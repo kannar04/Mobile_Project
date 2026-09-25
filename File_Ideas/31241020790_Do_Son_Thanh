@@ -1,45 +1,37 @@
-Tên đồ án: Ứng dụng home 2 home chia sẽ chổ ở, airBnB
-Guest
-Register / login (Optional nếu ko cần lưu thông tin người dùng chỉ làm MVP)
-Browse available accommodations (needed)
-Search by (Optional):
-location
-date
-number of guests
-price
-View accommodation details (needed)
-photos
-description
-price/night
-amenities
-location
-host information
-reviews
-Select dates ( needed)
-Calculate total price (optional)
-Make a booking (needed)
-View booking history (optional)
-Cancel booking (needed)
-Leave a review after staying (optional?)
-
-Host
+User
 Register / login (optional)
-Create accommodation listing (needed)
-Edit/delete listing (needed)
-Upload accommodation photos (needed)
-Set: (needed)
-price
-available dates
-maximum guests
-amenities
-description
-View incoming bookings (optional,life quality)
-Accept/reject booking (needed, lify cycle)
-View booking history (optional)
-System
-Prevent double-booking (needed)
-Calculate booking cost (optional if we dont do the same feature above)
-Track booking status (needed)
-Authentication / authorization (optional if we dont do login)
-Basic notifications (optional)
-
+Profile (optional)
+Manage own pet posts (needed)
+Pet listing (all needed)
+Create pet post 
+Photos
+Name
+Species: dog/cat/etc.
+Breed
+Age
+Gender
+Location
+Description
+Health/vaccination information
+Status: Available / Reserved / Adopted / Unavailable
+Browse
+Search pets (optional)
+Filter by: (optional)
+species
+breed
+age
+gender
+location
+Pet detail page
+Exchange / adoption
+Send request to owner (needed)
+Owner accepts/rejects (needed)
+Track request status (needed)
+Remove/close listing once the transaction is completed(needed)
+Communication
+Contact owner (needed)
+Basic messaging (needed)
+Social
+Like/favorite pet (optional)
+Comment (optional)
+Report post (optional)
