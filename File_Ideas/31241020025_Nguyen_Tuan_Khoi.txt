@@ -1,0 +1,73 @@
+Tên đồ án: Ứng dụng AniLove: Trao đổi, chia sẻ thú cưng
+Người thực hiện: 31241020025 - Nguyễn Tuấn Khôi
+
+Tham khảo: Petfinder, Adopt-a-Pet, Rover (chăm hộ thú cưng), Chợ Tốt (mục thú cưng),
+các nhóm cứu hộ như Hanoi Pet Adoption (HPA), Saigon Pet Adoption (SPA)
+Vai trò: Người dùng (vừa có thể đăng thú cưng, vừa có thể tìm / nhận thú cưng) - Admin
+
+==================================================
+I. MUST-HAVE (Bắt buộc - Core)
+Không có thì ứng dụng không hoạt động / không có ý nghĩa
+==================================================
+Chung
+- Đăng ký / đăng nhập / đăng xuất
+- Hồ sơ cá nhân cơ bản (họ tên, ảnh đại diện, khu vực, số điện thoại)
+
+Người đăng (chủ thú cưng)
+- Đăng thú cưng: hình ảnh, tên, loài (chó / mèo / khác), giống, tuổi, giới tính,
+  khu vực, mô tả, tình trạng sức khỏe / tiêm phòng
+- Chọn hình thức: cho nhận nuôi / trao đổi
+- Sửa / xóa / ẩn bài đăng
+- Cập nhật trạng thái: Còn / Đang chờ / Đã có chủ mới
+- Xem yêu cầu nhận thú cưng, chấp nhận / từ chối
+
+Người tìm / nhận thú cưng
+- Xem danh sách thú cưng (dạng lưới ảnh, cuộn trên điện thoại)
+- Xem chi tiết thú cưng + thông tin người đăng
+- Gửi yêu cầu nhận / trao đổi (kèm lời nhắn giới thiệu bản thân)
+- Xem các yêu cầu đã gửi, trạng thái, hủy yêu cầu
+
+Hệ thống
+- Vòng đời yêu cầu: Chờ duyệt -> Được chấp nhận -> Hoàn tất / Bị từ chối / Đã hủy
+- Khi 1 yêu cầu được chấp nhận: bài đăng chuyển sang "Đang chờ",
+  khi hoàn tất thì bài đăng tự đóng và các yêu cầu còn lại tự bị từ chối
+- Liên hệ được với người đăng sau khi yêu cầu được chấp nhận
+  (bản tối thiểu: hiện số điện thoại / nút Zalo)
+
+Admin
+- Quản lý tài khoản (khóa / mở khóa)
+- Quản lý / gỡ bài đăng vi phạm
+
+==================================================
+II. IMPORTANT (Chức năng hỗ trợ)
+==================================================
+- Tìm kiếm thú cưng theo từ khóa
+- Bộ lọc: loài, giống, tuổi, giới tính, khu vực, hình thức (nhận nuôi / trao đổi)
+- Lưu thú cưng yêu thích
+- Chia sẻ bài đăng (Facebook, Zalo, copy link)
+- Thông báo đẩy (push notification): có yêu cầu mới, yêu cầu được chấp nhận / từ chối
+- Báo cáo bài đăng: lừa đảo, mua bán trá hình, ngược đãi động vật; Admin xử lý báo cáo
+- Đánh giá người dùng sau khi hoàn tất trao đổi (tăng độ tin cậy)
+- Thông tin thêm của thú cưng: màu sắc, tính cách, đã triệt sản chưa,
+  sổ tiêm phòng (chụp ảnh đính kèm)
+- Lịch sử thú cưng đã cho / đã nhận
+- Admin quản lý danh mục loài và giống
+- Thống kê cơ bản cho Admin: số người dùng, số bài đăng, số yêu cầu, số thú cưng đã có chủ mới
+
+==================================================
+III. NICE-TO-HAVE (Chức năng bên lề)
+==================================================
+- Nhắn tin trong app (chat) giữa người đăng và người nhận
+- Chăm hộ / gửi thú cưng tạm thời (khi chủ đi xa)
+- Hiển thị khoảng cách / tìm thú cưng gần tôi (dùng GPS của điện thoại)
+- Bảng câu hỏi khi xin nhận nuôi (nhà ở, kinh nghiệm nuôi, thời gian chăm sóc)
+  để người đăng dễ chọn người phù hợp
+- Cập nhật sau nhận nuôi: người nhận đăng ảnh / tình hình thú cưng cho chủ cũ xem
+- Mục thú cưng thất lạc / tìm thấy
+- Bảng tin cộng đồng: chia sẻ ảnh, bài viết kinh nghiệm chăm sóc, like / bình luận
+- Admin quản lý bài viết / tin tức về thú cưng
+- Nhắc lịch tiêm phòng, tẩy giun cho thú cưng
+- Bản đồ phòng khám thú y, pet shop gần đây
+- Xác minh tài khoản (số điện thoại), huy hiệu "Người dùng uy tín"
+- Gợi ý thú cưng phù hợp theo sở thích / lịch sử xem
+- Đa ngôn ngữ (Tiếng Việt / English), dark mode
