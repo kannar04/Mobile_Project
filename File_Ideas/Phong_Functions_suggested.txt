@@ -1,0 +1,75 @@
+1. Hệ thống / Admin
+Đăng nhập Admin.
+Quản lý tài khoản người dùng.
+Thêm / sửa / xóa tài khoản.
+Khóa / mở khóa tài khoản.
+Quản lý danh mục thú cưng.
+Thêm / sửa / xóa danh mục.
+Quản lý giống thú cưng.
+Thêm / sửa / xóa giống.
+Quản lý bài đăng thú cưng.
+Xem / sửa / xóa bài đăng.
+Quản lý yêu cầu nhận / trao đổi thú cưng.
+Xem trạng thái các yêu cầu.
+Quản lý đánh giá / nhận xét.
+Quản lý báo cáo.
+Quản lý bài viết / tin tức về thú cưng.
+Thêm / sửa / xóa bài viết.
+Xem thống kê cơ bản:
+Số người dùng.
+Số thú cưng.
+Số bài đăng.
+Số yêu cầu trao đổi.
+Số thú cưng đã được nhận.
+
+2. Người tìm / nhận thú cưng
+Đăng ký.
+Đăng nhập / đăng xuất.
+Xem và chỉnh sửa hồ sơ cá nhân.
+Xem danh sách thú cưng.
+Tìm kiếm thú cưng.
+Lọc theo loài.
+Lọc theo giống.
+Lọc theo tuổi.
+Lọc theo giới tính.
+Lọc theo khu vực.
+Xem chi tiết thú cưng.
+Xem hình ảnh thú cưng.
+Xem thông tin chủ thú cưng.
+Lưu thú cưng yêu thích.
+Gửi yêu cầu nhận / trao đổi thú cưng.
+Nhập lời nhắn khi gửi yêu cầu.
+Xem các yêu cầu đã gửi.
+Xem trạng thái yêu cầu.
+Hủy yêu cầu.
+Đánh giá người dùng sau khi hoàn tất trao đổi.
+
+3. Chủ thú cưng / Người đăng
+Đăng ký / đăng nhập.
+Chỉnh sửa hồ sơ cá nhân.
+Đăng thú cưng mới.
+Thêm thông tin thú cưng:
+Tên.
+Loài.
+Giống.
+Tuổi.
+Giới tính.
+Màu sắc.
+Tình trạng sức khỏe.
+Tính cách.
+Khu vực.
+Mô tả.
+Hình ảnh.
+Chọn hình thức:
+Tìm người nhận nuôi.
+Trao đổi thú cưng.
+Chia sẻ / chăm hộ.
+Sửa bài đăng.
+Xóa bài đăng.
+Ẩn / hiện bài đăng.
+Cập nhật trạng thái thú cưng.
+Xem các yêu cầu nhận thú cưng.
+Xem thông tin người gửi yêu cầu.
+Chấp nhận yêu cầu.
+Từ chối yêu cầu.
+Xem lịch sử thú cưng đã trao đổi / cho nhận.
