@@ -2,7 +2,7 @@
 
 ## Tên đề tài
 
-**[Chưa chốt]**
+** Ứng dụng AniLove: Trao đổi, chia sẻ thú cưng **
 
 ## Các thành viên
 
