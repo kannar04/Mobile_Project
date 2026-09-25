@@ -1,11 +1,5 @@
-# ANILOVE — ĐẶC TẢ CHỨC NĂNG
+# ANILOVE — CHỨC NĂNG
 
-**Tên đồ án:** Ứng dụng AniLove: Trao đổi, chia sẻ thú cưng  
-**Phiên bản:** 1.0 · **Nền tảng:** Mobile App + Admin Website + Backend API
-
-## 1. Mục tiêu và phạm vi
-
-AniLove giúp người dùng đăng thông tin thú cưng, tìm thú cưng phù hợp, trao đổi với chủ nuôi và gửi yêu cầu nhận nuôi. Trong tài liệu này, **“chia sẻ”** gồm chia sẻ hồ sơ, hình ảnh và bài viết về thú cưng; **“trao đổi”** gồm trao đổi thông tin, trò chuyện và thỏa thuận nhận nuôi/chuyển giao. MVP không xử lý mua bán hoặc thanh toán.
 
 | Vai trò | Quyền chính |
 |---|---|
@@ -56,47 +50,4 @@ AniLove giúp người dùng đăng thông tin thú cưng, tìm thú cưng phù 
 - **SV-04:** Lưu cuộc hội thoại, tin nhắn, yêu thích, lượt thích và bình luận.
 - **SV-05:** Tạo thông báo theo sự kiện; lưu trạng thái đã đọc.
 - **SV-06:** Kiểm tra dữ liệu đầu vào, giới hạn tải ảnh và ghi nhật ký thao tác Admin.
-
-## 4. Quy tắc nghiệp vụ
-
-1. Chỉ tin `PUBLISHED` hiển thị công khai và nhận yêu cầu.
-2. Người dùng không được gửi yêu cầu nhận nuôi cho tin của chính mình.
-3. Một tài khoản chỉ có **một yêu cầu đang chờ** trên mỗi tin; có thể gửi lại sau khi rút hoặc bị từ chối theo quy tắc sản phẩm.
-4. Người đăng chỉ xử lý yêu cầu thuộc tin của mình; người gửi chỉ xem/rút yêu cầu của mình.
-5. Khi xác nhận bàn giao, tin chuyển `COMPLETED`; các yêu cầu còn chờ chuyển `CLOSED`, và hệ thống thông báo cho người liên quan.
-6. Thông tin sức khỏe do người đăng khai báo; hiển thị rõ nguồn thông tin và không tự gắn nhãn đã xác minh.
-7. Tin nhắn chỉ hiển thị với các thành viên của cuộc hội thoại; số điện thoại không công khai mặc định.
-
-**Trạng thái tin:** `DRAFT → PENDING_REVIEW → PUBLISHED → COMPLETED`; nhánh `REJECTED`, `HIDDEN`, `CLOSED`.
-
-**Trạng thái yêu cầu:** `PENDING → ACCEPTED → COMPLETED`; nhánh `REJECTED`, `WITHDRAWN`, `CLOSED`. Chấp nhận yêu cầu là đồng ý tiếp tục trao đổi; chỉ xác nhận bàn giao mới hoàn tất tin.
-
-## 5. Dữ liệu chính
-
-| Bảng | Nội dung |
-|---|---|
-| `users` | Tài khoản và hồ sơ |
-| `pets`, `pet_images` | Tin thú cưng và ảnh |
-| `adoption_requests` | Yêu cầu nhận nuôi/chuyển giao |
-| `conversations`, `messages` | Trò chuyện |
-| `posts`, `post_images`, `comments`, `reactions` | Bài chia sẻ và tương tác |
-| `favorites`, `notifications` | Tin yêu thích và thông báo |
-| `reports`, `admin_logs` | Báo cáo và lịch sử quản trị |
-
-## 6. API tham khảo
-
-| Method | Endpoint | Quyền |
-|---|---|---|
-| POST | `/api/auth/register`, `/api/auth/login` | Public |
-| GET | `/api/pets`, `/api/pets/{id}` | Public |
-| POST / PATCH | `/api/pets`, `/api/pets/{id}` | Member/chủ tin |
-| POST / GET | `/api/pets/{id}/requests`, `/api/requests/my` | Member |
-| PATCH | `/api/requests/{id}/accept`, `/api/requests/{id}/reject` | Chủ tin |
-| POST / GET | `/api/posts`, `/api/posts/{id}/comments` | Member/Public |
-| GET / POST | `/api/conversations`, `/api/conversations/{id}/messages` | Người tham gia |
-| GET / PATCH | `/api/admin/pets/pending`, `/api/admin/pets/{id}/review` | Admin |
-
-## 7. Tiêu chí hoàn thành MVP
-
-Người dùng tạo tin thú cưng → Admin duyệt → người khác tìm và xem tin → gửi yêu cầu → hai bên nhắn tin → người đăng chấp nhận yêu cầu → xác nhận bàn giao → tin được đóng. Người dùng cũng có thể đăng và tương tác với bài chia sẻ.
 
