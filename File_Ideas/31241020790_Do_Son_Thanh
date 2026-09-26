@@ -1,0 +1,37 @@
+User
+Register / login (optional)
+Profile (optional)
+Manage own pet posts (needed)
+Pet listing (all needed)
+Create pet post 
+Photos
+Name
+Species: dog/cat/etc.
+Breed
+Age
+Gender
+Location
+Description
+Health/vaccination information
+Status: Available / Reserved / Adopted / Unavailable
+Browse
+Search pets (optional)
+Filter by: (optional)
+species
+breed
+age
+gender
+location
+Pet detail page
+Exchange / adoption
+Send request to owner (needed)
+Owner accepts/rejects (needed)
+Track request status (needed)
+Remove/close listing once the transaction is completed(needed)
+Communication
+Contact owner (needed)
+Basic messaging (needed)
+Social
+Like/favorite pet (optional)
+Comment (optional)
+Report post (optional)
