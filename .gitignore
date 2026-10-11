@@ -7,7 +7,7 @@ local.properties
 
 # Log/OS Files
 *.log
-
+/*.png
 # Android Studio generated files and folders
 captures/
 .externalNativeBuild/
@@ -15,7 +15,15 @@ captures/
 *.aab
 *.apk
 output-metadata.json
-
+*.py
+*.pyc
+__pycache__/
+*.drawio
+*.html
+anilove_cat.png
+anilove_dog.png
+anilove_schema.json
+anilove_schema.sql
 # IntelliJ
 *.iml
 .idea/
