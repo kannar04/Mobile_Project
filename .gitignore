@@ -36,3 +36,80 @@ skill.md
 
 # Generated diagrams
 /graph/**
+
+# ==========================================
+# Android / Gradle Build Outputs
+# ==========================================
+*.apk
+*.aar
+*.ap_
+*.aab
+*.dex
+*.class
+
+# Build directories
+build/
+/build/
+app/build/
+*/build/
+.gradle/
+
+# Native C/C++ build outputs
+.externalNativeBuild/
+.cxx/
+ndkBuild/
+
+# Android Profiler & Captures
+/captures/
+.navigation/
+
+# ==========================================
+# Local Configuration & Secrets
+# ==========================================
+local.properties
+secrets.properties
+
+# Keystore / Signing files
+*.jks
+*.keystore
+
+# Google Services / Config (Uncomment if sensitive)
+# google-services.json
+
+# ==========================================
+# Android Studio / IntelliJ IDEA
+# ==========================================
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# If you want to share specific IntelliJ configuration (e.g. VCS/Code style),
+# comment out `.idea/` above and uncomment the lines below:
+# !.idea/vcs.xml
+# !.idea/codeStyles/
+# !.idea/copyright/
+# !.idea/gradle.xml
+
+# ==========================================
+# Kotlin / Java
+# ==========================================
+.kotlin/
+hs_err_pid*
+
+# ==========================================
+# Operating System Files
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ==========================================
+# Miscellaneous / Logs
+# ==========================================
+*.log
