@@ -1,0 +1,98 @@
+<resources>
+    <color name="auth_primary">#26332D</color>
+    <color name="auth_on_primary">#FFFFFF</color>
+    <color name="auth_surface">#F8F7F4</color>
+    <color name="auth_on_surface">#26332D</color>
+    <color name="auth_muted">#64726A</color>
+    <color name="auth_container">#F1F3F2</color>
+    <dimen name="auth_form_max_width">520dp</dimen>
+    <style name="Theme.Project.Auth" parent="Theme.Project">
+        <item name="colorPrimary">@color/auth_primary</item>
+        <item name="colorOnPrimary">@color/auth_on_primary</item>
+        <item name="colorSurface">@color/auth_surface</item>
+        <item name="colorOnSurface">@color/auth_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/auth_muted</item>
+        <item name="colorSecondaryContainer">@color/auth_container</item>
+        <item name="colorOnSecondaryContainer">@color/auth_on_surface</item>
+        <item name="android:windowBackground">@color/auth_surface</item>
+    </style>
+    <style name="AuthButton" parent="Widget.Material3.Button">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.AuthControl</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">52dp</item>
+        <item name="android:layout_marginTop">12dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+    <style name="ShapeAppearanceOverlay.AuthControl" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">14dp</item>
+    </style>
+    <style name="AuthTonalButton" parent="AuthButton">
+        <item name="backgroundTint">?attr/colorSecondaryContainer</item>
+        <item name="android:textColor">?attr/colorOnSecondaryContainer</item>
+    </style>
+    <style name="AuthField" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">12dp</item>
+        <item name="boxCornerRadiusTopEnd">12dp</item>
+        <item name="boxCornerRadiusBottomStart">12dp</item>
+        <item name="boxCornerRadiusBottomEnd">12dp</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">16dp</item>
+    </style>
+    <string name="auth_entry">Tài khoản</string>
+    <string name="auth_back">Quay lại</string>
+    <string name="auth_signin_title">Chào mừng trở lại</string>
+    <string name="auth_register_title">Tạo tài khoản</string>
+    <string name="auth_account_title">Tài khoản của bạn</string>
+    <string name="auth_signin_body">Đăng nhập để dùng tài khoản ANILOVE.</string>
+    <string name="auth_register_body">Dùng email của bạn. Mật khẩu từ 12–128 ký tự.</string>
+    <string name="auth_email">Email</string>
+    <string name="auth_password">Mật khẩu</string>
+    <string name="auth_confirm">Nhập lại mật khẩu</string>
+    <string name="auth_proof">Mật khẩu tài khoản hiện tại</string>
+    <string name="auth_signin">Đăng nhập</string>
+    <string name="auth_register">Tạo tài khoản</string>
+    <string name="auth_switch_signin">Đã có tài khoản? Đăng nhập</string>
+    <string name="auth_google">Tiếp tục với Google</string>
+    <string name="auth_google_link">Liên kết Google</string>
+    <string name="auth_google_linked">Google đã liên kết</string>
+    <string name="auth_google_unavailable">Google chưa được cấu hình trong môi trường này. Bạn có thể dùng email.</string>
+    <string name="auth_visitor">Tiếp tục với tư cách khách</string>
+    <string name="auth_logout">Đăng xuất</string>
+    <string name="auth_verify">Gửi email xác minh</string>
+    <string name="auth_refresh">Kiểm tra trạng thái</string>
+    <string name="auth_retry_setup">Thử lại thiết lập tài khoản</string>
+    <string name="auth_disclosure">Bản thử nghiệm môn học. Đăng nhập không xác nhận mức độ phù hợp nhận nuôi.</string>
+    <string name="auth_pending">Đang xử lý. Bạn có thể đăng xuất hoặc quay lại.</string>
+    <string name="auth_outcome_unknown">Chưa biết kết quả. Đang chờ yêu cầu trước kết thúc; không gửi lại yêu cầu đăng nhập.</string>
+    <string name="auth_configuration_error">Chưa xác minh cấu hình môi trường. Đăng nhập hiện chưa khả dụng.</string>
+    <string name="auth_credentials_error">Không thể đăng nhập bằng thông tin này. Kiểm tra lại và thử lại.</string>
+    <string name="auth_throttled">Dịch vụ đang giới hạn yêu cầu. Vui lòng thử lại sau.</string>
+    <string name="auth_network_error">Không thể kết nối. Kiểm tra mạng rồi thử lại.</string>
+    <string name="auth_conflict">Không thể hoàn tất yêu cầu bằng thông tin này. Hãy dùng phương thức đăng nhập hiện có. Không có tài khoản nào được hợp nhất.</string>
+    <string name="auth_provider_password_policy">Mật khẩu chưa đáp ứng chính sách của dịch vụ. Chọn mật khẩu khác và thử lại.</string>
+    <string name="auth_choose_another_google">Không tìm thấy tài khoản đã dùng. Chọn một tài khoản Google khác?</string>
+    <string name="auth_choose_account">Chọn tài khoản</string>
+    <string name="auth_cancelled">Đã hủy yêu cầu.</string>
+    <string name="auth_send_success">Đã gửi yêu cầu email xác minh. Kiểm tra hộp thư; việc nhận email chưa được xác nhận.</string>
+    <string name="auth_send_error">Không thể gửi email xác minh. Tài khoản vẫn đã được tạo; bạn có thể thử gửi lại.</string>
+    <string name="auth_cooldown">Vui lòng chờ 60 giây trước khi gửi lại email.</string>
+    <string name="auth_unverified">Email chưa xác minh.</string>
+    <string name="auth_verification_unknown">Chưa kiểm tra được trạng thái xác minh email.</string>
+    <string name="auth_provider_clear_failed">Đã đăng xuất khỏi ANILOVE. Chưa xóa được trạng thái chọn tài khoản Google trên thiết bị.</string>
+    <string name="auth_verified">Email đã xác minh.</string>
+    <string name="auth_setup_pending">Thiết lập tài khoản chưa hoàn tất. Thử lại với tài khoản đang đăng nhập.</string>
+    <string name="auth_activation_pending">Chưa được kích hoạt bởi người quản lý bản thử nghiệm.</string>
+    <string name="auth_restricted">Quyền thành viên đang bị hạn chế. Bạn vẫn có thể quay lại hoặc đăng xuất.</string>
+    <string name="auth_authority_unknown">Chưa kiểm tra được quyền thành viên. Không thể xác nhận trạng thái sẵn sàng.</string>
+    <string name="auth_ready">Tài khoản sẵn sàng cho bản thử nghiệm. Đây không phải xác nhận phù hợp nhận nuôi.</string>
+    <string name="auth_email_invalid">Nhập một địa chỉ email hợp lệ.</string>
+    <string name="auth_password_invalid">Mật khẩu mới phải có từ 12 đến 128 ký tự.</string>
+    <string name="auth_password_required">Nhập mật khẩu.</string>
+    <string name="auth_confirmation_invalid">Hai mật khẩu chưa trùng nhau.</string>
+    <string name="auth_proof_required">Nhập mật khẩu hiện tại để xác nhận quyền truy cập trước khi liên kết Google.</string>
+</resources>

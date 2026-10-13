@@ -1,0 +1,29 @@
+<resources>
+<string name="social_title">AniLove</string><string name="social_compose">Bạn muốn chia sẻ về bé cưng?</string><string name="social_body">Câu chuyện · tối đa 2000 ký tự</string>
+<string name="social_refresh">Làm mới</string><string name="social_drafts">Bài của tôi</string><string name="social_signin">Đăng nhập để đọc và chia sẻ câu chuyện.</string>
+<string name="social_reading">Những khoảnh khắc nhỏ, thật nhiều yêu thương.</string><string name="social_new_posts">Có thay đổi mới. Chọn Làm mới khi bạn sẵn sàng.</string>
+<string name="social_loading">Đang tải câu chuyện…</string><string name="social_retry">Thử lại</string><string name="social_end">Bạn đã đọc hết những câu chuyện hiện có.</string>
+<string name="social_member">Thành viên AniLove</string><string name="social_audience">Cộng đồng · người dùng đăng nhập</string><string name="social_only_me">Bản nháp · Chỉ mình tôi</string>
+<string name="social_edited">Đã chỉnh sửa</string><string name="social_illustration">Minh họa có sẵn · không phải ảnh cá nhân</string><string name="social_open">Đọc và bình luận</string>
+<string name="social_close">Quay lại</string><string name="social_publish">Đăng bài</string><string name="social_save_private">Lưu riêng</string><string name="social_save_first">Lưu riêng trước, rồi xác nhận đăng bản đã lưu.</string>
+<string name="social_no_contact">Không ghi điện thoại hoặc địa chỉ. Đây không phải xác minh danh tính hay quyền nhận nuôi.</string>
+<string name="social_reconcile">Kiểm tra kết quả</string><string name="social_restart">Bỏ yêu cầu chưa được lưu</string><string name="social_sending">Đang gửi…</string><string name="social_committed">Máy chủ đã xác nhận.</string>
+<string name="social_unknown">Chưa biết kết quả. Đang chờ yêu cầu kết thúc; không gửi thêm.</string><string name="social_conflict">Nội dung đã thay đổi. Tải lại và so sánh trước khi áp dụng bản sửa.</string>
+<string name="social_unavailable">Chưa thể xác nhận. Giữ bản đang sửa, kiểm tra mạng rồi thử lại.</string><string name="social_service">Cộng đồng chưa mở đăng bài. Bạn vẫn có thể soạn và lưu riêng.</string>
+<string name="social_not_committed">Chưa tìm thấy kết quả. Yêu cầu không được tự động gửi lại.</string><string name="social_lost_text">Tải bài đã lưu trước khi bắt đầu lại. Nội dung chưa lưu có thể mất sau khi ứng dụng đóng.</string>
+<string name="social_legacy">Bản nháp trước đây · Chỉ mình tôi</string><string name="social_more">Tải thêm</string><string name="social_more_comments">Bình luận tiếp theo</string><string name="social_menu">Tùy chọn</string>
+<string name="social_like">Thích / Bỏ thích</string><string name="social_comment">Bình luận · tối đa 500 ký tự</string><string name="social_send_comment">Gửi bình luận</string><string name="social_comment_invalid">Nhập bình luận từ 1 đến 500 ký tự.</string>
+<string name="social_edit">Chỉnh sửa</string><string name="social_delete">Xóa bài viết</string><string name="social_delete_help">Bài sẽ không còn được đọc trong cộng đồng. Lịch sử và hồ sơ báo cáo được giữ lại.</string>
+<string name="social_withdraw">Rút bình luận</string><string name="social_removed">Bài viết không còn hiển thị. Bạn có thể quay lại bảng tin.</string><string name="social_source_edited">Bài viết đã thay đổi kể từ bình luận này.</string><string name="social_likes">%1$d lượt thích</string>
+<string name="report_title">Báo cáo</string><string name="report_mine">Báo cáo của tôi</string><string name="report_private">Chỉ bạn và người được phép xét duyệt có thể xem. Tiếp nhận không phải kết luận vi phạm.</string>
+<string name="report_reason">Lý do</string><string name="report_details">Thông tin bổ sung · tối đa 1000 ký tự</string><string name="report_submit">Gửi báo cáo</string><string name="report_received">Đã tiếp nhận</string>
+<string name="report_invalid">Chọn lý do và nhập tối đa 1000 ký tự. Lý do Khác cần giải thích.</string><string name="report_rate">Đã đạt giới hạn tiếp nhận. Giữ nội dung và thử lại sau; hệ thống không thể điều phối cứu hộ.</string>
+<string name="report_duplicate">Bạn đã có báo cáo cho nội dung này. Xem hoặc bổ sung trong Báo cáo của tôi.</string><string name="report_discard">Bỏ nội dung báo cáo chưa gửi?</string>
+<string name="report_original_retained">Lời trình bày gốc được giữ nguyên. Yêu cầu rút không xóa hồ sơ hoặc tự động kết thúc xét duyệt.</string><string name="report_append">Bổ sung thông tin</string><string name="report_withdraw">Yêu cầu rút báo cáo</string><string name="report_withdraw_statement">Tôi yêu cầu rút báo cáo này.</string>
+<string-array name="report_reasons"><item>Spam</item><item>Quấy rối</item><item>Thông tin sai lệch</item><item>Quyền riêng tư</item><item>Phúc lợi động vật</item><item>Khác</item></string-array>
+<string name="report_in_review">Đang xét duyệt</string><string name="report_needs_information">Cần thông tin bổ sung</string><string name="report_resolved">Đã có kết quả xét duyệt</string><string name="report_rejected">Không chấp nhận báo cáo</string>
+<string name="social_boundary">Vị trí trước đó không còn trong bộ nhớ. Chọn Làm mới để đọc lại từ đầu.</string>
+<string name="report_welfare_help">Bản thử nghiệm không điều phối cứu hộ hoặc xác nhận an toàn của động vật.</string>
+<string name="social_like_action">Thích</string><string name="social_unlike">Bỏ thích</string><string name="social_count_loading">Đang tải lượt thích…</string>
+<string name="report_cancel_pending">Yêu cầu đã gửi có thể hoàn tất. Đóng biểu mẫu không rút báo cáo; kiểm tra trong Báo cáo của tôi.</string>
+</resources>

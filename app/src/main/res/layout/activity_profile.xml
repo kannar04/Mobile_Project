@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/profile_root" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
+    <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+        <com.gmail.manhle240406.project.auth.BoundedFormLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal" android:orientation="vertical" android:padding="24dp" android:saveEnabled="false">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/profile_title" android:textAppearance="?attr/textAppearanceHeadlineMedium" android:accessibilityHeading="true" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="@string/profile_intro" android:textAppearance="?attr/textAppearanceBodyMedium" />
+            <TextView android:id="@+id/profile_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:accessibilityLiveRegion="polite" android:textAppearance="?attr/textAppearanceBodyMedium" android:saveEnabled="false" />
+            <ProgressBar android:id="@+id/profile_progress" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp" android:indeterminate="true" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/profile_retry" style="@style/AuthTonalButton" android:text="@string/profile_retry_operation" android:visibility="gone" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/profile_resolve" style="@style/AuthTonalButton" android:text="@string/profile_resolve_conflict" android:visibility="gone" />
+            <LinearLayout android:id="@+id/profile_form" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:saveEnabled="false">
+                <TextView android:id="@+id/profile_summary" android:layout_width="match_parent" android:layout_height="wrap_content" android:textAppearance="?attr/textAppearanceTitleLarge" android:accessibilityHeading="true" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/profile_edit" style="@style/AuthButton" android:text="@string/social_edit" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/profile_options" style="@style/AuthTonalButton" android:text="@string/social_menu" />
+                <LinearLayout android:id="@+id/profile_public_fields" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="28dp" android:text="@string/profile_content" android:textAppearance="?attr/textAppearanceTitleLarge" android:accessibilityHeading="true" />
+                <com.google.android.material.textfield.TextInputLayout android:id="@+id/profile_name_layout" style="@style/AuthField" android:hint="@string/profile_name">
+                    <com.google.android.material.textfield.TextInputEditText android:id="@+id/profile_name" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPersonName|textCapWords" android:saveEnabled="false" android:importantForAutofill="no" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:labelFor="@id/profile_avatar" android:text="@string/profile_avatar" />
+                <Spinner android:id="@+id/profile_avatar" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:entries="@array/profile_avatar_labels" android:saveEnabled="false" />
+                <ImageView android:id="@+id/profile_avatar_image" android:layout_width="64dp" android:layout_height="64dp" android:layout_marginTop="8dp" android:importantForAccessibility="no" android:src="@drawable/profile_avatar_default" app:tint="?attr/colorPrimary" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:labelFor="@id/profile_region" android:text="@string/profile_region" />
+                <Spinner android:id="@+id/profile_region" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:entries="@array/profile_region_labels" android:saveEnabled="false" />
+                <com.google.android.material.textfield.TextInputLayout android:id="@+id/profile_bio_layout" style="@style/AuthField" android:hint="@string/profile_bio" app:helperText="@string/profile_bio_help">
+                    <com.google.android.material.textfield.TextInputEditText android:id="@+id/profile_bio" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine|textCapSentences" android:minLines="3" android:gravity="top" android:saveEnabled="false" android:importantForAutofill="no" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <TextView android:id="@+id/profile_draft_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:saveEnabled="false" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/profile_save" style="@style/AuthButton" android:text="@string/profile_save" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/profile_preview" style="@style/AuthTonalButton" android:text="@string/profile_preview" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/profile_contact_group" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="32dp" android:text="@string/profile_contact" android:textAppearance="?attr/textAppearanceTitleLarge" android:accessibilityHeading="true" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="@string/profile_contact_help" />
+                <com.google.android.material.textfield.TextInputLayout android:id="@+id/profile_phone_layout" style="@style/AuthField" android:hint="@string/profile_phone" app:helperText="@string/profile_phone_help">
+                    <com.google.android.material.textfield.TextInputEditText android:id="@+id/profile_phone" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="phone" android:saveEnabled="false" android:importantForAutofill="no" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.button.MaterialButton android:id="@+id/profile_save_contact" style="@style/AuthTonalButton" android:text="@string/profile_save_contact" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/profile_visibility_group" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="32dp" android:text="@string/profile_visibility" android:textAppearance="?attr/textAppearanceTitleLarge" android:accessibilityHeading="true" />
+                <TextView android:id="@+id/profile_visibility_state" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:saveEnabled="false" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="@string/profile_visibility_help" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/profile_hide" style="@style/AuthTonalButton" android:text="@string/profile_hide" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/profile_show" style="@style/AuthTonalButton" android:text="@string/profile_show" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/profile_reviews" style="@style/AuthTonalButton" android:text="@string/profile_reviews" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/profile_more" style="@style/AuthTonalButton" android:text="@string/profile_more_reviews" android:visibility="gone" />
+                <TextView android:id="@+id/profile_review_text" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:saveEnabled="false" />
+                </LinearLayout>
+            </LinearLayout>
+            <com.google.android.material.button.MaterialButton android:id="@+id/profile_reload" android:visibility="gone" style="@style/AuthTonalButton" android:text="@string/profile_reload" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/profile_back" style="@style/AuthTonalButton" android:text="@string/auth_back" />
+        </com.gmail.manhle240406.project.auth.BoundedFormLayout>
+    </FrameLayout>
+</androidx.core.widget.NestedScrollView>

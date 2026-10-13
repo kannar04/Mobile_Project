@@ -1,0 +1,14 @@
+{
+  "name": "anilove-foundation-rules-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed:demo": "node seed-demo.mjs",
+    "test": "firebase emulators:exec --config ../firebase.json --project demo-anilove --only auth,firestore \"node --test --test-concurrency=1 foundation.test.mjs profile.test.mjs pet.test.mjs listing.test.mjs community.test.mjs daily.test.mjs\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "5.0.0",
+    "firebase": "12.14.0",
+    "firebase-tools": "15.33.0"
+  }
+}
