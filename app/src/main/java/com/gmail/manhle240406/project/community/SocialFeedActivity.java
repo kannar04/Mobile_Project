@@ -28,6 +28,7 @@ public class SocialFeedActivity extends AppCompatActivity {
     private Adapter adapter;
     private LinearLayoutManager manager;
     private String reported,reacted;
+    private boolean restarting;
     private final LinkedHashMap<String,Long> counts=new LinkedHashMap<>();
     private final LinkedHashMap<String,Map<String,Object>> likes=new LinkedHashMap<>();
     private final HashSet<String> rowReads=new HashSet<>();
@@ -67,7 +68,12 @@ public class SocialFeedActivity extends AppCompatActivity {
         }});
         ((AniloveApplication)getApplication()).auth().state().observe(this,s->{
             if(s.uid==null){service.setText(R.string.social_signin);model.stop();}
-            else if(model.lost)recreate();
+            else if(model.lost&&!restarting&&!isFinishing()){
+                // A new Activity owns fresh session tickets; recreate() retains stale ViewModels.
+                restarting=true;
+                startActivity(new Intent(this,getClass()));
+                finish();
+            }
         });
         privateView(root);
     }
