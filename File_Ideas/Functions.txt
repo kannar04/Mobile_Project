@@ -1,7 +1,187 @@
-Các chức năng nên chia ra thành 3 phần:
-Must-have: bắt buộc phải có. Core
-Ví dụ: Chức năng cho phép cho thuê (là quan trọng vì không có nó thì ứng dụng sẽ không hoạt động/ hoặc không có thì ứng dụng không có ý nghĩa)
-Important: Chức năng hỗ trợ
-Ví dụ: Chức năng cho phép chia sẻ thông tin nơi cho thuê (để hỗ trợ là chính). 
-Nice-to-have: Chức năng bên lề
-Ví dụ: Chức năng nhắn tin trao đổi giữa bên thuê và bên cho thuê (Có thể đính thông tin liên lạc và liên hệ trực tiếp qua các nền tảng khá. Ví dụ: Zalo)
+﻿ANILOVE - TỔNG HỢP CHỨC NĂNG DỰ KIẾN
+Ứng dụng trao đổi, chia sẻ và cho nhận nuôi thú cưng
+
+QUY ƯỚC
+- Host: chủ thú cưng/người đăng tin. Guest: người tìm/nhận thú cưng.
+  Admin: quản trị viên.
+- Một tài khoản có thể vừa là Guest vừa là Host.
+- Khách chưa đăng nhập được xem danh sách và chi tiết tin công khai
+  đã duyệt; các thao tác cá nhân cần tài khoản.
+- Must-have: chức năng cốt lõi, bắt buộc để ứng dụng hoạt động.
+- Important: chức năng hỗ trợ sử dụng và quản lý.
+- Nice-to-have: chức năng mở rộng, có thể triển khai sau.
+- Các chức năng trùng nhau đã được gộp. Mức ưu tiên là đề xuất tổng hợp
+  vì bốn file nguồn chưa thống nhất hoàn toàn về mức độ cần thiết.
+
+======================================================================
+I. HOST - CHỦ THÚ CƯNG / NGƯỜI ĐĂNG
+======================================================================
+
+1. MUST-HAVE - CHỨC NĂNG CỐT LÕI
+
+1.1. Tài khoản và hồ sơ
+- Đăng ký, đăng nhập, đăng xuất.
+- Xem và cập nhật họ tên, ảnh đại diện, khu vực, số điện thoại,
+  thông tin liên hệ và giới thiệu ngắn.
+
+1.2. Quản lý bài đăng thú cưng
+- Tạo bài đăng với các thông tin:
+  + Tên, loài (chó/mèo/khác), giống, tuổi hoặc tuổi ước tính, giới tính.
+  + Khu vực, mô tả và hình ảnh.
+  + Tình trạng sức khỏe, thông tin tiêm phòng và điều kiện nhận nuôi.
+- Chọn hình thức: cho nhận nuôi hoặc trao đổi thú cưng.
+- Tải lên và quản lý hình ảnh thú cưng.
+- Gửi bài đăng để Admin duyệt trước khi hiển thị công khai.
+- Xem, chỉnh sửa, xóa, ẩn/hiện hoặc đóng tin của mình theo trạng thái duyệt.
+- Cập nhật trạng thái thú cưng: Còn / Đang chờ / Đã có chủ mới /
+  Không còn khả dụng.
+
+1.3. Quản lý yêu cầu nhận nuôi/trao đổi
+- Xem danh sách và chi tiết yêu cầu, hồ sơ và lời nhắn của người gửi.
+- Chấp nhận hoặc từ chối yêu cầu.
+- Liên hệ với người nhận qua số điện thoại hoặc Zalo sau khi chấp nhận.
+- Xác nhận đã bàn giao thú cưng để hoàn tất yêu cầu.
+- Khi chấp nhận yêu cầu, tin chuyển sang Đang chờ; khi bàn giao hoàn tất,
+  tin chuyển sang Đã có chủ mới, tự đóng và từ chối các yêu cầu còn lại.
+
+2. IMPORTANT - CHỨC NĂNG HỖ TRỢ
+
+2.1. Tài khoản và thông tin bài đăng
+- Quên mật khẩu, đổi mật khẩu.
+- Lưu nháp bài đăng trước khi gửi duyệt.
+- Bổ sung màu sắc, tính cách, tình trạng triệt sản và ảnh sổ tiêm phòng.
+
+2.2. Lịch sử và chia sẻ
+- Xem lịch sử thú cưng đã cho nhận nuôi/trao đổi.
+- Chia sẻ bài đăng bằng liên kết, Facebook hoặc Zalo.
+
+2.3. Đánh giá, báo cáo và thông báo
+- Đánh giá, nhận xét người dùng sau khi hoàn tất nhận nuôi/trao đổi.
+- Báo cáo tin, bài viết, bình luận hoặc tài khoản không phù hợp:
+  lừa đảo, mua bán trá hình, ngược đãi động vật và các vi phạm khác.
+- Nhận thông báo đẩy khi tin được duyệt, có yêu cầu mới hoặc yêu cầu
+  thay đổi trạng thái; xem trạng thái đã đọc của thông báo.
+
+3. NICE-TO-HAVE - CHỨC NĂNG MỞ RỘNG
+
+- Nhắn tin trực tiếp trong ứng dụng với Guest; nhận thông báo tin nhắn mới.
+- Đăng nhu cầu chăm hộ/gửi thú cưng tạm thời khi đi xa.
+- Xem câu trả lời về nhà ở, kinh nghiệm nuôi và thời gian chăm sóc
+  để lựa chọn người nhận phù hợp.
+- Xem ảnh và tình hình thú cưng do người nhận cập nhật sau nhận nuôi.
+- Đăng/xem tin thú cưng thất lạc hoặc tìm thấy.
+- Đăng bài chia sẻ ảnh, câu chuyện, kinh nghiệm chăm sóc; xem bài viết
+  của mình, xem bảng tin cộng đồng, thích và bình luận.
+- Nhận nhắc lịch tiêm phòng, tẩy giun cho thú cưng.
+- Xem bản đồ phòng khám thú y và pet shop gần đây.
+- Xác minh số điện thoại; hiển thị huy hiệu Người dùng uy tín.
+- Sử dụng giao diện tiếng Việt/tiếng Anh và chế độ tối (dark mode).
+
+======================================================================
+II. GUEST - NGƯỜI TÌM / NHẬN THÚ CƯNG
+======================================================================
+
+1. MUST-HAVE - CHỨC NĂNG CỐT LÕI
+
+1.1. Tài khoản và hồ sơ
+- Đăng ký, đăng nhập, đăng xuất.
+- Xem và cập nhật họ tên, ảnh đại diện, khu vực, số điện thoại,
+  thông tin liên hệ và giới thiệu ngắn.
+
+1.2. Xem thú cưng
+- Xem danh sách thú cưng đã duyệt và đang hiển thị dưới dạng lưới ảnh.
+- Xem chi tiết: hình ảnh, tên, loài, giống, tuổi, giới tính, đặc điểm,
+  mô tả, khu vực, sức khỏe/tiêm phòng do chủ nuôi cung cấp,
+  điều kiện nhận nuôi, hình thức cho nhận/trao đổi và trạng thái.
+- Xem thông tin Host.
+
+1.3. Gửi và quản lý yêu cầu nhận nuôi/trao đổi
+- Gửi yêu cầu nhận nuôi/trao đổi kèm lời nhắn giới thiệu bản thân.
+- Xem danh sách, chi tiết và trạng thái yêu cầu của mình:
+  Chờ duyệt / Được chấp nhận / Hoàn tất / Bị từ chối / Đã hủy.
+- Hủy/rút yêu cầu khi trạng thái cho phép.
+- Liên hệ Host qua số điện thoại hoặc Zalo sau khi yêu cầu được chấp nhận.
+
+2. IMPORTANT - CHỨC NĂNG HỖ TRỢ
+
+2.1. Tài khoản và tìm kiếm
+- Quên mật khẩu, đổi mật khẩu.
+- Tìm kiếm thú cưng theo từ khóa, tên, loài và khu vực.
+- Lọc theo loài, giống, tuổi, giới tính, khu vực, hình thức nhận nuôi/
+  trao đổi và tình trạng nhận nuôi.
+- Sắp xếp theo tin mới; tải thêm kết quả khi cuộn hoặc chuyển trang.
+
+2.2. Lịch sử và tiện ích
+- Xem lịch sử thú cưng đã nhận/trao đổi.
+- Lưu/bỏ lưu và xem danh sách thú cưng yêu thích.
+- Chia sẻ bài đăng bằng liên kết, Facebook hoặc Zalo.
+
+2.3. Đánh giá, báo cáo và thông báo
+- Đánh giá, nhận xét người dùng sau khi hoàn tất nhận nuôi/trao đổi.
+- Báo cáo tin, bài viết, bình luận hoặc tài khoản không phù hợp:
+  lừa đảo, mua bán trá hình, ngược đãi động vật và các vi phạm khác.
+- Nhận thông báo đẩy khi yêu cầu được chấp nhận, bị từ chối hoặc
+  thay đổi trạng thái; xem trạng thái đã đọc của thông báo.
+
+3. NICE-TO-HAVE - CHỨC NĂNG MỞ RỘNG
+
+- Nhắn tin trực tiếp trong ứng dụng với Host; nhận thông báo tin nhắn mới.
+- Tìm nhu cầu chăm hộ/gửi thú cưng tạm thời và kết nối với chủ nuôi.
+- Xem khoảng cách và tìm thú cưng gần vị trí hiện tại bằng GPS.
+- Trả lời bảng câu hỏi nhận nuôi về nhà ở, kinh nghiệm nuôi và thời gian
+  chăm sóc.
+- Đăng ảnh/cập nhật tình hình thú cưng sau nhận nuôi cho chủ cũ xem.
+- Đăng/xem tin thú cưng thất lạc hoặc tìm thấy.
+- Đăng bài chia sẻ ảnh, câu chuyện, kinh nghiệm chăm sóc; xem bài viết
+  của mình, xem bảng tin cộng đồng, thích và bình luận.
+- Thích và bình luận bài đăng thú cưng.
+- Nhận gợi ý thú cưng dựa trên sở thích và lịch sử xem.
+- Nhận nhắc lịch tiêm phòng, tẩy giun cho thú cưng đã nhận.
+- Xem bản đồ phòng khám thú y và pet shop gần đây.
+- Xác minh số điện thoại; hiển thị huy hiệu Người dùng uy tín.
+- Sử dụng giao diện tiếng Việt/tiếng Anh và chế độ tối (dark mode).
+
+======================================================================
+III. ADMIN - QUẢN TRỊ VIÊN
+======================================================================
+
+1. MUST-HAVE - CHỨC NĂNG CỐT LÕI
+
+1.1. Tài khoản quản trị và người dùng
+- Đăng nhập, đăng xuất trang quản trị với quyền Admin.
+- Tìm kiếm và xem tài khoản người dùng.
+- Khóa/mở khóa tài khoản vi phạm.
+
+1.2. Quản lý bài đăng
+- Xem danh sách và chi tiết bài đăng thú cưng.
+- Duyệt/từ chối bài đăng kèm lý do.
+- Ẩn hoặc gỡ/xóa bài đăng vi phạm.
+
+2. IMPORTANT - CHỨC NĂNG HỖ TRỢ
+
+2.1. Tài khoản và danh mục
+- Thêm, sửa, xóa tài khoản người dùng.
+- Thêm, sửa, xóa danh mục loài và giống thú cưng.
+- Quản lý danh mục khu vực nếu sử dụng danh mục cố định.
+
+2.2. Bài đăng và yêu cầu nhận nuôi/trao đổi
+- Chỉnh sửa bài đăng thú cưng.
+- Tra cứu danh sách, thông tin chi tiết và trạng thái yêu cầu nhận nuôi/
+  trao đổi.
+
+2.3. Đánh giá và báo cáo
+- Quản lý đánh giá, nhận xét của người dùng.
+- Tiếp nhận và xử lý báo cáo về tin thú cưng, bài viết, bình luận
+  và tài khoản.
+
+2.4. Dashboard và thống kê
+- Xem số người dùng và số thú cưng.
+- Xem tổng số bài đăng, số tin chờ duyệt và số tin đang hoạt động.
+- Xem số yêu cầu nhận nuôi/trao đổi và số thú cưng đã có chủ mới.
+- Xem số báo cáo.
+
+3. NICE-TO-HAVE - CHỨC NĂNG MỞ RỘNG
+
+3.1. Bài viết và tin tức
+- Quản lý bài viết cộng đồng, tin tức về thú cưng.
+- Xem, thêm, sửa, xóa bài viết và tin tức.

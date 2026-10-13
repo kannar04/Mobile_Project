@@ -1,0 +1,949 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function self(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+    // F42 r2: separate ordinary community enrollment; protected memberReady/active unchanged.
+    function subjectPermitsCommunity(uid) {
+      let path=/databases/$(database)/documents/securitySubjects/$(uid);
+      return !exists(path) || (get(path).data.keys().hasOnly(['status','roles','updatedAt'])
+        && get(path).data.keys().hasAll(['status','roles','updatedAt']) && get(path).data.status == 'active'
+        && get(path).data.roles is list && get(path).data.updatedAt is timestamp);
+    }
+    function membershipShape(d,uid) {
+      return d.keys().size()==6 && d.keys().hasOnly(['uid','schemaVersion','status','membershipVersion','createdAt','updatedAt'])
+        && d.uid==uid && d.schemaVersion is int && d.schemaVersion==1 && d.status in ['active','restricted']
+        && d.membershipVersion is int && d.membershipVersion>=1 && d.createdAt is timestamp && d.updatedAt is timestamp;
+    }
+    function basicMemberReady(uid) {
+      let m=get(/databases/$(database)/documents/communityMemberships/$(uid)).data;
+      return profileOwner(uid) && request.auth.token.email_verified==true && membershipShape(m,uid)
+        && m.status=='active' && subjectPermitsCommunity(uid);
+    }
+    match /communityMemberships/{uid} {
+      allow get: if self(uid);
+      allow create: if profileOwner(uid) && request.auth.token.email_verified==true && subjectPermitsCommunity(uid)
+        && membershipShape(request.resource.data,uid) && request.resource.data.status=='active'
+        && request.resource.data.membershipVersion==1 && request.resource.data.createdAt==request.time && request.resource.data.updatedAt==request.time;
+      allow list,update,delete: if false;
+    }
+    function active(uid) {
+      return self(uid) &&
+        get(/databases/$(database)/documents/securitySubjects/$(uid)).data.status == 'active';
+    }
+    function validId(id) {
+      return id.matches('[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}');
+    }
+    function profileOwner(uid) {
+      return self(uid) && exists(/databases/$(database)/documents/users/$(uid))
+        && get(/databases/$(database)/documents/users/$(uid)).data.keys().size()==3
+        && get(/databases/$(database)/documents/users/$(uid)).data.keys().hasOnly(['uid','schemaVersion','createdAt'])
+        && get(/databases/$(database)/documents/users/$(uid)).data.createdAt is timestamp
+        && get(/databases/$(database)/documents/users/$(uid)).data.uid == uid
+        && get(/databases/$(database)/documents/users/$(uid)).data.schemaVersion == 1;
+    }
+    function unicodeBound(s,min,max,bytes){return s is string && s.matches('(?s).{'+string(min)+','+string(max)+'}') && s.toUtf8().size()<=bytes && (s=='' || s.matches('(?s).*[^\\s\\x00-\\x1f\\x7f].*'));}
+    function content(d) {
+      return unicodeBound(d.displayName,2,40,160) && d.displayName==d.displayName.trim()
+        && unicodeBound(d.bio,0,500,2000) && d.avatarKey in ['default','cat','dog']
+        && (d.regionCode == null || d.regionCode in ['north','central','south']);
+    }
+    function ownerVersion(d, uid) {
+      return d.ownerUid == uid && d.schemaVersion is int && d.schemaVersion == 1
+        && d.version is int && d.version >= 1 && d.lastOperationId is string && validId(d.lastOperationId)
+        && d.updatedAt is timestamp && d.updatedAt == request.time;
+    }
+    function nextVersion() {
+      return request.resource.data.version == resource.data.version + 1
+        && request.resource.data.lastOperationId != resource.data.lastOperationId;
+    }
+    function publicShape(d,uid) {
+      return d.keys().hasOnly(['ownerUid','schemaVersion','publicationVersion','sourceDraftVersion','displayName','avatarKey','regionCode','bio','publishedAt'])
+        && d.keys().hasAll(['ownerUid','schemaVersion','publicationVersion','sourceDraftVersion','displayName','avatarKey','regionCode','bio','publishedAt'])
+        && d.ownerUid == uid && d.schemaVersion is int && d.schemaVersion == 1
+        && d.publicationVersion is int && d.publicationVersion >= 1
+        && d.sourceDraftVersion is int && d.sourceDraftVersion >= 1 && content(d) && d.publishedAt is timestamp;
+    }
+    function controlShape(d,uid) {
+      return d.keys().hasOnly(['ownerUid','schemaVersion','version','visibility','lastOperationId','updatedAt'])
+        && d.keys().hasAll(['ownerUid','schemaVersion','version','visibility','lastOperationId','updatedAt'])
+        && d.ownerUid == uid && d.schemaVersion is int && d.schemaVersion == 1 && d.version is int && d.version >= 1
+        && d.visibility in ['hidden','public'] && validId(d.lastOperationId) && d.updatedAt is timestamp;
+    }
+    function visible(uid) {
+      let controls = get(/databases/$(database)/documents/publicProfileControls/$(uid)).data;
+      return controlShape(controls,uid) && controls.visibility == 'public'
+        && get(/databases/$(database)/documents/profileModeration/$(uid)).data.hold == 'clear';
+    }
+    function draftShape(d,uid) {
+      return d.keys().hasOnly(['ownerUid','schemaVersion','version','displayName','avatarKey','regionCode','bio','submission','lastOperationId','updatedAt'])
+        && d.keys().hasAll(['ownerUid','schemaVersion','version','displayName','avatarKey','regionCode','bio','submission','lastOperationId','updatedAt'])
+        && ownerVersion(d,uid) && content(d) && d.submission in ['draft','submitted'];
+    }
+    match /users/{uid}/profileDraft/current {
+      allow get: if self(uid);
+      allow create: if profileOwner(uid) && draftShape(request.resource.data,uid)
+        && request.resource.data.version == 1 && request.resource.data.submission == 'draft';
+      allow update: if profileOwner(uid) && draftShape(request.resource.data,uid) && nextVersion()
+        && (request.resource.data.submission == 'draft' ||
+          (resource.data.submission == 'draft' && request.resource.data.submission == 'submitted'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['submission','version','lastOperationId','updatedAt'])
+            && active(uid) && request.auth.token.email_verified == true));
+      allow list, delete: if false;
+    }
+    match /users/{uid}/private/contact {
+      function contactShape(d) {
+        return d.keys().hasOnly(['ownerUid','schemaVersion','version','phoneE164','lastOperationId','updatedAt'])
+          && d.keys().hasAll(['ownerUid','schemaVersion','version','phoneE164','lastOperationId','updatedAt'])
+          && ownerVersion(d,uid) && (d.phoneE164 == null || (d.phoneE164 is string && d.phoneE164.matches('[+][0-9]{7,15}')));
+      }
+      allow get: if self(uid);
+      allow create: if profileOwner(uid) && contactShape(request.resource.data) && request.resource.data.version == 1;
+      allow update: if profileOwner(uid) && contactShape(request.resource.data) && nextVersion();
+      allow list, delete: if false;
+    }
+    function profileHold(d,uid) {
+      return d.keys().size()==7 && d.keys().hasOnly(['schemaVersion','ownerUid','hold','moderationVersion','reasonCode','decisionId','updatedAt'])
+        && d.schemaVersion is int && d.schemaVersion==1 && d.ownerUid==uid && d.hold in ['clear','held'] && d.moderationVersion is int && d.moderationVersion>=1
+        && (d.reasonCode==null || d.reasonCode is string) && (d.decisionId==null || d.decisionId is string) && d.updatedAt is timestamp;
+    }
+    match /profileModeration/{uid} {
+      allow get: if self(uid);
+      allow create: if profileOwner(uid) && profileHold(request.resource.data,uid) && request.resource.data.hold=='clear'
+        && request.resource.data.moderationVersion==1 && request.resource.data.reasonCode==null && request.resource.data.decisionId==null
+        && request.resource.data.updatedAt==request.time && !exists(/databases/$(database)/documents/users/$(uid)/profileDraft/current)
+        && getAfter(/databases/$(database)/documents/users/$(uid)/profileDraft/current).data.updatedAt==request.time;
+      allow list,update,delete: if false;
+    }
+    function profilePublication(uid,op) {
+      let r=getAfter(/databases/$(database)/documents/users/$(uid)/profileOperations/$(op)).data;
+      let d=get(/databases/$(database)/documents/users/$(uid)/profileDraft/current).data;
+      let c=getAfter(/databases/$(database)/documents/publicProfileControls/$(uid)).data;
+      let p=getAfter(/databases/$(database)/documents/publicProfiles/$(uid)).data;
+      let h=get(/databases/$(database)/documents/profileModeration/$(uid)).data;
+      return basicMemberReady(uid) && profileHold(h,uid) && h.hold=='clear' && r.base.moderation==h.moderationVersion
+        && !exists(/databases/$(database)/documents/users/$(uid)/profileOperations/$(op))
+        && r.command=='publish' && r.consent==true && r.base.draft==d.version && r.input=={'displayName':d.displayName,'avatarKey':d.avatarKey,'regionCode':d.regionCode,'bio':d.bio}
+        && r.base.control==(exists(/databases/$(database)/documents/publicProfileControls/$(uid))?get(/databases/$(database)/documents/publicProfileControls/$(uid)).data.version:0)
+        && r.base.publication==(exists(/databases/$(database)/documents/publicProfiles/$(uid))?get(/databases/$(database)/documents/publicProfiles/$(uid)).data.publicationVersion:0)
+        && r.result=={'control':r.base.control+1,'publication':r.base.publication+1} && r.committedAt==request.time
+        && c.lastOperationId==op && c.visibility=='public' && c.version==r.result.control && c.updatedAt==request.time
+        && publicShape(p,uid) && p.publicationVersion==r.result.publication && p.sourceDraftVersion==d.version && p.publishedAt==request.time
+        && r.input=={'displayName':p.displayName,'avatarKey':p.avatarKey,'regionCode':p.regionCode,'bio':p.bio};
+    }
+    function profileHide(uid,op){
+      let n=getAfter(/databases/$(database)/documents/publicProfileControls/$(uid)).data;
+      let r=getAfter(/databases/$(database)/documents/users/$(uid)/profileOperations/$(op)).data;
+      let prior=exists(/databases/$(database)/documents/publicProfileControls/$(uid))?get(/databases/$(database)/documents/publicProfileControls/$(uid)).data.version:0;
+      return profileOwner(uid) && n.visibility=='hidden' && n.lastOperationId==op && n.version==prior+1 && n.updatedAt==request.time
+        && !exists(/databases/$(database)/documents/users/$(uid)/profileOperations/$(op)) && r.ownerUid==uid && r.operationId==op && r.command=='hide'
+        && r.base=={'draft':0,'control':prior,'publication':0,'moderation':0} && r.result=={'control':prior+1,'publication':0}
+        && r.input=={'visibility':'hidden'} && r.consent==false && r.committedAt==request.time;
+    }
+    match /publicProfileControls/{uid} {
+      allow get: if self(uid);
+      allow create: if profileOwner(uid) && controlShape(request.resource.data,uid) && ownerVersion(request.resource.data,uid)
+        && request.resource.data.version==1 && (request.resource.data.visibility=='hidden' || profilePublication(uid,request.resource.data.lastOperationId));
+      allow update: if profileOwner(uid) && controlShape(request.resource.data,uid) && ownerVersion(request.resource.data,uid) && nextVersion()
+        && (request.resource.data.visibility=='hidden'?profileHide(uid,request.resource.data.lastOperationId):profilePublication(uid,request.resource.data.lastOperationId));
+      allow list,delete: if false;
+    }
+    match /publicProfiles/{uid} {
+      allow get: if (!exists(/databases/$(database)/documents/publicProfiles/$(uid)) && self(uid))
+        || (request.auth!=null && publicShape(resource.data,uid) && (self(uid) || visible(uid)));
+      allow create,update: if self(uid) && publicShape(request.resource.data,uid)
+        && profilePublication(uid,getAfter(/databases/$(database)/documents/publicProfileControls/$(uid)).data.lastOperationId);
+      allow list,delete: if false;
+    }
+    match /users/{uid}/profileOperations/{op} {
+      allow get: if self(uid);
+      allow list: if self(uid) && request.query.limit!=null && request.query.limit<=20;
+      allow create: if self(uid) && validId(op) && request.resource.data.keys().size()==9
+        && request.resource.data.keys().hasOnly(['schemaVersion','ownerUid','operationId','command','base','result','input','consent','committedAt'])
+        && request.resource.data.schemaVersion is int && request.resource.data.schemaVersion==1 && request.resource.data.ownerUid==uid && request.resource.data.operationId==op
+        && request.resource.data.base.keys().size()==4 && request.resource.data.base.keys().hasOnly(['draft','control','publication','moderation'])
+        && (request.resource.data.command=='hide'?profileHide(uid,op):profilePublication(uid,op));
+      allow update,delete: if false;
+    }
+    match /users/{uid}/profileReviews/{reviewId} {
+      allow get: if self(uid);
+      allow list: if self(uid) && request.query.limit != null && request.query.limit > 0 && request.query.limit <= 20;
+      allow write: if false;
+    }
+    match /system/config {
+      // Public config is safe only if the operator document matches this allowlist.
+      allow get: if resource.data.keys().hasOnly(['schemaVersion', 'environmentLabel', 'featureMode', 'updatedAt'])
+        && resource.data.keys().hasAll(['schemaVersion', 'environmentLabel', 'featureMode', 'updatedAt'])
+        && resource.data.schemaVersion is int && resource.data.schemaVersion == 1
+        && resource.data.environmentLabel is string && resource.data.environmentLabel.size() > 0
+        && resource.data.environmentLabel.size() <= 40
+        && resource.data.featureMode == 'course_demo' && resource.data.updatedAt is timestamp;
+      allow list, write: if false;
+    }
+    match /securitySubjects/{uid} {
+      allow get: if self(uid);
+      allow list, write: if false;
+    }
+    match /users/{uid} {
+      allow get: if self(uid);
+      allow create: if self(uid)
+        && request.resource.data.keys().hasOnly(['uid', 'schemaVersion', 'createdAt'])
+        && request.resource.data.keys().hasAll(['uid', 'schemaVersion', 'createdAt'])
+        && request.resource.data.uid == uid
+        && request.resource.data.schemaVersion is int && request.resource.data.schemaVersion == 1
+        && request.resource.data.createdAt is timestamp && request.resource.data.createdAt == request.time;
+      allow list, update, delete: if false;
+    }
+    // F06: seven-record registration and command receipts are linked with getAfter.
+    function memberReady(uid) {
+      let shell = get(/databases/$(database)/documents/users/$(uid)).data;
+      return self(uid) && request.auth.token.email_verified == true
+        && shell.keys().hasOnly(['uid','schemaVersion','createdAt']) && shell.uid == uid && shell.schemaVersion == 1
+        && get(/databases/$(database)/documents/securitySubjects/$(uid)).data.status == 'active';
+    }
+    function bounded(s, min, max, bytes) {
+      return s is string && s.size() >= min && s.size() <= max && s.toUtf8().size() <= bytes
+        && (s == '' || s.matches('(?s).*[^\\s\\x00-\\x1f\\x7f].*'));
+    }
+    function petIdentity(d) {
+      return d.keys().hasOnly(['displayName','species','breed','sex','ageMonths','ageObservedAt','marks','marksUnknown','illustrationKey'])
+        && d.keys().hasAll(['displayName','species','breed','sex','ageMonths','ageObservedAt','marks','marksUnknown','illustrationKey'])
+        && bounded(d.displayName,0,80,320) && bounded(d.species,1,40,160) && bounded(d.breed,0,80,320)
+        && d.sex in ['unknown','female','male']
+        && ((d.ageMonths == null && d.ageObservedAt == null) || (d.ageMonths is int && d.ageMonths >= 0 && d.ageMonths <= 1200 && d.ageObservedAt is timestamp && d.ageObservedAt <= request.time))
+        && d.marksUnknown is bool && bounded(d.marks,0,500,2000)
+        && ((d.marksUnknown && d.marks == '') || (!d.marksUnknown && d.marks.size() >= 1)) && d.illustrationKey in ['default','cat','dog'];
+    }
+    function declaration(d) {
+      return d.keys().hasOnly(['basis','reportedCare','explanation']) && d.keys().hasAll(['basis','reportedCare','explanation'])
+        && d.basis in ['claimed_owner','authorized_caregiver','other_permission'] && d.reportedCare is bool
+        && bounded(d.explanation,d.basis == 'claimed_owner' ? 0 : 1,1000,3000);
+    }
+    function claimInput(c) { return {'basis':c.basis,'reportedCare':c.reportedCare,'explanation':c.explanation}; }
+    function petHeader(p,id) {
+      return p.keys().hasOnly(['schemaVersion','petId','registrarUid','editorUid','identityVersion','currentRevisionId','custodyVersion','lifecycle','createdAt','updatedAt','lastOperationId'])
+        && p.keys().hasAll(['schemaVersion','petId','registrarUid','editorUid','identityVersion','currentRevisionId','custodyVersion','lifecycle','createdAt','updatedAt','lastOperationId'])
+        && p.schemaVersion is int && p.schemaVersion == 1 && p.petId == id && validId(id)
+        && p.registrarUid is string && p.editorUid is string && p.identityVersion is int && p.identityVersion >= 1
+        && p.custodyVersion is int && p.custodyVersion >= 0 && p.lifecycle in ['active','archived'] && validId(p.currentRevisionId)
+        && validId(p.lastOperationId) && p.createdAt is timestamp && p.updatedAt is timestamp;
+    }
+    function petEditor(id) {return request.auth != null && get(/databases/$(database)/documents/pets/$(id)).data.editorUid == request.auth.uid;}
+    function petReceipt(r,uid,id) {
+      return r.keys().hasOnly(['schemaVersion','ownerUid','operationId','petId','type','role','baseIdentityVersion','baseClaimVersion','baseAuthorityVersion','result','input','status','recordedAt'])
+        && r.keys().hasAll(['schemaVersion','ownerUid','operationId','petId','type','role','baseIdentityVersion','baseClaimVersion','baseAuthorityVersion','result','input','status','recordedAt'])
+        && r.schemaVersion is int && r.schemaVersion == 1 && r.ownerUid == uid && r.operationId == id && validId(id) && validId(r.petId)
+        && r.type in ['register_pet','revise_identity','submit_claim','revise_claim','withdraw_claim','suspend_offering','submit_challenge']
+        && r.role in ['registrar','editor','claimant','offer_actor','reporter']
+        && r.baseIdentityVersion is int && r.baseIdentityVersion >= 0 && r.baseClaimVersion is int && r.baseClaimVersion >= 0 && r.baseAuthorityVersion is int && r.baseAuthorityVersion >= 0
+        && r.result.keys().hasOnly(['identityVersion','claimVersion','authorityVersion']) && r.result.keys().hasAll(['identityVersion','claimVersion','authorityVersion'])
+        && r.result.identityVersion is int && r.result.identityVersion >= 0 && r.result.claimVersion is int && r.result.claimVersion >= 0 && r.result.authorityVersion is int && r.result.authorityVersion >= 0
+        && r.input is map && r.status == 'committed' && r.recordedAt == request.time;
+    }
+    function petRegistration(id,uid) {
+      let p=getAfter(/databases/$(database)/documents/pets/$(id)).data;
+      let r=getAfter(/databases/$(database)/documents/users/$(uid)/petReceipts/$(p.lastOperationId)).data;
+      return !exists(/databases/$(database)/documents/pets/$(id)) && memberReady(uid)
+        && p.registrarUid == uid && p.editorUid == uid && p.createdAt == request.time && p.updatedAt == request.time
+        && p.identityVersion == 1 && p.currentRevisionId == p.lastOperationId
+        && r.type == 'register_pet' && r.ownerUid == uid && r.petId == id && r.operationId == p.lastOperationId && r.recordedAt == request.time;
+    }
+    function registrationLinks(id,uid) {
+      let p=getAfter(/databases/$(database)/documents/pets/$(id)).data;
+      let revision=getAfter(/databases/$(database)/documents/pets/$(id)/identityRevisions/$(p.currentRevisionId)).data;
+      let c=getAfter(/databases/$(database)/documents/pets/$(id)/claims/$(uid)).data;
+      let a=getAfter(/databases/$(database)/documents/petOfferAuthorities/$(id)).data;
+      let slot=getAfter(/databases/$(database)/documents/petListingSlots/$(id)).data;
+      let gate=getAfter(/databases/$(database)/documents/petActivityGates/$(id)).data;
+      let r=getAfter(/databases/$(database)/documents/users/$(uid)/petReceipts/$(p.lastOperationId)).data;
+      return !exists(/databases/$(database)/documents/pets/$(id)) && memberReady(uid)
+        && p.registrarUid == uid && p.editorUid == uid && p.identityVersion == 1 && p.custodyVersion == 0 && p.lifecycle == 'active'
+        && p.createdAt == request.time && p.updatedAt == request.time && p.currentRevisionId == p.lastOperationId
+        && revision.actorUid == uid && revision.version == 1 && revision.operationId == p.lastOperationId && revision.createdAt == request.time
+        && c.claimantUid == uid && c.claimVersion == 1 && c.identityVersion == 1 && c.reviewState == 'draft' && c.submittedRevisionId == null && c.submittedAt == null
+        && c.createdAt == request.time && c.updatedAt == request.time && c.lastOperationId == p.lastOperationId
+        && a.offerUid == null && a.claimUid == uid && a.claimVersion == 1 && a.identityVersion == 1 && a.authorityVersion == 0 && a.status == 'blocked' && a.hold == 'clear' && a.decisionId == null && a.custodyVersion == 0 && a.updatedAt == request.time && a.lastOperationId == p.lastOperationId
+        && slot.activeListingId == null && slot.slotVersion == 0 && slot.updatedAt == request.time
+        && gate.state == 'none' && gate.activeReservationId == null && gate.activePlacementId == null && gate.gateVersion == 0 && gate.custodyVersion == 0 && gate.updatedAt == request.time
+        && r.operationId == p.lastOperationId && r.recordedAt == request.time && r.type == 'register_pet' && r.role == 'registrar' && r.petId == id
+        && r.baseIdentityVersion == 0 && r.baseClaimVersion == 0 && r.baseAuthorityVersion == 0
+        && r.result == {'identityVersion':1,'claimVersion':1,'authorityVersion':0}
+        && r.input.keys().hasOnly(['identity','claim']) && r.input.keys().hasAll(['identity','claim']) && r.input.identity == revision.identity && r.input.claim == claimInput(c);
+    }
+    function identityChange(id,uid) {
+      let old=get(/databases/$(database)/documents/pets/$(id)).data;
+      let p=getAfter(/databases/$(database)/documents/pets/$(id)).data;
+      let revision=getAfter(/databases/$(database)/documents/pets/$(id)/identityRevisions/$(p.currentRevisionId)).data;
+      let r=getAfter(/databases/$(database)/documents/users/$(uid)/petReceipts/$(p.lastOperationId)).data;
+      let claim=get(/databases/$(database)/documents/pets/$(id)/claims/$(uid)).data;
+      let authority=get(/databases/$(database)/documents/petOfferAuthorities/$(id)).data;
+      return memberReady(uid) && old.editorUid == uid && old.lifecycle == 'active'
+        && p.diff(old).affectedKeys().hasOnly(['identityVersion','currentRevisionId','updatedAt','lastOperationId'])
+        && p.identityVersion == old.identityVersion + 1 && p.currentRevisionId == p.lastOperationId && p.updatedAt == request.time
+        && p.lastOperationId != old.lastOperationId && revision.version == p.identityVersion && revision.operationId == p.lastOperationId && revision.actorUid == uid && revision.createdAt == request.time
+        && r.operationId == p.lastOperationId && r.recordedAt == request.time && r.type == 'revise_identity' && r.role == 'editor' && r.petId == id && r.baseIdentityVersion == old.identityVersion
+        && r.baseClaimVersion == claim.claimVersion && r.baseAuthorityVersion == authority.authorityVersion
+        && r.result == {'identityVersion':p.identityVersion,'claimVersion':claim.claimVersion,'authorityVersion':authority.authorityVersion}
+        && r.input.keys().hasOnly(['identity']) && r.input.keys().hasAll(['identity']) && r.input.identity == revision.identity;
+    }
+    function identityLink(id,uid,op) {
+      let old=get(/databases/$(database)/documents/pets/$(id)).data;
+      let p=getAfter(/databases/$(database)/documents/pets/$(id)).data;
+      return self(uid) && old.editorUid == uid && p.identityVersion == old.identityVersion + 1 && p.lastOperationId == op && p.currentRevisionId == op && p.updatedAt == request.time;
+    }
+    function claimLink(id,uid,op) {
+      let old=get(/databases/$(database)/documents/pets/$(id)/claims/$(uid)).data;
+      let c=getAfter(/databases/$(database)/documents/pets/$(id)/claims/$(uid)).data;
+      return self(uid) && old.claimantUid == uid && c.claimVersion == old.claimVersion + 1 && c.lastOperationId == op && c.updatedAt == request.time;
+    }
+    function claimAuthorityLink(id,uid) {
+      let a=get(/databases/$(database)/documents/petOfferAuthorities/$(id)).data;
+      let next=getAfter(/databases/$(database)/documents/petOfferAuthorities/$(id)).data;
+      let c=getAfter(/databases/$(database)/documents/pets/$(id)/claims/$(uid)).data;
+      return claimLink(id,uid,next.lastOperationId) && c.reviewState in ['draft','withdrawn'] && a.claimUid == uid && a.status == 'enabled'
+        && next.status == 'suspended' && next.authorityVersion == a.authorityVersion + 1 && next.updatedAt == request.time
+        && next.diff(a).affectedKeys().hasOnly(['status','authorityVersion','updatedAt','lastOperationId']);
+    }
+    function claimShape(c,id,uid) {
+      return c.keys().hasOnly(['schemaVersion','petId','claimantUid','claimVersion','identityVersion','basis','reportedCare','explanation','reviewState','submittedRevisionId','submittedAt','createdAt','updatedAt','lastOperationId'])
+        && c.keys().hasAll(['schemaVersion','petId','claimantUid','claimVersion','identityVersion','basis','reportedCare','explanation','reviewState','submittedRevisionId','submittedAt','createdAt','updatedAt','lastOperationId'])
+        && c.schemaVersion is int && c.schemaVersion == 1 && c.petId == id && c.claimantUid == uid && c.claimVersion is int && c.claimVersion >= 1 && c.identityVersion is int && c.identityVersion >= 1
+        && declaration(claimInput(c)) && c.reviewState in ['draft','submitted','needs_information','accepted_for_demo','rejected','withdrawn']
+        && (c.submittedRevisionId == null || validId(c.submittedRevisionId)) && (c.submittedAt == null || c.submittedAt is timestamp)
+        && c.createdAt is timestamp && c.updatedAt is timestamp && validId(c.lastOperationId);
+    }
+    function authorityShape(a,id) {
+      return a.keys().hasOnly(['schemaVersion','petId','offerUid','claimUid','claimVersion','identityVersion','authorityVersion','status','hold','decisionId','custodyVersion','updatedAt','lastOperationId'])
+        && a.keys().hasAll(['schemaVersion','petId','offerUid','claimUid','claimVersion','identityVersion','authorityVersion','status','hold','decisionId','custodyVersion','updatedAt','lastOperationId'])
+        && a.schemaVersion is int && a.schemaVersion == 1 && a.petId == id && (a.offerUid == null || a.offerUid is string) && a.claimUid is string
+        && a.claimVersion is int && a.claimVersion >= 1 && a.identityVersion is int && a.identityVersion >= 1 && a.authorityVersion is int && a.authorityVersion >= 0 && a.custodyVersion is int && a.custodyVersion >= 0
+        && a.status in ['blocked','enabled','suspended'] && a.hold in ['clear','held'] && (a.decisionId == null || validId(a.decisionId)) && a.updatedAt is timestamp && validId(a.lastOperationId);
+    }
+    function slotShape(s,id) {
+      return s.keys().hasOnly(['schemaVersion','petId','activeListingId','slotVersion','updatedAt']) && s.keys().hasAll(['schemaVersion','petId','activeListingId','slotVersion','updatedAt'])
+        && s.schemaVersion is int && s.schemaVersion == 1 && s.petId == id && s.slotVersion is int && s.slotVersion >= 0 && (s.activeListingId == null || validId(s.activeListingId)) && s.updatedAt is timestamp;
+    }
+    function gateShape(g,id) {
+      return g.keys().hasOnly(['schemaVersion','petId','state','activeReservationId','activePlacementId','gateVersion','custodyVersion','updatedAt']) && g.keys().hasAll(['schemaVersion','petId','state','activeReservationId','activePlacementId','gateVersion','custodyVersion','updatedAt'])
+        && g.schemaVersion is int && g.schemaVersion == 1 && g.petId == id && g.state in ['none','reserved','placed','unknown'] && g.gateVersion is int && g.gateVersion >= 0 && g.custodyVersion is int && g.custodyVersion >= 0
+        && (g.activeReservationId == null || validId(g.activeReservationId)) && (g.activePlacementId == null || validId(g.activePlacementId)) && g.updatedAt is timestamp;
+    }
+    // F07 may consume this only after its own approval. No offering write is enabled here.
+    function petOfferEligible(id,uid,expectedIdentity) {
+      let p=get(/databases/$(database)/documents/pets/$(id)).data;
+      let c=get(/databases/$(database)/documents/pets/$(id)/claims/$(uid)).data;
+      let a=get(/databases/$(database)/documents/petOfferAuthorities/$(id)).data;
+      let s=get(/databases/$(database)/documents/petListingSlots/$(id)).data;
+      let g=get(/databases/$(database)/documents/petActivityGates/$(id)).data;
+      return memberReady(uid) && petHeader(p,id) && claimShape(c,id,uid) && authorityShape(a,id) && slotShape(s,id) && gateShape(g,id)
+        && p.lifecycle == 'active' && p.editorUid == uid && p.identityVersion == expectedIdentity
+        && a.offerUid == uid && a.claimUid == uid && a.status == 'enabled' && a.hold == 'clear' && validId(a.decisionId)
+        && c.reviewState == 'accepted_for_demo' && c.identityVersion == p.identityVersion && a.identityVersion == p.identityVersion && a.claimVersion == c.claimVersion
+        && a.custodyVersion == p.custodyVersion && g.custodyVersion == p.custodyVersion && g.state == 'none' && g.activeReservationId == null && g.activePlacementId == null && s.activeListingId == null;
+    }
+    function claimChange(id,uid) {
+      let p=get(/databases/$(database)/documents/pets/$(id)).data;
+      let old=get(/databases/$(database)/documents/pets/$(id)/claims/$(uid)).data;
+      let c=getAfter(/databases/$(database)/documents/pets/$(id)/claims/$(uid)).data;
+      let a=get(/databases/$(database)/documents/petOfferAuthorities/$(id)).data;
+      let next=getAfter(/databases/$(database)/documents/petOfferAuthorities/$(id)).data;
+      let r=getAfter(/databases/$(database)/documents/users/$(uid)/petReceipts/$(c.lastOperationId)).data;
+      return self(uid) && p.editorUid == uid && claimShape(c,id,uid) && c.claimVersion == old.claimVersion + 1 && c.createdAt == old.createdAt && c.updatedAt == request.time && c.lastOperationId != old.lastOperationId
+        && c.identityVersion == p.identityVersion && authorityShape(a,id) && r.operationId == c.lastOperationId && r.recordedAt == request.time && r.role == 'claimant' && r.petId == id
+        && r.baseIdentityVersion == p.identityVersion && r.baseClaimVersion == old.claimVersion && r.baseAuthorityVersion == a.authorityVersion
+        && r.input.keys().hasOnly(['claim']) && r.input.keys().hasAll(['claim']) && r.input.claim == claimInput(c)
+        && r.result == {'identityVersion':p.identityVersion,'claimVersion':c.claimVersion,'authorityVersion':next.authorityVersion}
+        && ((r.type == 'submit_claim' && memberReady(uid) && old.reviewState == 'draft' && c.reviewState == 'submitted'
+              && claimInput(c) == claimInput(old) && c.submittedRevisionId == c.lastOperationId && c.submittedAt == request.time
+              && getAfter(/databases/$(database)/documents/pets/$(id)/claims/$(uid)/revisions/$(c.submittedRevisionId)).data.declaration == claimInput(c))
+          || (r.type in ['revise_claim','withdraw_claim'] && (r.type == 'withdraw_claim' || memberReady(uid)) && c.submittedRevisionId == null && c.submittedAt == null
+              && c.reviewState == (r.type == 'withdraw_claim' ? 'withdrawn' : 'draft')))
+        && ((a.claimUid == uid && a.status == 'enabled' && r.type in ['revise_claim','withdraw_claim']
+              && next.diff(a).affectedKeys().hasOnly(['status','authorityVersion','updatedAt','lastOperationId']) && next.status == 'suspended' && next.authorityVersion == a.authorityVersion + 1 && next.updatedAt == request.time && next.lastOperationId == c.lastOperationId)
+            || (!(a.claimUid == uid && a.status == 'enabled' && r.type in ['revise_claim','withdraw_claim']) && next == a));
+    }
+    function ownSuspend(id,uid) {
+      let a=get(/databases/$(database)/documents/petOfferAuthorities/$(id)).data;
+      let next=getAfter(/databases/$(database)/documents/petOfferAuthorities/$(id)).data;
+      let r=getAfter(/databases/$(database)/documents/users/$(uid)/petReceipts/$(next.lastOperationId)).data;
+      return self(uid) && a.offerUid == uid && a.status == 'enabled' && next.status == 'suspended' && next.authorityVersion == a.authorityVersion + 1
+        && next.diff(a).affectedKeys().hasOnly(['status','authorityVersion','updatedAt','lastOperationId']) && next.updatedAt == request.time && next.lastOperationId != a.lastOperationId
+        && r.operationId == next.lastOperationId && r.recordedAt == request.time && r.type == 'suspend_offering' && r.role == 'offer_actor' && r.petId == id && r.baseAuthorityVersion == a.authorityVersion
+        && r.baseIdentityVersion == a.identityVersion && r.baseClaimVersion == a.claimVersion
+        && r.input == {} && r.result == {'identityVersion':a.identityVersion,'claimVersion':a.claimVersion,'authorityVersion':next.authorityVersion};
+    }
+    match /pets/{id} {
+      allow get: if request.auth != null && ((!exists(/databases/$(database)/documents/pets/$(id)) && memberReady(request.auth.uid)) || resource.data.editorUid == request.auth.uid);
+      allow list: if request.auth != null && resource.data.editorUid == request.auth.uid && request.query.limit != null && request.query.limit > 0 && request.query.limit <= 20;
+      allow create: if request.auth != null && petHeader(request.resource.data,id) && registrationLinks(id,request.auth.uid);
+      allow update: if request.auth != null && petHeader(request.resource.data,id) && identityChange(id,request.auth.uid);
+      allow delete: if false;
+    }
+    match /pets/{id}/identityRevisions/{revisionId} {
+      allow get: if petEditor(id);
+      allow create: if request.auth != null && validId(revisionId)
+        && request.resource.data.keys().hasOnly(['schemaVersion','petId','version','actorUid','identity','operationId','createdAt'])
+        && request.resource.data.keys().hasAll(['schemaVersion','petId','version','actorUid','identity','operationId','createdAt'])
+        && request.resource.data.schemaVersion is int && request.resource.data.schemaVersion == 1 && request.resource.data.petId == id && request.resource.data.version is int && request.resource.data.version >= 1
+        && request.resource.data.operationId == revisionId && request.resource.data.actorUid == request.auth.uid && petIdentity(request.resource.data.identity) && request.resource.data.createdAt == request.time
+        && getAfter(/databases/$(database)/documents/pets/$(id)).data.currentRevisionId == revisionId
+        && (petRegistration(id,request.auth.uid) || identityLink(id,request.auth.uid,revisionId));
+      allow list, update, delete: if false;
+    }
+    match /pets/{id}/claims/{uid} {
+      allow get: if self(uid);
+      allow create: if self(uid) && claimShape(request.resource.data,id,uid) && petRegistration(id,uid);
+      allow update: if self(uid) && claimChange(id,uid);
+      allow list, delete: if false;
+      match /revisions/{revisionId} {
+        allow get: if self(uid);
+        allow create: if self(uid) && request.resource.data.keys().hasOnly(['schemaVersion','petId','claimantUid','claimVersion','identityVersion','declaration','operationId','createdAt'])
+          && request.resource.data.keys().hasAll(['schemaVersion','petId','claimantUid','claimVersion','identityVersion','declaration','operationId','createdAt'])
+          && request.resource.data.schemaVersion is int && request.resource.data.schemaVersion == 1 && request.resource.data.petId == id && request.resource.data.claimantUid == uid
+          && request.resource.data.operationId == revisionId && declaration(request.resource.data.declaration) && request.resource.data.createdAt == request.time
+          && getAfter(/databases/$(database)/documents/pets/$(id)/claims/$(uid)).data.submittedRevisionId == revisionId
+          && request.resource.data.claimVersion == getAfter(/databases/$(database)/documents/pets/$(id)/claims/$(uid)).data.claimVersion
+          && request.resource.data.identityVersion == getAfter(/databases/$(database)/documents/pets/$(id)/claims/$(uid)).data.identityVersion && claimLink(id,uid,revisionId);
+        allow list, update, delete: if false;
+      }
+    }
+    match /petOfferAuthorities/{id} {
+      allow get: if request.auth != null && (resource.data.offerUid == request.auth.uid || petEditor(id) || activeListingOwner(id));
+      allow create: if request.auth != null && authorityShape(request.resource.data,id) && petRegistration(id,request.auth.uid);
+      allow update: if request.auth != null && authorityShape(request.resource.data,id) && (ownSuspend(id,request.auth.uid) || claimAuthorityLink(id,request.auth.uid));
+      allow list, delete: if false;
+    }
+    match /petListingSlots/{id} {
+      allow get: if petEditor(id) || activeListingOwner(id);
+      allow create: if request.auth != null && slotShape(request.resource.data,id) && petRegistration(id,request.auth.uid);
+      allow update: if request.auth != null && listingSlotChange(id,request.auth.uid);
+      allow list, delete: if false;
+    }
+    match /petActivityGates/{id} {
+      allow get: if petEditor(id) || activeListingOwner(id);
+      allow create: if request.auth != null && gateShape(request.resource.data,id) && petRegistration(id,request.auth.uid);
+      allow list, update, delete: if false;
+    }
+    match /users/{uid}/petPrivate/{id} {
+      function chipShape(d) {return d.keys().hasOnly(['schemaVersion','ownerUid','petId','chip','notes','verification','privateVersion','lastOperationId','createdAt','updatedAt'])
+        && d.keys().hasAll(['schemaVersion','ownerUid','petId','chip','notes','verification','privateVersion','lastOperationId','createdAt','updatedAt']) && d.schemaVersion is int && d.schemaVersion == 1 && d.ownerUid == uid && d.petId == id && validId(id)
+        && (d.chip == null || bounded(d.chip,1,64,256)) && bounded(d.notes,0,500,2000) && d.verification == 'unverified' && d.privateVersion is int && d.privateVersion >= 1 && validId(d.lastOperationId) && d.createdAt is timestamp && d.updatedAt == request.time;}
+      allow get: if self(uid);
+      allow create: if memberReady(uid) && petEditor(id) && chipShape(request.resource.data) && request.resource.data.privateVersion == 1 && request.resource.data.createdAt == request.time;
+      allow update: if memberReady(uid) && petEditor(id) && chipShape(request.resource.data) && request.resource.data.privateVersion == resource.data.privateVersion + 1 && request.resource.data.createdAt == resource.data.createdAt && request.resource.data.lastOperationId != resource.data.lastOperationId;
+      allow list, delete: if false;
+    }
+    function challengeCreate(uid,id) {
+      let c=getAfter(/databases/$(database)/documents/users/$(uid)/petChallenges/$(id)).data;
+      let r=getAfter(/databases/$(database)/documents/users/$(uid)/petReceipts/$(id)).data;
+      return self(uid) && validId(id) && c.keys().hasOnly(['schemaVersion','ownerUid','operationId','targetPetId','statement','challengeVersion','status','response','submittedAt'])
+        && c.keys().hasAll(['schemaVersion','ownerUid','operationId','targetPetId','statement','challengeVersion','status','response','submittedAt'])
+        && c.schemaVersion is int && c.schemaVersion == 1 && c.ownerUid == uid && c.operationId == id && validId(c.targetPetId) && bounded(c.statement,1,1000,3000)
+        && c.challengeVersion == 1 && c.status == 'received' && c.response == '' && c.submittedAt == request.time
+        && petReceipt(r,uid,id) && r.type == 'submit_challenge' && r.role == 'reporter' && r.petId == c.targetPetId
+        && r.input == {'statement':c.statement} && r.baseIdentityVersion == 0 && r.baseClaimVersion == 0 && r.baseAuthorityVersion == 0
+        && r.result == {'identityVersion':0,'claimVersion':0,'authorityVersion':0};
+    }
+    match /users/{uid}/petChallenges/{id} {
+      allow get: if self(uid);
+      allow list: if self(uid) && request.query.limit != null && request.query.limit > 0 && request.query.limit <= 20;
+      allow create: if challengeCreate(uid,id);
+      allow update, delete: if false;
+    }
+    match /users/{uid}/petReceipts/{id} {
+      allow get: if self(uid);
+      allow list: if self(uid) && request.query.limit != null && request.query.limit > 0 && request.query.limit <= 20;
+      allow create: if self(uid) && petReceipt(request.resource.data,uid,id)
+        && (request.resource.data.type == 'register_pet' && petRegistration(request.resource.data.petId,uid)
+          || request.resource.data.type == 'revise_identity' && identityLink(request.resource.data.petId,uid,id)
+          || request.resource.data.type in ['submit_claim','revise_claim','withdraw_claim'] && claimLink(request.resource.data.petId,uid,id)
+          || request.resource.data.type == 'suspend_offering' && ownSuspend(request.resource.data.petId,uid)
+          || request.resource.data.type == 'submit_challenge' && challengeCreate(uid,id));
+      allow update, delete: if false;
+    }
+    match /foundationChecks/{uid}/operations/{id} {
+      allow get: if self(uid);
+      allow list: if self(uid) && request.query.limit != null && request.query.limit > 0 && request.query.limit <= 20;
+      allow create: if active(uid) && validId(id)
+        && request.resource.data.keys().hasOnly(['ownerUid', 'operationId', 'schemaVersion', 'createdAt'])
+        && request.resource.data.keys().hasAll(['ownerUid', 'operationId', 'schemaVersion', 'createdAt'])
+        && request.resource.data.ownerUid == uid && request.resource.data.operationId == id
+        && request.resource.data.schemaVersion is int && request.resource.data.schemaVersion == 1
+        && request.resource.data.createdAt is timestamp && request.resource.data.createdAt == request.time;
+      allow update: if false;
+      allow delete: if active(uid);
+    }
+    // F07 private slice: public/review/participant records remain default-denied.
+    function listingFields(f,complete) {
+      return f.keys().hasOnly(['title','description','regionCode','offerType','mediaRefs']) && f.keys().size() == 5
+        && bounded(f.title,complete ? 5 : 0,80,320) && bounded(f.description,0,2000,8000)
+        && (f.regionCode == null || f.regionCode in ['north','central','south']) && f.offerType == 'adoption' && f.mediaRefs is list && f.mediaRefs.size() == 0;
+    }
+    function listingHeader(d,id) {
+      return d.keys().hasOnly(['schemaVersion','listingId','ownerUid','petId','contentVersion','activeRevisionId','lifecycle','visibility','controlVersion','createdAt','updatedAt','lastOperationId','closureReason','closedAt','archivedAt'])
+        && d.keys().size() == 15
+        && d.schemaVersion is int && d.schemaVersion == 1 && d.listingId == id && validId(id) && d.ownerUid is string && validId(d.petId)
+        && d.contentVersion is int && d.contentVersion > 0 && d.activeRevisionId == 'v' + string(d.contentVersion) && d.controlVersion is int && d.controlVersion > 0
+        && d.lifecycle in ['draft','closed','archived'] && d.visibility == 'hidden' && d.createdAt is timestamp && d.updatedAt is timestamp && validId(d.lastOperationId)
+        && (d.lifecycle == 'draft' ? d.closureReason == null && d.closedAt == null && d.archivedAt == null : d.closureReason == 'no_longer_offered' && d.closedAt is timestamp && (d.lifecycle == 'closed' ? d.archivedAt == null : d.archivedAt is timestamp));
+    }
+    function listingVersions(b) {return b.keys().hasOnly(['contentVersion','controlVersion','slotVersion','identityVersion','authorityVersion','custodyVersion']) && b.keys().size() == 6
+      && b.contentVersion is int && b.contentVersion >= 0 && b.controlVersion is int && b.controlVersion >= 0 && b.slotVersion is int && b.slotVersion >= 0 && b.identityVersion is int && b.identityVersion >= 0 && b.authorityVersion is int && b.authorityVersion >= 0 && b.custodyVersion is int && b.custodyVersion >= 0;}
+    function listingReceipt(r,id,op,uid) {return r.keys().hasOnly(['schemaVersion','command','actorUid','listingId','petId','operationId','base','result','input','committedAt','status']) && r.keys().size() == 11
+      && r.schemaVersion is int && r.schemaVersion == 1 && r.actorUid == uid && r.listingId == id && r.operationId == op && validId(op) && validId(r.petId) && r.command in ['create','edit','hide','close','archive'] && listingVersions(r.base)
+      && r.result.keys().hasOnly(['contentVersion','controlVersion','slotVersion']) && r.result.keys().size() == 3 && r.result.contentVersion is int && r.result.contentVersion >= 1 && r.result.controlVersion is int && r.result.controlVersion >= 1 && r.result.slotVersion is int && r.result.slotVersion >= 0
+      && (r.command in ['create','edit'] ? r.input is map : r.input is map && r.input.size() == 0) && r.committedAt == request.time && r.status == 'committed';}
+    function listingRevision(v,id,uid,n) {return v.keys().hasOnly(['schemaVersion','listingId','ownerUid','petId','contentVersion','editableFields','petIdentityVersion','custodyVersion','identitySnapshot','careVersion','mediaVersion','createdAt','operationId']) && v.keys().size() == 13
+      && v.schemaVersion is int && v.schemaVersion == 1 && v.listingId == id && v.ownerUid == uid && validId(v.petId) && v.contentVersion is int && v.contentVersion == n && listingFields(v.editableFields,true) && v.petIdentityVersion is int && v.petIdentityVersion >= 1 && v.custodyVersion is int && v.custodyVersion >= 0 && petIdentity(v.identitySnapshot) && v.careVersion == null && v.mediaVersion == null && v.createdAt == request.time && validId(v.operationId);}
+    function listingOwner(id) {return request.auth != null && get(/databases/$(database)/documents/listings/$(id)).data.ownerUid == request.auth.uid;}
+    function activeListingOwner(pet) {
+      let s=get(/databases/$(database)/documents/petListingSlots/$(pet)).data;
+      return request.auth != null && s.activeListingId != null && listingOwner(s.activeListingId);
+    }
+    // Split the same live graph across root and revision validation; each write stays below evaluation/access limits.
+    function listingOfferingCore(pet,uid,b) {
+      let p=get(/databases/$(database)/documents/pets/$(pet)).data;
+      let a=get(/databases/$(database)/documents/petOfferAuthorities/$(pet)).data;
+      return memberReady(uid) && p.schemaVersion is int && p.schemaVersion == 1 && p.petId == pet && p.keys().size() == 11 && p.keys().hasOnly(['schemaVersion','petId','registrarUid','editorUid','identityVersion','currentRevisionId','custodyVersion','lifecycle','createdAt','updatedAt','lastOperationId']) && p.identityVersion is int && p.identityVersion >= 1 && p.custodyVersion is int && p.custodyVersion >= 0 && p.lifecycle == 'active' && p.editorUid == uid
+        && a.schemaVersion is int && a.schemaVersion == 1 && a.petId == pet && a.keys().size() == 13 && a.keys().hasOnly(['schemaVersion','petId','offerUid','claimUid','claimVersion','identityVersion','authorityVersion','status','hold','decisionId','custodyVersion','updatedAt','lastOperationId']) && a.authorityVersion is int && a.claimVersion is int && a.identityVersion is int && a.custodyVersion is int && a.updatedAt is timestamp && validId(a.lastOperationId) && a.status == 'enabled' && a.hold == 'clear' && a.offerUid == uid && a.claimUid == uid && validId(a.decisionId) && p.identityVersion == b.identityVersion && a.authorityVersion == b.authorityVersion && p.custodyVersion == b.custodyVersion;
+    }
+    function listingOfferingRest(pet,uid,b,slotId) {
+      let p=get(/databases/$(database)/documents/pets/$(pet)).data;
+      let c=get(/databases/$(database)/documents/pets/$(pet)/claims/$(uid)).data;
+      let a=get(/databases/$(database)/documents/petOfferAuthorities/$(pet)).data;
+      let g=get(/databases/$(database)/documents/petActivityGates/$(pet)).data;
+      let s=get(/databases/$(database)/documents/petListingSlots/$(pet)).data;
+      return c.schemaVersion is int && c.schemaVersion == 1 && c.keys().size() == 14 && c.keys().hasOnly(['schemaVersion','petId','claimantUid','claimVersion','identityVersion','basis','reportedCare','explanation','reviewState','submittedRevisionId','submittedAt','createdAt','updatedAt','lastOperationId']) && c.claimVersion is int && c.claimVersion >= 1 && c.identityVersion is int && c.reviewState == 'accepted_for_demo' && c.claimantUid == uid && c.petId == pet && c.claimVersion == a.claimVersion && c.identityVersion == p.identityVersion && a.identityVersion == p.identityVersion
+        && g.schemaVersion is int && g.schemaVersion == 1 && g.petId == pet && g.keys().size() == 8 && g.keys().hasOnly(['schemaVersion','petId','state','activeReservationId','activePlacementId','gateVersion','custodyVersion','updatedAt']) && g.updatedAt is timestamp && g.custodyVersion is int && g.gateVersion is int && g.gateVersion >= 0 && g.state == 'none' && g.activeReservationId == null && g.activePlacementId == null && g.custodyVersion == p.custodyVersion && a.custodyVersion == p.custodyVersion
+        && slotShape(s,pet) && s.activeListingId == slotId && s.slotVersion == b.slotVersion;
+    }
+    function listingOffering(pet,uid,b,slotId) {return listingOfferingCore(pet,uid,b) && listingOfferingRest(pet,uid,b,slotId);}
+    function listingSnapshot(v,pet) {
+      let p=get(/databases/$(database)/documents/pets/$(pet)).data;
+      let i=get(/databases/$(database)/documents/pets/$(pet)/identityRevisions/$(p.currentRevisionId)).data;
+      return v.petIdentityVersion == p.identityVersion && v.custodyVersion == p.custodyVersion && i.version == p.identityVersion && i.petId == pet && v.identitySnapshot == i.identity;
+    }
+    // Root create validates content and companions; slot update validates the full authority graph once.
+    function listingCreate(id,uid,d) {
+      let r=getAfter(/databases/$(database)/documents/listings/$(id)/operations/$(d.lastOperationId)).data;
+      let v=getAfter(/databases/$(database)/documents/listings/$(id)/revisions/v1).data;
+      let s=get(/databases/$(database)/documents/petListingSlots/$(d.petId)).data;
+      let n=getAfter(/databases/$(database)/documents/petListingSlots/$(d.petId)).data;
+      return self(uid) && listingHeader(d,id) && d.ownerUid == uid && d.createdAt == request.time && d.updatedAt == request.time && d.contentVersion == 1 && d.controlVersion == 1 && d.lifecycle == 'draft'
+        && r.actorUid == uid && r.operationId == d.lastOperationId && r.committedAt == request.time && r.command == 'create' && r.petId == d.petId && r.base.contentVersion == 0 && r.base.controlVersion == 0 && r.base.slotVersion == s.slotVersion
+        && r.result == {'contentVersion':1,'controlVersion':1,'slotVersion':s.slotVersion+1}
+        && v.ownerUid == uid && v.contentVersion == 1 && v.petId == d.petId && v.operationId == d.lastOperationId && v.editableFields == r.input && listingSnapshot(v,d.petId)
+        && s.activeListingId == null && n.activeListingId == id && n.slotVersion == s.slotVersion+1 && n.updatedAt == request.time;
+    }
+    function listingInactive(pet,b) {
+      let g=get(/databases/$(database)/documents/petActivityGates/$(pet)).data;
+      let a=get(/databases/$(database)/documents/petOfferAuthorities/$(pet)).data;
+      return gateShape(g,pet) && authorityShape(a,pet) && g.state == 'none' && g.activeReservationId == null && g.activePlacementId == null && a.hold == 'clear'
+        && g.custodyVersion == a.custodyVersion && g.custodyVersion == b.custodyVersion && a.authorityVersion == b.authorityVersion;
+    }
+    function listingArchivable(pet) {
+      let g=get(/databases/$(database)/documents/petActivityGates/$(pet)).data;
+      let a=get(/databases/$(database)/documents/petOfferAuthorities/$(pet)).data;
+      return gateShape(g,pet) && authorityShape(a,pet) && g.state == 'none' && g.activeReservationId == null && g.activePlacementId == null && a.hold == 'clear' && g.custodyVersion == a.custodyVersion;
+    }
+    function listingTerminal(id,d,old,r) {
+      let s=get(/databases/$(database)/documents/petListingSlots/$(d.petId)).data;
+      let n=getAfter(/databases/$(database)/documents/petListingSlots/$(d.petId)).data;
+      return r.command in ['close','archive'] && (old.lifecycle == 'draft' || old.lifecycle == 'closed' && r.command == 'archive')
+        && d.lifecycle == (r.command == 'close' ? 'closed' : 'archived') && d.closureReason == 'no_longer_offered' && d.closedAt == (old.closedAt == null ? request.time : old.closedAt) && d.archivedAt == (r.command == 'archive' ? request.time : null)
+        && d.contentVersion == old.contentVersion && slotShape(s,d.petId)
+        && (old.lifecycle == 'draft' ? listingInactive(d.petId,r.base) && r.base.slotVersion == s.slotVersion && s.activeListingId == id && n.activeListingId == null && n.slotVersion == s.slotVersion+1 && n.updatedAt == request.time && r.result.slotVersion == n.slotVersion
+          : n == s && (r.base.slotVersion == 0 && r.base.identityVersion == 0 && r.base.authorityVersion == 0 && r.base.custodyVersion == 0 && r.result.slotVersion == 0 && listingArchivable(d.petId)
+            || r.base.slotVersion == s.slotVersion && r.result.slotVersion == s.slotVersion && listingInactive(d.petId,r.base)));
+    }
+    function listingUpdate(id,uid,d,old) {
+      let r=getAfter(/databases/$(database)/documents/listings/$(id)/operations/$(d.lastOperationId)).data;
+      return self(uid) && old.ownerUid == uid && listingHeader(d,id) && d.ownerUid == old.ownerUid && d.petId == old.petId && d.createdAt == old.createdAt && d.updatedAt == request.time
+        && d.controlVersion == old.controlVersion+1 && d.lastOperationId != old.lastOperationId && old.lifecycle != 'archived'
+        && r.actorUid == uid && r.operationId == d.lastOperationId && r.committedAt == request.time && r.petId == d.petId && r.base.contentVersion == old.contentVersion && r.base.controlVersion == old.controlVersion
+        && r.result.contentVersion == d.contentVersion && r.result.controlVersion == d.controlVersion
+        && (r.command == 'hide' && d.diff(old).affectedKeys().hasOnly(['visibility','controlVersion','updatedAt','lastOperationId']) && r.base.slotVersion == 0 && r.base.identityVersion == 0 && r.base.authorityVersion == 0 && r.base.custodyVersion == 0 && r.result.slotVersion == 0
+          || r.command == 'edit' && listingEdit(id,uid,d,old,r)
+          || listingTerminal(id,d,old,r));
+    }
+    function listingEdit(id,uid,d,old,r) {
+      let v=getAfter(/databases/$(database)/documents/listings/$(id)/revisions/$(d.activeRevisionId)).data;
+      return old.lifecycle == 'draft' && d.diff(old).affectedKeys().hasOnly(['contentVersion','activeRevisionId','visibility','controlVersion','updatedAt','lastOperationId']) && d.contentVersion == old.contentVersion+1
+        && listingOfferingCore(d.petId,uid,r.base) && r.result.slotVersion == r.base.slotVersion && v.ownerUid == uid && v.contentVersion == d.contentVersion && v.petId == d.petId && v.operationId == d.lastOperationId && v.editableFields == r.input && listingSnapshot(v,d.petId);
+    }
+    function listingRevisionOffering(id,uid) {
+      let n=getAfter(/databases/$(database)/documents/listings/$(id)).data;
+      let r=getAfter(/databases/$(database)/documents/listings/$(id)/operations/$(n.lastOperationId)).data;
+      return !exists(/databases/$(database)/documents/listings/$(id)) || r.command == 'edit' && listingOfferingRest(n.petId,uid,r.base,id);
+    }
+    // Lean companion proof: the parent must change now and name this new immutable operation.
+    function listingLink(id,op,uid) {
+      let n=getAfter(/databases/$(database)/documents/listings/$(id)).data;
+      return n.ownerUid == uid && n.lastOperationId == op && n.updatedAt == request.time
+        && (!exists(/databases/$(database)/documents/listings/$(id)) ? n.controlVersion == 1 : n.controlVersion == get(/databases/$(database)/documents/listings/$(id)).data.controlVersion+1 && n.lastOperationId != get(/databases/$(database)/documents/listings/$(id)).data.lastOperationId);
+    }
+    function listingSlotChange(pet,uid) {
+      let old=resource.data;
+      let next=request.resource.data;
+      let id=old.activeListingId == null ? next.activeListingId : old.activeListingId;
+      let n=getAfter(/databases/$(database)/documents/listings/$(id)).data;
+      let r=getAfter(/databases/$(database)/documents/listings/$(id)/operations/$(n.lastOperationId)).data;
+      return self(uid) && old.schemaVersion == 1 && old.petId == pet && slotShape(next,pet) && next.diff(old).affectedKeys().hasOnly(['activeListingId','slotVersion','updatedAt']) && next.slotVersion == old.slotVersion+1 && next.updatedAt == request.time
+        && n.ownerUid == uid && n.petId == pet && listingLink(id,n.lastOperationId,uid) && r.petId == pet && r.result.slotVersion == next.slotVersion && r.base.slotVersion == old.slotVersion
+        && (old.activeListingId == null ? validId(id) && next.activeListingId == id && !exists(/databases/$(database)/documents/listings/$(id)) && r.command == 'create' && listingOffering(pet,uid,r.base,null)
+          : next.activeListingId == null && r.command in ['close','archive'] && get(/databases/$(database)/documents/listings/$(id)).data.lifecycle == 'draft' && n.lifecycle in ['closed','archived']);
+    }
+    match /listings/{id} {
+      allow get: if request.auth != null && validId(id) && (!exists(/databases/$(database)/documents/listings/$(id)) || resource.data.ownerUid == request.auth.uid);
+      allow list: if request.auth != null && resource.data.ownerUid == request.auth.uid && request.query.limit != null && request.query.limit > 0 && request.query.limit <= 20;
+      allow create: if request.auth != null && listingCreate(id,request.auth.uid,request.resource.data);
+      allow update: if request.auth != null && listingUpdate(id,request.auth.uid,request.resource.data,resource.data);
+      allow delete: if false;
+      match /revisions/{versionId} {
+        allow get: if listingOwner(id);
+        allow list: if listingOwner(id) && request.query.limit != null && request.query.limit > 0 && request.query.limit <= 20;
+        allow create: if request.auth != null && listingLink(id,request.resource.data.operationId,request.auth.uid) && versionId == 'v'+string(request.resource.data.contentVersion)
+          && request.resource.data.contentVersion == getAfter(/databases/$(database)/documents/listings/$(id)).data.contentVersion
+          && request.resource.data.petId == getAfter(/databases/$(database)/documents/listings/$(id)).data.petId
+          && listingRevision(request.resource.data,id,request.auth.uid,request.resource.data.contentVersion)
+          && listingRevisionOffering(id,request.auth.uid);
+        allow update,delete: if false;
+      }
+      match /operations/{operation} {
+        allow get: if request.auth != null && validId(id) && validId(operation) && (!exists(/databases/$(database)/documents/listings/$(id)) ? !exists(/databases/$(database)/documents/listings/$(id)/operations/$(operation)) : listingOwner(id));
+        allow list: if listingOwner(id) && request.query.limit != null && request.query.limit > 0 && request.query.limit <= 20;
+        allow create: if request.auth != null && listingLink(id,operation,request.auth.uid) && listingReceipt(request.resource.data,id,operation,request.auth.uid);
+        allow update,delete: if false;
+      }
+    }
+    match /users/{uid}/listingDrafts/{id} {
+      function workingShape(d) {return d.keys().hasOnly(['schemaVersion','ownerUid','draftVersion','linkedPetId','intendedListingId','baseListingVersion','baseControlVersion','editableFields','updatedAt','lastOperationId']) && d.keys().size() == 10
+        && d.schemaVersion is int && d.schemaVersion == 1 && d.ownerUid == uid && d.draftVersion is int && d.draftVersion > 0 && validId(id) && validId(d.intendedListingId) && (d.linkedPetId == null || validId(d.linkedPetId))
+        && (d.baseListingVersion == null && d.baseControlVersion == null || d.baseListingVersion is int && d.baseListingVersion > 0 && d.baseControlVersion is int && d.baseControlVersion > 0)
+        && listingFields(d.editableFields,false) && d.updatedAt == request.time && validId(d.lastOperationId);}
+      allow get: if self(uid);
+      allow list: if self(uid) && request.query.limit != null && request.query.limit > 0 && request.query.limit <= 20;
+      allow create: if self(uid) && workingShape(request.resource.data) && request.resource.data.draftVersion == 1;
+      allow update: if self(uid) && workingShape(request.resource.data) && request.resource.data.draftVersion == resource.data.draftVersion+1 && request.resource.data.lastOperationId != resource.data.lastOperationId;
+      allow delete: if self(uid);
+    }
+
+    // F31 approved private slice. F29/F39 public/report/moderator contracts remain gated.
+    function communityFields(f) {return f.keys().size() == 2 && f.keys().hasOnly(['body','bundledIllustrationKey']) && f.body is string && f.body.matches('(?s).{1,1000}.{0,1000}') && f.body == f.body.trim() && f.body.toUtf8().size() <= 8000 && f.body.matches('(?s).*[^\\s\\x00-\\x1f\\x7f].*') && (f.bundledIllustrationKey == null || f.bundledIllustrationKey in ['default','cat','dog']);}
+    function communityRoot(d,id) {return d.keys().size() == 16 && d.keys().hasOnly(['schemaVersion','postId','authorUid','type','lifecycle','contentVersion','currentRevisionId','controlVersion','visibility','submittedVersion','publicationConsent','moderatorHold','firstPublishedAt','createdAt','updatedAt','lastOperationId'])
+      && d.schemaVersion is int && d.schemaVersion == 1 && d.postId == id && validId(id) && d.authorUid is string && d.type == 'community' && d.lifecycle in ['active','archived'] && d.contentVersion is int && d.contentVersion >= 1 && d.currentRevisionId == 'v'+string(d.contentVersion) && d.controlVersion is int && d.controlVersion >= 1 && d.visibility == 'hidden' && d.submittedVersion == null && d.publicationConsent == false && d.moderatorHold in ['clear','held'] && (d.firstPublishedAt == null || d.firstPublishedAt is timestamp) && d.createdAt is timestamp && d.updatedAt is timestamp && validId(d.lastOperationId);}
+    function communityRevision(v,id,uid,n) {return v.keys().size() == 9 && v.keys().hasOnly(['schemaVersion','postId','authorUid','type','contentVersion','body','bundledIllustrationKey','createdAt','operationId']) && v.schemaVersion is int && v.schemaVersion == 1 && v.postId == id && v.authorUid == uid && v.type == 'community' && v.contentVersion is int && v.contentVersion == n && communityFields({'body':v.body,'bundledIllustrationKey':v.bundledIllustrationKey}) && v.createdAt == request.time && validId(v.operationId);}
+    function communityVersions(v) {return v.keys().size() == 2 && v.keys().hasOnly(['contentVersion','controlVersion']) && v.contentVersion is int && v.contentVersion >= 0 && v.controlVersion is int && v.controlVersion >= 0;}
+    function communityReceipt(r,uid,op) {return r.keys().size() == 10 && r.keys().hasOnly(['schemaVersion','ownerUid','operationId','postId','command','base','result','input','status','committedAt']) && r.schemaVersion is int && r.schemaVersion == 1 && r.ownerUid == uid && r.operationId == op && validId(op) && validId(r.postId) && r.command in ['create','edit','hide','archive'] && communityVersions(r.base) && communityVersions(r.result) && r.result.contentVersion >= 1 && r.result.controlVersion >= 1 && (r.command in ['create','edit'] ? communityFields(r.input) : r.input is map && r.input.size() == 0) && r.status == 'committed' && r.committedAt == request.time;}
+    function communityOwner(id) {return request.auth != null && get(/databases/$(database)/documents/communityPosts/$(id)).data.authorUid == request.auth.uid;}
+    function communityLink(id,uid,op) {
+      let n=getAfter(/databases/$(database)/documents/communityPosts/$(id)).data;
+      return n.authorUid == uid && n.lastOperationId == op && n.updatedAt == request.time && (!exists(/databases/$(database)/documents/communityPosts/$(id)) ? n.controlVersion == 1 : n.controlVersion == get(/databases/$(database)/documents/communityPosts/$(id)).data.controlVersion+1 && op != get(/databases/$(database)/documents/communityPosts/$(id)).data.lastOperationId);
+    }
+    function communityMaterial(id,uid,d,r) {
+      let v=getAfter(/databases/$(database)/documents/communityPosts/$(id)/revisions/$(d.currentRevisionId)).data;
+      return memberReady(uid) && v.authorUid == uid && v.postId == id && v.contentVersion == d.contentVersion && v.operationId == d.lastOperationId && v.createdAt == request.time && r.input == {'body':v.body,'bundledIllustrationKey':v.bundledIllustrationKey};
+    }
+    function communityCreate(id,uid,d) {
+      let r=getAfter(/databases/$(database)/documents/users/$(uid)/communityOperations/$(d.lastOperationId)).data;
+      return self(uid) && communityRoot(d,id) && d.authorUid == uid && d.lifecycle == 'active' && d.contentVersion == 1 && d.controlVersion == 1 && d.moderatorHold == 'clear' && d.firstPublishedAt == null && d.createdAt == request.time && d.updatedAt == request.time
+        && r.command == 'create' && r.postId == id && r.base == {'contentVersion':0,'controlVersion':0} && r.result == {'contentVersion':1,'controlVersion':1} && r.committedAt == request.time && communityMaterial(id,uid,d,r)
+        && !exists(/databases/$(database)/documents/users/$(uid)/communityOperations/$(d.lastOperationId)) && !existsAfter(/databases/$(database)/documents/communityFeed/$(id));
+    }
+    function communityUpdate(id,uid,d,old) {
+      let r=getAfter(/databases/$(database)/documents/users/$(uid)/communityOperations/$(d.lastOperationId)).data;
+      return self(uid) && old.authorUid == uid && old.lifecycle == 'active' && communityRoot(d,id) && d.authorUid == old.authorUid && d.type == old.type && d.createdAt == old.createdAt && d.moderatorHold == old.moderatorHold && d.firstPublishedAt == old.firstPublishedAt && d.controlVersion == old.controlVersion+1 && d.lastOperationId != old.lastOperationId && d.updatedAt == request.time
+        && !exists(/databases/$(database)/documents/users/$(uid)/communityOperations/$(d.lastOperationId)) && r.postId == id && r.base == {'contentVersion':old.contentVersion,'controlVersion':old.controlVersion} && r.result == {'contentVersion':d.contentVersion,'controlVersion':d.controlVersion} && r.committedAt == request.time
+        && !existsAfter(/databases/$(database)/documents/communityFeed/$(id))
+        && (r.command == 'edit' && d.lifecycle == 'active' && d.contentVersion == old.contentVersion+1 && communityMaterial(id,uid,d,r)
+          || r.command == 'hide' && d.lifecycle == 'active' && d.contentVersion == old.contentVersion
+          || r.command == 'archive' && d.lifecycle == 'archived' && d.contentVersion == old.contentVersion);
+    }
+    match /communityPosts/{id} {
+      allow get: if request.auth != null && validId(id) && (!exists(/databases/$(database)/documents/communityPosts/$(id)) || resource.data.authorUid == request.auth.uid);
+      allow list: if request.auth != null && resource.data.authorUid == request.auth.uid && request.query.limit != null && request.query.limit > 0 && request.query.limit <= 20;
+      allow create: if request.auth != null && request.resource.data.schemaVersion==1 && communityCreate(id,request.auth.uid,request.resource.data);
+      allow update: if request.auth != null && request.resource.data.schemaVersion==1 && resource.data.schemaVersion==1 && communityUpdate(id,request.auth.uid,request.resource.data,resource.data);
+      allow delete: if false;
+      match /revisions/{versionId} {
+        allow get: if communityOwner(id);
+        allow list: if communityOwner(id) && request.query.limit != null && request.query.limit > 0 && request.query.limit <= 20;
+        allow create: if request.auth != null && request.resource.data.schemaVersion==1 && communityRevision(request.resource.data,id,request.auth.uid,request.resource.data.contentVersion) && versionId == 'v'+string(request.resource.data.contentVersion) && communityLink(id,request.auth.uid,request.resource.data.operationId) && getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.currentRevisionId == versionId;
+        allow update,delete: if false;
+      }
+    }
+    match /users/{uid}/communityOperations/{op} {
+      allow get: if self(uid);
+      allow list: if self(uid) && request.query.limit != null && request.query.limit > 0 && request.query.limit <= 20;
+      allow create: if self(uid) && request.resource.data.schemaVersion==1 && communityReceipt(request.resource.data,uid,op) && communityLink(request.resource.data.postId,uid,op);
+      allow update,delete: if false;
+    }
+    match /communityFeed/{id} {
+      // No F31 client can publish or read a feed before separately accepted F39 integration.
+      allow get,list,create,update: if false;
+      allow delete: if request.auth != null && communityOwner(id) && communityLink(id,request.auth.uid,getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.lastOperationId)
+        && getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.visibility == 'hidden';
+    }
+
+    // F31 r2: no moderator capability is introduced. Only protected policy enables new publication.
+    function page20(){return request.query.limit!=null && request.query.limit>0 && request.query.limit<=20;}
+    function rollout(){
+      let p=get(/databases/$(database)/documents/system/communityPolicy).data;
+      return p.keys().size()==5 && p.keys().hasOnly(['schemaVersion','policyVersion','enabled','publicationMode','updatedAt'])
+        && reportPolicy('post') && p.schemaVersion==1 && p.policyVersion is int && p.policyVersion>=1 && p.enabled==true && p.publicationMode=='post_moderated' && p.updatedAt is timestamp;
+    }
+    match /system/communityPolicy {allow get: if request.auth!=null && (!exists(/databases/$(database)/documents/system/communityPolicy) || resource.data.keys().size()==5 && resource.data.keys().hasOnly(['schemaVersion','policyVersion','enabled','publicationMode','updatedAt']) && resource.data.schemaVersion is int && resource.data.schemaVersion==1 && resource.data.policyVersion is int && resource.data.policyVersion>=1 && resource.data.enabled is bool && resource.data.publicationMode=='post_moderated' && resource.data.updatedAt is timestamp); allow list,write: if false;}
+    function sroot(d,id){return d.keys().size()==15 && d.keys().hasOnly(['schemaVersion','postId','authorUid','type','lifecycle','contentVersion','currentRevisionId','controlVersion','visibility','moderatorHold','firstPublishedAt','editedAt','createdAt','updatedAt','lastOperationId'])
+      && d.schemaVersion is int && d.schemaVersion==2 && d.postId==id && validId(id) && d.authorUid is string && d.type=='community' && d.lifecycle in ['active','archived']
+      && d.contentVersion is int && d.contentVersion>=1 && d.currentRevisionId=='v'+string(d.contentVersion) && d.controlVersion is int && d.controlVersion>=1
+      && d.visibility in ['hidden','visible'] && d.moderatorHold in ['clear','held'] && (d.firstPublishedAt==null || d.firstPublishedAt is timestamp)
+      && (d.editedAt==null || d.editedAt is timestamp) && d.createdAt is timestamp && d.updatedAt==request.time && validId(d.lastOperationId);}
+    function srevision(v,id,uid,n){return v.keys().size()==9 && v.keys().hasOnly(['schemaVersion','postId','authorUid','type','contentVersion','body','bundledIllustrationKey','createdAt','operationId'])
+      && v.schemaVersion is int && v.schemaVersion==2 && v.postId==id && v.authorUid==uid && v.type=='community' && v.contentVersion==n
+      && communityFields({'body':v.body,'bundledIllustrationKey':v.bundledIllustrationKey}) && v.createdAt is timestamp && validId(v.operationId);}
+    function sfeed(f,id){return f.keys().size()==11 && f.keys().hasOnly(['schemaVersion','postId','authorUid','type','contentVersion','body','bundledIllustrationKey','audience','state','firstPublishedAt','editedAt'])
+      && f.schemaVersion is int && f.schemaVersion==2 && f.postId==id && validId(id) && f.authorUid is string && f.type=='community' && f.contentVersion is int && f.contentVersion>=1
+      && communityFields({'body':f.body,'bundledIllustrationKey':f.bundledIllustrationKey}) && f.audience=='community' && f.state=='visible' && f.firstPublishedAt is timestamp && (f.editedAt==null || f.editedAt is timestamp);}
+    function sreceipt(r,uid,op){return r.keys().size()==11 && r.keys().hasOnly(['schemaVersion','ownerUid','operationId','postId','targetId','command','base','result','input','status','committedAt'])
+      && r.schemaVersion is int && r.schemaVersion==2 && r.ownerUid==uid && r.operationId==op && validId(op) && validId(r.postId) && (r.targetId==null || validId(r.targetId))
+      && r.command in ['create_private','publish','edit_private','edit_visible','show','hide','archive','set_like','add_comment','edit_comment','withdraw_comment']
+      && r.base.keys().size()==3 && r.base.keys().hasOnly(['contentVersion','controlVersion','targetVersion']) && r.base.contentVersion is int && r.base.controlVersion is int && r.base.targetVersion is int
+      && r.base.contentVersion>=0 && r.base.controlVersion>=0 && r.base.targetVersion>=0 && r.result is map && r.input is map && r.status=='committed' && r.committedAt==request.time;}
+    function sop(uid,op){return getAfter(/databases/$(database)/documents/users/$(uid)/communityOperations/$(op)).data;}
+    function srootLink(id,uid,op){
+      let n=getAfter(/databases/$(database)/documents/communityPosts/$(id)).data;
+      let r=sop(uid,op);
+      return n.schemaVersion is int && n.schemaVersion==2 && n.updatedAt==request.time && n.authorUid==uid && n.lastOperationId==op && r.postId==id && r.targetId==null && r.base.targetVersion==0
+        && r.result=={'contentVersion':n.contentVersion,'controlVersion':n.controlVersion} && r.committedAt==request.time
+        && !exists(/databases/$(database)/documents/users/$(uid)/communityOperations/$(op));
+    }
+    function sproject(id,d){
+      let v=getAfter(/databases/$(database)/documents/communityPosts/$(id)/revisions/$(d.currentRevisionId)).data;
+      let f=getAfter(/databases/$(database)/documents/communityFeed/$(id)).data;
+      return f.schemaVersion is int && f.schemaVersion==2 && f.authorUid==d.authorUid && f.contentVersion==d.contentVersion && f.body==v.body && f.bundledIllustrationKey==v.bundledIllustrationKey
+        && f.firstPublishedAt==d.firstPublishedAt && f.editedAt==d.editedAt && d.lifecycle=='active' && d.moderatorHold=='clear'
+        && existsAfter(/databases/$(database)/documents/communityCounts/$(id));
+    }
+    function smaterial(id,d,r){
+      let v=getAfter(/databases/$(database)/documents/communityPosts/$(id)/revisions/$(d.currentRevisionId)).data;
+      return v.schemaVersion is int && v.schemaVersion==2 && v.authorUid==d.authorUid && v.postId==id && v.contentVersion==d.contentVersion && v.operationId==d.lastOperationId && v.createdAt==request.time
+        && (r.command=='publish'?r.input=={'body':v.body,'bundledIllustrationKey':v.bundledIllustrationKey,'consent':true}:r.input=={'body':v.body,'bundledIllustrationKey':v.bundledIllustrationKey});
+    }
+    function screate(id,uid,d){
+      let r=sop(uid,d.lastOperationId);
+      return self(uid) && sroot(d,id) && srootLink(id,uid,d.lastOperationId) && d.lifecycle=='active' && d.contentVersion==1 && d.controlVersion==1
+        && d.moderatorHold=='clear' && d.editedAt==null && d.createdAt==request.time
+        && basicMemberReady(uid) && r.base=={'contentVersion':0,'controlVersion':0,'targetVersion':0} && smaterial(id,d,r)
+        && (r.command=='create_private'?d.visibility=='hidden' && d.firstPublishedAt==null && !existsAfter(/databases/$(database)/documents/communityFeed/$(id))
+          :r.command=='publish' && rollout() && d.visibility=='visible' && d.firstPublishedAt==request.time && getAfter(/databases/$(database)/documents/communityFeed/$(id)).data.contentVersion==1 && existsAfter(/databases/$(database)/documents/communityCounts/$(id)));
+    }
+    function supdate(id,uid,d,old){
+      let r=sop(uid,d.lastOperationId);
+      return self(uid) && old.schemaVersion is int && d.schemaVersion==2 && old.authorUid==uid && old.lifecycle=='active' && sroot(d,id) && srootLink(id,uid,d.lastOperationId)
+        && d.authorUid==old.authorUid && d.type==old.type && d.createdAt==old.createdAt && d.moderatorHold==old.moderatorHold
+        && d.controlVersion==old.controlVersion+1 && d.lastOperationId!=old.lastOperationId && r.base.contentVersion==old.contentVersion && r.base.controlVersion==old.controlVersion
+        && (old.firstPublishedAt==null ? (d.firstPublishedAt==null || d.firstPublishedAt==request.time && r.command in ['publish','show','edit_visible']) : d.firstPublishedAt==old.firstPublishedAt)
+        && (r.command in ['edit_private','edit_visible'] ? d.editedAt==(old.firstPublishedAt==null?old.editedAt:request.time) : d.editedAt==old.editedAt)
+        && (r.command in ['edit_private','edit_visible'] ? d.contentVersion==old.contentVersion+1 && smaterial(id,d,r) : d.contentVersion==old.contentVersion)
+        && (r.command=='archive' ? d.lifecycle=='archived' : d.lifecycle=='active')
+        && (r.command in ['publish','show','edit_visible'] ? d.visibility=='visible' && basicMemberReady(uid) && sproject(id,d)
+          && (r.command=='edit_visible' || r.input=={'consent':true}) : r.command in ['edit_private','hide','archive'] && (r.command=='edit_private'?basicMemberReady(uid):true) && d.visibility=='hidden' && !existsAfter(/databases/$(database)/documents/communityFeed/$(id)))
+        && (r.command in ['publish','show'] ? old.visibility=='hidden' : true);
+    }
+    match /communityPosts/{id} {
+      allow create: if request.auth!=null && screate(id,request.auth.uid,request.resource.data);
+      allow update: if request.auth!=null && supdate(id,request.auth.uid,request.resource.data,resource.data);
+      match /revisions/{v} {
+        allow create: if request.auth!=null && srevision(request.resource.data,id,request.auth.uid,request.resource.data.contentVersion)
+          && v=='v'+string(request.resource.data.contentVersion) && request.resource.data.createdAt==request.time
+          && srootLink(id,request.auth.uid,request.resource.data.operationId) && getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.currentRevisionId==v;
+      }
+    }
+    match /communityFeed/{id} {
+      allow get: if request.auth!=null && (!exists(/databases/$(database)/documents/communityFeed/$(id)) || sfeed(resource.data,id));
+      // Query authorization deliberately uses only projected state: rules are not filters.
+      allow list: if request.auth!=null && page20() && resource.data.schemaVersion==2 && resource.data.audience=='community' && resource.data.state=='visible';
+      allow create,update: if request.auth!=null && rollout() && sfeed(request.resource.data,id) && srootLink(id,request.auth.uid,getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.lastOperationId)
+        && sproject(id,getAfter(/databases/$(database)/documents/communityPosts/$(id)).data);
+      allow delete: if request.auth!=null && srootLink(id,request.auth.uid,getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.lastOperationId)
+        && getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.visibility=='hidden';
+    }
+    function parentVisibleAfter(id){return existsAfter(/databases/$(database)/documents/communityFeed/$(id)) && getAfter(/databases/$(database)/documents/communityFeed/$(id)).data.schemaVersion==2 && getAfter(/databases/$(database)/documents/communityFeed/$(id)).data.state=='visible';}
+    function parentVisible(id){return exists(/databases/$(database)/documents/communityFeed/$(id)) && get(/databases/$(database)/documents/communityFeed/$(id)).data.schemaVersion==2 && get(/databases/$(database)/documents/communityFeed/$(id)).data.state=='visible';}
+    function scount(d,id){return d.keys().size()==6 && d.keys().hasOnly(['schemaVersion','postId','likeCount','countVersion','updatedAt','lastOperationId']) && d.schemaVersion is int && d.schemaVersion==2 && d.postId==id && d.likeCount is int && d.likeCount>=0 && d.countVersion is int && d.countVersion>=0 && d.updatedAt==request.time && validId(d.lastOperationId);}
+    function slike(d,id,uid){return d.keys().size()==8 && d.keys().hasOnly(['schemaVersion','uid','postId','active','likeVersion','sourceContentVersion','updatedAt','lastOperationId']) && d.schemaVersion is int && d.schemaVersion==2 && d.uid==uid && d.postId==id && d.active is bool && d.likeVersion is int && d.likeVersion>=1 && d.sourceContentVersion is int && d.sourceContentVersion>=1 && d.updatedAt==request.time && validId(d.lastOperationId);}
+    function likeDelta(id,uid,op){
+      let path=/databases/$(database)/documents/communityPosts/$(id)/likes/$(uid);
+      let n=getAfter(path).data;
+      let oldActive=exists(path)?get(path).data.active:false;
+      let oldVersion=exists(path)?get(path).data.likeVersion:0;
+      let count=get(/databases/$(database)/documents/communityCounts/$(id)).data;
+      let next=getAfter(/databases/$(database)/documents/communityCounts/$(id)).data;
+      let r=sop(uid,op);
+      return self(uid) && slike(n,id,uid) && scount(next,id) && n.lastOperationId==op && next.lastOperationId==op
+        && n.active!=oldActive && n.likeVersion==oldVersion+1 && r.command=='set_like' && r.postId==id && r.targetId==null
+        && r.base.targetVersion==oldVersion && r.result=={'targetVersion':n.likeVersion} && r.input=={'active':n.active} && r.committedAt==request.time
+        && next.likeCount==count.likeCount+(n.active?1:-1) && next.countVersion==count.countVersion+1
+        && (n.active ? basicMemberReady(uid) && parentVisibleAfter(id) && n.sourceContentVersion==get(/databases/$(database)/documents/communityFeed/$(id)).data.contentVersion && r.base.contentVersion==n.sourceContentVersion : oldActive && n.sourceContentVersion==(parentVisible(id)?get(/databases/$(database)/documents/communityFeed/$(id)).data.contentVersion:get(path).data.sourceContentVersion));
+    }
+    function likeNoop(r,uid){
+      let p=/databases/$(database)/documents/communityPosts/$(r.postId)/likes/$(uid);
+      return r.command=='set_like' && r.targetId==null && r.input.keys().size()==1 && r.input.active is bool
+        && r.base.targetVersion==(exists(p)?get(p).data.likeVersion:0) && r.result=={'targetVersion':r.base.targetVersion}
+        && r.input.active==(exists(p)?get(p).data.active:false) && (r.input.active ? basicMemberReady(uid) && parentVisible(r.postId) : true);
+    }
+    match /communityPosts/{id}/likes/{uid} {
+      allow get: if self(uid);allow list,delete: if false;
+      allow create,update: if self(uid) && likeDelta(id,uid,request.resource.data.lastOperationId);
+    }
+    match /communityCounts/{id} {
+      allow get: if request.auth!=null && (!exists(/databases/$(database)/documents/communityCounts/$(id)) || parentVisible(id) || get(/databases/$(database)/documents/communityPosts/$(id)/likes/$(request.auth.uid)).data.active==true || communityOwner(id));
+      allow create: if request.auth!=null && scount(request.resource.data,id) && request.resource.data.likeCount==0 && request.resource.data.countVersion==0
+        && srootLink(id,request.auth.uid,request.resource.data.lastOperationId) && getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.visibility=='visible';
+      allow update: if request.auth!=null && likeDelta(id,request.auth.uid,request.resource.data.lastOperationId);
+      allow list,delete: if false;
+    }
+    function commentShape(c,id){return c.keys().size()==11 && c.keys().hasOnly(['schemaVersion','postId','authorUid','sourceContentVersion','commentVersion','body','state','createdAt','editedAt','updatedAt','operationId']) && c.schemaVersion is int && c.schemaVersion==2 && c.postId==id && c.authorUid is string
+      && c.sourceContentVersion is int && c.sourceContentVersion>=1 && c.commentVersion is int && c.commentVersion>=1 && unicodeBound(c.body,1,500,2000) && c.body==c.body.trim() && c.state in ['visible','withdrawn'] && c.createdAt is timestamp && (c.editedAt==null || c.editedAt is timestamp) && c.updatedAt==request.time && validId(c.operationId);}
+    function commentLink(id,cid,uid,op){
+      let path=/databases/$(database)/documents/communityPosts/$(id)/comments/$(cid);
+      let n=getAfter(path).data;
+      let r=sop(uid,op);
+      let v=getAfter(/databases/$(database)/documents/communityPosts/$(id)/comments/$(cid)/revisions/$('v'+string(n.commentVersion))).data;
+      let f=getAfter(/databases/$(database)/documents/communityCommentFeed/$(id)/comments/$(cid)).data;
+      return self(uid) && validId(cid) && commentShape(n,id) && n.authorUid==uid && n.operationId==op && r.postId==id && r.targetId==cid && r.committedAt==request.time
+        && r.base.targetVersion==(exists(path)?get(path).data.commentVersion:0) && n.commentVersion==r.base.targetVersion+1 && r.result=={'targetVersion':n.commentVersion}
+        && (exists(path)?get(path).data.authorUid==uid && get(path).data.state=='visible' && n.createdAt==get(path).data.createdAt && n.editedAt==request.time:r.command=='add_comment' && n.createdAt==request.time && n.editedAt==null)
+        && v=={'schemaVersion':2,'postId':id,'commentId':cid,'authorUid':uid,'commentVersion':n.commentVersion,'sourceContentVersion':n.sourceContentVersion,'body':n.body,'state':n.state,'createdAt':request.time,'operationId':op}
+        && (r.command=='withdraw_comment'? n.state=='withdrawn' && r.input=={} && n.body==get(path).data.body && n.sourceContentVersion==get(path).data.sourceContentVersion && !existsAfter(/databases/$(database)/documents/communityCommentFeed/$(id)/comments/$(cid))
+          : r.command in ['add_comment','edit_comment'] && n.state=='visible' && r.input=={'body':n.body} && basicMemberReady(uid) && parentVisibleAfter(id) && n.sourceContentVersion==r.base.contentVersion && n.sourceContentVersion==get(/databases/$(database)/documents/communityFeed/$(id)).data.contentVersion
+          && f=={'schemaVersion':2,'postId':id,'commentId':cid,'authorUid':uid,'commentVersion':n.commentVersion,'sourceContentVersion':n.sourceContentVersion,'body':n.body,'state':'visible','createdAt':n.createdAt,'editedAt':n.editedAt});
+    }
+    match /communityPosts/{id}/comments/{cid} {
+      allow get: if request.auth!=null && (!exists(/databases/$(database)/documents/communityPosts/$(id)/comments/$(cid)) || resource.data.authorUid==request.auth.uid);
+      allow create,update: if request.auth!=null && commentLink(id,cid,request.auth.uid,request.resource.data.operationId);
+      allow list,delete: if false;
+      match /revisions/{v} {allow get: if request.auth!=null && get(/databases/$(database)/documents/communityPosts/$(id)/comments/$(cid)).data.authorUid==request.auth.uid;
+        allow create: if request.auth!=null && v=='v'+string(request.resource.data.commentVersion) && commentLink(id,cid,request.auth.uid,request.resource.data.operationId);allow list,update,delete: if false;}
+    }
+    match /communityCommentFeed/{id}/comments/{cid} {
+      allow get: if request.auth!=null && parentVisible(id) && resource.data.schemaVersion==2 && resource.data.state=='visible';
+      allow list: if request.auth!=null && parentVisible(id) && page20() && resource.data.schemaVersion==2 && resource.data.state=='visible';
+      allow create,update,delete: if request.auth!=null && commentLink(id,cid,request.auth.uid,getAfter(/databases/$(database)/documents/communityPosts/$(id)/comments/$(cid)).data.operationId);
+    }
+    match /users/{uid}/communityOperations/{op} {
+      allow create: if self(uid) && sreceipt(request.resource.data,uid,op)
+        && (request.resource.data.command=='set_like'?likeNoop(request.resource.data,uid) || likeDelta(request.resource.data.postId,uid,op)
+          :request.resource.data.command in ['add_comment','edit_comment','withdraw_comment']?commentLink(request.resource.data.postId,request.resource.data.targetId,uid,op):srootLink(request.resource.data.postId,uid,op));
+    }
+
+    // F29 intake only. No client reviewer/status/hold capability.
+    function reportPolicy(kind){
+      let p=get(/databases/$(database)/documents/system/reportPolicy).data;
+      return p.keys().size()==5 && p.keys().hasOnly(['schemaVersion','policyVersion','intakeEnabled','supportedTargetKinds','updatedAt'])
+        && p.schemaVersion==1 && p.policyVersion is int && p.policyVersion>=1 && p.intakeEnabled==true && p.supportedTargetKinds is list
+        && p.supportedTargetKinds.hasOnly(['post','comment']) && kind in p.supportedTargetKinds && p.updatedAt is timestamp;
+    }
+    match /system/reportPolicy {allow get: if request.auth!=null && (!exists(/databases/$(database)/documents/system/reportPolicy) || resource.data.keys().size()==5 && resource.data.keys().hasOnly(['schemaVersion','policyVersion','intakeEnabled','supportedTargetKinds','updatedAt']) && resource.data.schemaVersion is int && resource.data.schemaVersion==1 && resource.data.policyVersion is int && resource.data.policyVersion>=1 && resource.data.intakeEnabled is bool && resource.data.supportedTargetKinds is list && resource.data.supportedTargetKinds.hasOnly(['post','comment']) && resource.data.updatedAt is timestamp);allow list,write: if false;}
+    function reportKey(r){return r.targetKind=='post'?'post_'+r.targetId:'comment_'+r.parentId+'_'+r.targetId;}
+    function reportPayload(statement,evidence){return statement.toUtf8().size()+(evidence==null?0:evidence.toUtf8().size())<=6144;}
+    function reportShape(r){return r.keys().size()==17 && r.keys().hasOnly(['schemaVersion','reporterUid','targetKind','targetId','parentId','observedVersion','category','statement','evidenceText','snapshotProvenance','sourceRef','status','statusVersion','createdAt','lastReporterVersion','opId','lastReporterOperationId'])
+      && r.schemaVersion is int && r.schemaVersion==1 && r.reporterUid is string && r.targetKind in ['post','comment'] && validId(r.targetId)
+      && (r.targetKind=='post'?r.parentId==null:validId(r.parentId)) && r.observedVersion is int && r.observedVersion>=1
+      && r.category in ['spam','harassment','misleading_information','privacy','animal_welfare','other']
+      && unicodeBound(r.statement,r.category=='other'?1:0,1000,4000) && (r.evidenceText==null || unicodeBound(r.evidenceText,1,1000,4000))
+      && reportPayload(r.statement,r.evidenceText) && r.snapshotProvenance in ['current_authorized_projection','reporter_statement'] && (r.sourceRef==null || r.sourceRef is string)
+      && r.status=='received' && r.statusVersion==1 && r.createdAt==request.time && r.lastReporterVersion==1 && validId(r.opId) && r.lastReporterOperationId==r.opId;}
+    function reportOwn(id){return request.auth!=null && get(/databases/$(database)/documents/reports/$(id)).data.reporterUid==request.auth.uid;}
+    function reportRevision(v,id,uid,n){return v.keys().size()==12 && v.keys().hasOnly(['schemaVersion','reportId','reporterUid','reporterVersion','command','statement','evidenceText','observedVersion','snapshotProvenance','sourceRef','operationId','createdAt'])
+      && v.schemaVersion is int && v.schemaVersion==1 && v.reportId==id && v.reporterUid==uid && v.reporterVersion==n && v.command in ['submit','append','withdraw']
+      && unicodeBound(v.statement,0,1000,4000) && (v.evidenceText==null || unicodeBound(v.evidenceText,1,1000,4000)) && v.observedVersion is int && v.observedVersion>=1
+      && reportPayload(v.statement,v.evidenceText) && v.snapshotProvenance in ['current_authorized_projection','reporter_statement'] && (v.sourceRef==null || v.sourceRef is string) && validId(v.operationId) && v.createdAt==request.time;}
+    function reportReceipt(o,uid,op){return o.keys().size()==10 && o.keys().hasOnly(['schemaVersion','ownerUid','operationId','command','reportId','targetKey','baseVersion','resultVersion','input','committedAt'])
+      && o.schemaVersion is int && o.schemaVersion==1 && o.ownerUid==uid && o.operationId==op && validId(op) && validId(o.reportId) && o.command in ['submit','append','withdraw']
+      && o.targetKey is string && o.baseVersion is int && o.baseVersion>=0 && o.resultVersion==o.baseVersion+1
+      && o.input.keys().size()==4 && o.input.keys().hasOnly(['category','statement','evidenceText','observedVersion']) && o.input.category in ['spam','harassment','misleading_information','privacy','animal_welfare','other']
+      && unicodeBound(o.input.statement,o.input.category=='other'?1:0,1000,4000) && (o.input.evidenceText==null || unicodeBound(o.input.evidenceText,1,1000,4000)) && reportPayload(o.input.statement,o.input.evidenceText) && o.input.observedVersion is int && o.input.observedVersion>=1 && o.committedAt==request.time;}
+    function reportCommon(id,uid,op){
+      let r=getAfter(/databases/$(database)/documents/reports/$(id)).data;
+      let o=getAfter(/databases/$(database)/documents/users/$(uid)/reportOperations/$(op)).data;
+      let v=getAfter(/databases/$(database)/documents/reports/$(id)/reporterRevisions/$('v'+string(r.lastReporterVersion))).data;
+      return self(uid) && profileOwner(uid) && r.reporterUid==uid && r.lastReporterOperationId==op && o.reportId==id && o.targetKey==reportKey(r)
+        && o.ownerUid==uid && o.operationId==op && o.committedAt==request.time && !exists(/databases/$(database)/documents/users/$(uid)/reportOperations/$(op))
+        && v.reporterVersion==r.lastReporterVersion && v.reporterUid==uid && v.createdAt==request.time && v.operationId==op && v.command==o.command && o.resultVersion==r.lastReporterVersion
+        && v.statement==o.input.statement && v.evidenceText==o.input.evidenceText && v.observedVersion==o.input.observedVersion;
+    }
+    function reportRate(id,uid,op){
+      let path=/databases/$(database)/documents/reportRateControls/$(uid);
+      let n=getAfter(path).data;
+      return n.keys().size()==6 && n.keys().hasOnly(['windowStart','count','lastAcceptedAt','version','lastReportId','lastOperationId'])
+        && n.lastReportId==id && n.lastOperationId==op && n.lastAcceptedAt==request.time && n.count is int && n.count>=1 && n.count<=30 && n.version is int
+        && (!exists(path)?n.version==1 && n.count==1 && n.windowStart==request.time
+          : n.version==get(path).data.version+1 && request.time>=get(path).data.lastAcceptedAt+duration.value(5,'s')
+            && (request.time>=get(path).data.windowStart+duration.value(24,'h')?n.count==1 && n.windowStart==request.time:n.count==get(path).data.count+1 && n.windowStart==get(path).data.windowStart));
+    }
+    function reportEvidence(id,uid,r){
+      let e=getAfter(/databases/$(database)/documents/reports/$(id)/restrictedEvidence/current).data;
+      let parent=r.parentId==null?r.targetId:r.parentId;
+      let post=/databases/$(database)/documents/communityFeed/$(parent);
+      let comment=/databases/$(database)/documents/communityCommentFeed/$(parent)/comments/$(r.targetId);
+      return (e.body==null || e.body is string && e.body.toUtf8().size()<=3072) && e.keys().size()==7 && e.keys().hasOnly(['schemaVersion','reportId','reporterUid','provenance','sourceRef','observedVersion','body'])
+        && e.schemaVersion is int && e.schemaVersion==1 && e.reportId==id && e.reporterUid==uid && e.provenance==r.snapshotProvenance && e.sourceRef==r.sourceRef && e.observedVersion==r.observedVersion
+        && (e.provenance=='reporter_statement'?e.sourceRef==null && e.body==null
+          : parentVisible(parent) && (r.targetKind=='post'? e.sourceRef=='communityFeed/'+r.targetId && e.body==get(post).data.body && e.observedVersion==get(post).data.contentVersion
+            : e.sourceRef=='communityCommentFeed/'+parent+'/comments/'+r.targetId && get(comment).data.state=='visible' && e.body==get(comment).data.body && e.observedVersion==get(comment).data.commentVersion));
+    }
+    function reportProvenance(r,v){
+      let parent=r.parentId==null?r.targetId:r.parentId;
+      return v.snapshotProvenance=='reporter_statement'?v.sourceRef==null
+        : parentVisible(parent) && (r.targetKind=='post'?v.sourceRef=='communityFeed/'+r.targetId && v.observedVersion==get(/databases/$(database)/documents/communityFeed/$(parent)).data.contentVersion
+          : v.sourceRef=='communityCommentFeed/'+parent+'/comments/'+r.targetId && get(/databases/$(database)/documents/communityCommentFeed/$(parent)/comments/$(r.targetId)).data.state=='visible'
+            && v.observedVersion==get(/databases/$(database)/documents/communityCommentFeed/$(parent)/comments/$(r.targetId)).data.commentVersion);
+    }
+    function reportInitial(id,uid,op){
+      let r=getAfter(/databases/$(database)/documents/reports/$(id)).data;
+      let link=getAfter(/databases/$(database)/documents/users/$(uid)/reportLinks/$(reportKey(r))).data;
+      let status=getAfter(/databases/$(database)/documents/users/$(uid)/reportStatus/$(id)).data;
+      return reportCommon(id,uid,op) && r.opId==op
+        && r.statement==getAfter(/databases/$(database)/documents/users/$(uid)/reportOperations/$(op)).data.input.statement
+        && r.category==getAfter(/databases/$(database)/documents/users/$(uid)/reportOperations/$(op)).data.input.category
+        && r.evidenceText==getAfter(/databases/$(database)/documents/users/$(uid)/reportOperations/$(op)).data.input.evidenceText
+        && r.observedVersion==getAfter(/databases/$(database)/documents/users/$(uid)/reportOperations/$(op)).data.input.observedVersion
+        && reportShape(r) && reportPolicy(r.targetKind) && reportRate(id,uid,op) && getAfter(/databases/$(database)/documents/reports/$(id)/restrictedEvidence/current).data.reportId==id && getAfter(/databases/$(database)/documents/reports/$(id)/restrictedEvidence/current).data.reporterUid==uid
+        && getAfter(/databases/$(database)/documents/users/$(uid)/reportOperations/$(op)).data.command=='submit'
+        && getAfter(/databases/$(database)/documents/users/$(uid)/reportOperations/$(op)).data.baseVersion==0
+        && !exists(/databases/$(database)/documents/users/$(uid)/reportLinks/$(reportKey(r)))
+        && link=={'schemaVersion':1,'targetKind':r.targetKind,'parentId':r.parentId,'targetId':r.targetId,'currentReportId':id,'state':'open','updatedAt':request.time}
+        && status=={'schemaVersion':1,'reportId':id,'targetKind':r.targetKind,'parentId':r.parentId,'targetId':r.targetId,'category':r.category,'status':'received','statusVersion':1,'response':null,'createdAt':request.time,'updatedAt':request.time};
+    }
+    function reportAppend(id,uid,op){
+      let old=get(/databases/$(database)/documents/reports/$(id)).data;
+      let n=getAfter(/databases/$(database)/documents/reports/$(id)).data;
+      let o=getAfter(/databases/$(database)/documents/users/$(uid)/reportOperations/$(op)).data;
+      return reportCommon(id,uid,op) && old.reporterUid==uid && n.diff(old).affectedKeys().hasOnly(['lastReporterVersion','lastReporterOperationId'])
+        && n.lastReporterVersion==old.lastReporterVersion+1 && o.baseVersion==old.lastReporterVersion && o.input.category==old.category
+        && (o.command=='withdraw' || o.command=='append' && reportPolicy(old.targetKind) && reportRate(id,uid,op));
+    }
+    function reportLinked(id,uid,op){return exists(/databases/$(database)/documents/reports/$(id))?reportAppend(id,uid,op):reportInitial(id,uid,op);}
+    match /reports/{id} {
+      allow get: if request.auth!=null && (!exists(/databases/$(database)/documents/reports/$(id)) || resource.data.reporterUid==request.auth.uid);
+      allow create: if request.auth!=null && validId(id) && reportInitial(id,request.auth.uid,request.resource.data.opId);
+      allow update: if request.auth!=null && reportAppend(id,request.auth.uid,request.resource.data.lastReporterOperationId);
+      allow list,delete: if false;
+      match /reporterRevisions/{v} {
+        allow get: if reportOwn(id);allow list: if reportOwn(id) && page20();
+        allow create: if request.auth!=null && v=='v'+string(request.resource.data.reporterVersion) && reportRevision(request.resource.data,id,request.auth.uid,request.resource.data.reporterVersion) && reportProvenance(getAfter(/databases/$(database)/documents/reports/$(id)).data,request.resource.data) && reportCommon(id,request.auth.uid,request.resource.data.operationId);
+        allow update,delete: if false;
+      }
+      match /restrictedEvidence/current {allow get: if reportOwn(id);allow create: if request.auth!=null && reportCommon(id,request.auth.uid,getAfter(/databases/$(database)/documents/reports/$(id)).data.opId) && !exists(/databases/$(database)/documents/reports/$(id)) && reportEvidence(id,request.auth.uid,getAfter(/databases/$(database)/documents/reports/$(id)).data);allow list,update,delete: if false;}
+    }
+    match /users/{uid}/reportStatus/{id} {allow get: if self(uid);allow list: if self(uid) && page20();allow create: if self(uid) && reportCommon(id,uid,getAfter(/databases/$(database)/documents/reports/$(id)).data.opId) && !exists(/databases/$(database)/documents/reports/$(id));allow update,delete: if false;}
+    match /users/{uid}/reportLinks/{key} {allow get: if self(uid);allow create: if self(uid) && key==reportKey(getAfter(/databases/$(database)/documents/reports/$(request.resource.data.currentReportId)).data) && reportCommon(request.resource.data.currentReportId,uid,getAfter(/databases/$(database)/documents/reports/$(request.resource.data.currentReportId)).data.opId) && !exists(/databases/$(database)/documents/reports/$(request.resource.data.currentReportId));allow list,update,delete: if false;}
+    match /reportRateControls/{uid} {allow get: if self(uid);allow create,update: if self(uid) && reportCommon(request.resource.data.lastReportId,uid,request.resource.data.lastOperationId) && reportRate(request.resource.data.lastReportId,uid,request.resource.data.lastOperationId) && getAfter(/databases/$(database)/documents/users/$(uid)/reportOperations/$(request.resource.data.lastOperationId)).data.command!='withdraw';allow list,delete: if false;}
+    match /users/{uid}/reportOperations/{op} {allow get: if self(uid);allow list: if self(uid) && page20();allow create: if self(uid) && reportReceipt(request.resource.data,uid,op) && reportCommon(request.resource.data.reportId,uid,op);allow update,delete: if false;}
+
+    // F06_TEST_PROBE_ANCHOR: only the emulator test loader injects a temporary predicate probe.
+    match /{document=**} { allow read, write: if false; }
+  }
+}
