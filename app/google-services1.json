@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "921727116108",
+    "project_id": "aniloveproject",
+    "storage_bucket": "aniloveproject.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:921727116108:android:2bd8e9e8fca863b05825e9",
+        "android_client_info": {
+          "package_name": "com.gmail.manhle240406.project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0bvqBa2Ib37gkfTMMjb3NVg1qTvSWKB4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
