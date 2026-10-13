@@ -2,7 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
+        android:name=".AniloveApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -11,8 +14,26 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Project">
+        <!-- Initialize explicitly, after environment validation and before SDK access. -->
+        <provider
+            android:name="com.google.firebase.provider.FirebaseInitProvider"
+            android:authorities="${applicationId}.firebaseinitprovider"
+            tools:node="remove" />
+        <activity android:name=".community.SocialComposerActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".community.SocialDetailActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".community.MyReportsActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".community.CommunityActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".listing.ListingActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".pet.PetActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".profile.ProfileActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".auth.AuthActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Project.Auth"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".MainActivity"
+            android:theme="@style/Theme.Project.Auth"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>

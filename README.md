@@ -1,14 +1,9 @@
-# Mobile_Project
+# Android Starter
 
-## Tên đề tài
+Minimal Java Android app with a single Hello World screen.
 
-** Ứng dụng AniLove: Trao đổi, chia sẻ thú cưng **
+Open this folder in Android Studio and sync Gradle, then run the app.
 
-## Các thành viên
+Build from PowerShell:
 
-| MSSV        | Họ và tên                      |
-| ----------- | ------------------------------ |
-| 31241021765 | Lê Trung Phong *(Nhóm trưởng)* |
-| 31241020790 | Đỗ Sơn Thành                   |
-| 31241020025 | Nguyễn Tuấn Khôi               |
-| 31241025109 | Nguyễn Minh Thức               |
+    .\gradlew.bat :app:assembleDebug

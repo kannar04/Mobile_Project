@@ -1,123 +1,22 @@
-# Gradle files
 .gradle/
-build/
-
-# Local configuration file (sdk path, etc)
-local.properties
-
-# Log/OS Files
-*.log
-/*.png
-# Android Studio generated files and folders
-captures/
-.externalNativeBuild/
-.cxx/
-*.aab
-*.apk
-output-metadata.json
-*.py
-*.pyc
-__pycache__/
-*.drawio
-*.html
-anilove_cat.png
-anilove_dog.png
-anilove_schema.json
-anilove_schema.sql
-# IntelliJ
-*.iml
-.idea/
-misc.xml
-deploymentTargetDropDown.xml
-render.experimental.xml
-
-# Keystore files
-*.jks
-*.keystore
-
-# Google Services (e.g. APIs or Firebase)
-google-services.json
-
-# Android Profiling
-*.hprof
-skill.md
-
-# Generated diagrams
-/graph/**
-
-# ==========================================
-# Android / Gradle Build Outputs
-# ==========================================
-*.apk
-*.aar
-*.ap_
-*.aab
-*.dex
-*.class
-
-# Build directories
-build/
-/build/
-app/build/
-*/build/
-.gradle/
-
-# Native C/C++ build outputs
-.externalNativeBuild/
-.cxx/
-ndkBuild/
-
-# Android Profiler & Captures
-/captures/
-.navigation/
-
-# ==========================================
-# Local Configuration & Secrets
-# ==========================================
-local.properties
-secrets.properties
-
-# Keystore / Signing files
-*.jks
-*.keystore
-
-# Google Services / Config (Uncomment if sensitive)
-# google-services.json
-
-# ==========================================
-# Android Studio / IntelliJ IDEA
-# ==========================================
-.idea/
-*.iml
-*.ipr
-*.iws
-
-# If you want to share specific IntelliJ configuration (e.g. VCS/Code style),
-# comment out `.idea/` above and uncomment the lines below:
-# !.idea/vcs.xml
-# !.idea/codeStyles/
-# !.idea/copyright/
-# !.idea/gradle.xml
-
-# ==========================================
-# Kotlin / Java
-# ==========================================
 .kotlin/
-hs_err_pid*
-
-# ==========================================
-# Operating System Files
-# ==========================================
+.idea/
+.kilo/
+**/build/
+local.properties
+*.iml
+*.log
+*.apk
+*.aab
+*.jks
+*.keystore
+secrets.properties
+google-services.json
+!app/src/debug/google-services.json
+firebase-tests/node_modules/
+.externalNativeBuild/
+.cxx/
+captures/
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 Desktop.ini
-
-# ==========================================
-# Miscellaneous / Logs
-# ==========================================
-*.log
