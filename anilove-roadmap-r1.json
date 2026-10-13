@@ -1,0 +1,1553 @@
+{
+  "schemaVersion": 1,
+  "revision": 1,
+  "updatedAt": "2026-10-11",
+  "project": {
+    "id": "anilove",
+    "name": "ANILOVE",
+    "title": "A home for every next step.",
+    "description": "A proposed route from the foundations to a thoughtful pet-adoption experience.",
+    "scope": "Mobile-course prototype. Adoption and welfare cases are simulated.",
+    "sourceContextRevision": 2,
+    "sourceIndex": "../index.csv",
+    "sourceContext": "../context.md",
+    "planningOnly": true
+  },
+  "current": {
+    "featureId": "F42",
+    "label": "Foundation analysis",
+    "note": "Requests are registered. Detailed analysis and approval are the next steps; implementation progress has not been verified."
+  },
+  "phases": [
+    {
+      "id": "foundation",
+      "title": "Foundation",
+      "subtitle": "Decide the architecture",
+      "order": 0
+    },
+    {
+      "id": "core",
+      "title": "Core experience",
+      "subtitle": "Publish and find pets",
+      "order": 1
+    },
+    {
+      "id": "adoption",
+      "title": "Adoption loop",
+      "subtitle": "Request, agree, hand over",
+      "order": 2
+    },
+    {
+      "id": "care",
+      "title": "Care & trust",
+      "subtitle": "Support after placement",
+      "order": 3
+    },
+    {
+      "id": "expansion",
+      "title": "Suggested expansion",
+      "subtitle": "Choose the next branches",
+      "order": 4
+    }
+  ],
+  "branches": [
+    {
+      "id": "platform",
+      "title": "Platform & accounts",
+      "color": "#355fa1",
+      "order": 0,
+      "description": "The shared architecture, identity and offline foundation."
+    },
+    {
+      "id": "adoption",
+      "title": "Adoption journey",
+      "color": "#18736b",
+      "order": 1,
+      "description": "The primary path from a pet listing to a confirmed handover."
+    },
+    {
+      "id": "trust",
+      "title": "Trust & welfare",
+      "color": "#ad562c",
+      "order": 2,
+      "description": "Moderation, private follow-up, concerns and supported returns."
+    },
+    {
+      "id": "community",
+      "title": "Community",
+      "color": "#7855a0",
+      "order": 3,
+      "description": "Optional social, lost-pet and temporary-care experiences."
+    },
+    {
+      "id": "discovery",
+      "title": "Discovery & insights",
+      "color": "#9a6620",
+      "order": 4,
+      "description": "Finding the right pet, useful directories and operational insight."
+    }
+  ],
+  "groups": [
+    {
+      "id": "platform-base",
+      "title": "Platform foundation",
+      "phase": "foundation",
+      "branch": "platform",
+      "dependencies": [],
+      "summary": "Firestore, access rules, rotation and the technical boundaries."
+    },
+    {
+      "id": "accounts",
+      "title": "Accounts & privacy",
+      "phase": "foundation",
+      "branch": "platform",
+      "dependencies": [
+        "platform-base"
+      ],
+      "summary": "A visitor becomes a member; personal information stays private."
+    },
+    {
+      "id": "listing",
+      "title": "Pet listings",
+      "phase": "core",
+      "branch": "adoption",
+      "dependencies": [
+        "accounts"
+      ],
+      "summary": "Identify the animal, disclose care needs and create a reviewable listing."
+    },
+    {
+      "id": "moderation",
+      "title": "Mobile moderation",
+      "phase": "core",
+      "branch": "trust",
+      "dependencies": [
+        "listing"
+      ],
+      "summary": "A compact mobile review flow with reasons and protected decisions."
+    },
+    {
+      "id": "discovery",
+      "title": "Browse & discover",
+      "phase": "core",
+      "branch": "discovery",
+      "dependencies": [
+        "moderation"
+      ],
+      "summary": "Approved public listings, bounded search, saved pets and sharing."
+    },
+    {
+      "id": "requests",
+      "title": "Requests & matching",
+      "phase": "adoption",
+      "branch": "adoption",
+      "dependencies": [
+        "discovery"
+      ],
+      "summary": "Suitability conversation, application, selection and private contact."
+    },
+    {
+      "id": "handover",
+      "title": "Agreement & handover",
+      "phase": "adoption",
+      "branch": "trust",
+      "dependencies": [
+        "requests"
+      ],
+      "summary": "Both parties accept the same terms and confirm the transfer."
+    },
+    {
+      "id": "offline",
+      "title": "Offline experience",
+      "phase": "care",
+      "branch": "platform",
+      "dependencies": [
+        "discovery",
+        "listing"
+      ],
+      "summary": "Previously viewed pages and drafts with honest synchronization states."
+    },
+    {
+      "id": "followup",
+      "title": "Post-adoption care",
+      "phase": "care",
+      "branch": "adoption",
+      "dependencies": [
+        "handover"
+      ],
+      "summary": "Private updates, due tasks and durable notification records."
+    },
+    {
+      "id": "welfare",
+      "title": "Concerns & returns",
+      "phase": "care",
+      "branch": "trust",
+      "dependencies": [
+        "followup",
+        "moderation"
+      ],
+      "summary": "Private review, help, appeals and safe simulated return scenarios."
+    },
+    {
+      "id": "reputation",
+      "title": "Factual reputation",
+      "phase": "care",
+      "branch": "discovery",
+      "dependencies": [
+        "handover"
+      ],
+      "summary": "Verified contact and participant reviews without a safety guarantee."
+    },
+    {
+      "id": "social",
+      "title": "Community stories",
+      "phase": "expansion",
+      "branch": "community",
+      "dependencies": [
+        "welfare"
+      ],
+      "summary": "A moderated feed, likes, comments and pet-care news."
+    },
+    {
+      "id": "reunite",
+      "title": "Lost & found",
+      "phase": "expansion",
+      "branch": "community",
+      "dependencies": [
+        "welfare",
+        "listing"
+      ],
+      "summary": "Privacy-conscious notices and disputed ownership claims."
+    },
+    {
+      "id": "temporary",
+      "title": "Temporary care",
+      "phase": "expansion",
+      "branch": "community",
+      "dependencies": [
+        "handover",
+        "welfare"
+      ],
+      "summary": "A separate, time-bound care arrangement rather than adoption."
+    },
+    {
+      "id": "exchange",
+      "title": "Pet exchange",
+      "phase": "expansion",
+      "branch": "adoption",
+      "dependencies": [
+        "handover",
+        "welfare"
+      ],
+      "summary": "A complex optional branch involving two animals and partial transfers."
+    },
+    {
+      "id": "nearby",
+      "title": "Nearby & recommendations",
+      "phase": "expansion",
+      "branch": "discovery",
+      "dependencies": [
+        "discovery"
+      ],
+      "summary": "Location-aware discovery and explainable preferences."
+    },
+    {
+      "id": "reminders",
+      "title": "Care reminders",
+      "phase": "expansion",
+      "branch": "platform",
+      "dependencies": [
+        "handover"
+      ],
+      "summary": "User-entered care dates; reminders do not provide medical advice."
+    },
+    {
+      "id": "insights",
+      "title": "Operational insights",
+      "phase": "expansion",
+      "branch": "trust",
+      "dependencies": [
+        "welfare",
+        "handover"
+      ],
+      "summary": "Defined counts for handovers, open cases, returns and moderation."
+    }
+  ],
+  "nodes": [
+    {
+      "id": "F01",
+      "title": "Registration, login, logout, and Google sign-in",
+      "shortTitle": "Login & Google sign-in",
+      "summary": "Firebase Authentication, stable UID, explicit signed-in/visitor states, provider linking policy, and test accounts. Use Google sign-in as a proposed supporting API integration.",
+      "group": "accounts",
+      "phase": "foundation",
+      "branch": "platform",
+      "priority": "foundation",
+      "dependencies": [
+        "F42"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F01-registration-login-logout-and-google-sign-in/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F02",
+      "title": "Password recovery and password changes",
+      "shortTitle": "Account recovery",
+      "summary": "provider-aware recovery and settings; recent reauthentication for sensitive operations; loading, expired-link, and failed-network states.",
+      "group": "accounts",
+      "phase": "foundation",
+      "branch": "platform",
+      "priority": "suggested",
+      "dependencies": [
+        "F01"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F02-password-recovery-and-password-changes/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F03",
+      "title": "Profiles, contact details, and public visibility",
+      "shortTitle": "Profiles & privacy",
+      "summary": "separate public name/avatar/general region/bio from private phone/contact settings; profile validation and a privacy preview.",
+      "group": "accounts",
+      "phase": "foundation",
+      "branch": "platform",
+      "priority": "foundation",
+      "dependencies": [
+        "F01"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F03-profiles-contact-details-and-public-visibility/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F04",
+      "title": "Phone verification and trust badges",
+      "shortTitle": "Factual verification badges",
+      "summary": "explicit badge criteria, issue/revocation history, and distinction between \"phone verified,\" \"completed adoption,\" and \"reviewed organization.\"",
+      "group": "reputation",
+      "phase": "care",
+      "branch": "discovery",
+      "priority": "suggested",
+      "dependencies": [
+        "F01"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F04-phone-verification-and-trust-badges/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F05",
+      "title": "Admin access, account search, locks, and user CRUD",
+      "shortTitle": "Admin roles & restrictions",
+      "summary": "protected Admin role, account lookup, reasons for restrictions, audit events, and a simple mobile account detail/action sheet.",
+      "group": "moderation",
+      "phase": "core",
+      "branch": "trust",
+      "priority": "core",
+      "dependencies": [
+        "F01",
+        "F03"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F05-admin-access-account-search-locks-and-user-crud/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F06",
+      "title": "Pet identity and claimed right to rehome",
+      "shortTitle": "Pet identity",
+      "summary": "petId separate from listingId, species/breed/sex/estimated age, identifying marks, and a Host declaration of ownership or rehoming authority. Microchip information, if used, is private and unverified by default.",
+      "group": "listing",
+      "phase": "core",
+      "branch": "adoption",
+      "priority": "core",
+      "dependencies": [
+        "F01",
+        "F03"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F06-pet-identity-and-claimed-right-to-rehome/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F07",
+      "title": "Create, draft, edit, delete, hide, show, and close listings",
+      "shortTitle": "Listing lifecycle",
+      "summary": "structured form, required/optional fields, local draft, saved server draft when online, preview, moderation version, and lifecycle actions.",
+      "group": "listing",
+      "phase": "core",
+      "branch": "adoption",
+      "priority": "core",
+      "dependencies": [
+        "F06"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F07-create-draft-edit-delete-hide-show-and-close-listings/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F08",
+      "title": "Health, vaccination, sterilization, color, behavior, and care needs",
+      "shortTitle": "Health & care disclosure",
+      "summary": "unknown/yes/no where appropriate, dated Host-supplied records, known behavior concerns, medication/care disclosures, and document redaction.",
+      "group": "listing",
+      "phase": "core",
+      "branch": "adoption",
+      "priority": "core",
+      "dependencies": [
+        "F06"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F08-health-vaccination-sterilization-color-behavior-and-care-needs/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F09",
+      "title": "Photo upload, ordering, removal, and media access",
+      "shortTitle": "Pet photos",
+      "summary": "storage service, image compression, file/type/size limits, upload progress, retry, ordering, thumbnails, removal cleanup, and private/public separation.",
+      "group": "listing",
+      "phase": "core",
+      "branch": "adoption",
+      "priority": "core",
+      "dependencies": [
+        "F07",
+        "F42"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F09-photo-upload-ordering-removal-and-media-access/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F10",
+      "title": "Listing approval, rejection, and pet availability",
+      "shortTitle": "Approval & availability",
+      "summary": "mobile review queue, specific reasons, revision history, and distinct availability actions.",
+      "group": "moderation",
+      "phase": "core",
+      "branch": "trust",
+      "priority": "core",
+      "dependencies": [
+        "F05",
+        "F07",
+        "F09"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F10-listing-approval-rejection-and-pet-availability/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F11",
+      "title": "Species, breed, and region catalogs",
+      "shortTitle": "Species, breeds & regions",
+      "summary": "stable category IDs, active/inactive status, species–breed relationship, and normalized regions; permit unknown/mixed breed.",
+      "group": "listing",
+      "phase": "core",
+      "branch": "adoption",
+      "priority": "core",
+      "dependencies": [
+        "F42"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F11-species-breed-and-region-catalogs/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F12",
+      "title": "Public grid, pet details, and Host information",
+      "shortTitle": "Public browse & detail",
+      "summary": "public listing projection, image grid, detail screen, loading/empty/error states, freshness indicator, and report access.",
+      "group": "discovery",
+      "phase": "core",
+      "branch": "discovery",
+      "priority": "core",
+      "dependencies": [
+        "F10",
+        "F08"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F12-public-grid-pet-details-and-host-information/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F13",
+      "title": "Search, filters, sorting, and pagination",
+      "shortTitle": "Search & filters",
+      "summary": "explicitly supported search semantics, species/region/age/sex/breed/type/status filters, indexes, stable ordering, cursor pagination, and reset when filters change.",
+      "group": "discovery",
+      "phase": "core",
+      "branch": "discovery",
+      "priority": "core",
+      "dependencies": [
+        "F12",
+        "F11"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F13-search-filters-sorting-and-pagination/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F14",
+      "title": "Save/unsave favorites",
+      "shortTitle": "Favorites",
+      "summary": "member-owned favorites keyed by user and listing; detail links and private list.",
+      "group": "discovery",
+      "phase": "core",
+      "branch": "discovery",
+      "priority": "suggested",
+      "dependencies": [
+        "F01",
+        "F12"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F14-save-unsave-favorites/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F15",
+      "title": "Share links, Facebook, and Zalo",
+      "shortTitle": "Share listings",
+      "summary": "OS share sheet, public listing URL and routing policy, fallback when target app is absent, and friendly unavailable content.",
+      "group": "discovery",
+      "phase": "core",
+      "branch": "discovery",
+      "priority": "suggested",
+      "dependencies": [
+        "F12"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F15-share-links-facebook-and-zalo/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F16",
+      "title": "Adoption suitability questionnaire",
+      "shortTitle": "Suitability questions",
+      "summary": "short pet-relevant questions, explanation of purpose/access, required versus optional answers, and a way to ask for clarification.",
+      "group": "requests",
+      "phase": "adoption",
+      "branch": "adoption",
+      "priority": "core",
+      "dependencies": [
+        "F01",
+        "F08",
+        "F12"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F16-adoption-suitability-questionnaire/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F17",
+      "title": "Submit, view, withdraw, and cancel adoption applications",
+      "shortTitle": "Adoption applications",
+      "summary": "application ID, applicant/listing IDs, approved listing snapshot/version, message, questionnaire, status, timestamps, and history.",
+      "group": "requests",
+      "phase": "adoption",
+      "branch": "adoption",
+      "priority": "core",
+      "dependencies": [
+        "F16",
+        "F12"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F17-submit-view-withdraw-and-cancel-adoption-applications/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F18",
+      "title": "Host review, accept/reject, and reservation",
+      "shortTitle": "Select & reserve",
+      "summary": "private applicant list/detail, comparison against pet needs, decision reason, atomic selection/reservation, and expiry/cancellation policy.",
+      "group": "requests",
+      "phase": "adoption",
+      "branch": "adoption",
+      "priority": "core",
+      "dependencies": [
+        "F17",
+        "F07"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F18-host-review-accept-reject-and-reservation/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F19",
+      "title": "Phone/Zalo contact and in-app chat",
+      "shortTitle": "Private contact / chat",
+      "summary": "participant-only contact access after selection; if chat is included, conversation membership, message history, blocking/reporting, attachment limits, and notifications.",
+      "group": "requests",
+      "phase": "adoption",
+      "branch": "adoption",
+      "priority": "core",
+      "dependencies": [
+        "F18"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F19-phone-zalo-contact-and-in-app-chat/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F20",
+      "title": "Meeting, readiness checklist, and agreement acceptance",
+      "shortTitle": "Agreement & meeting",
+      "summary": "mutually acknowledged meeting plan, pet-needs checklist, versioned simulated terms, acceptance records, and cancellation/revision actions.",
+      "group": "handover",
+      "phase": "adoption",
+      "branch": "trust",
+      "priority": "core",
+      "dependencies": [
+        "F18",
+        "F08"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F20-meeting-readiness-checklist-and-agreement-acceptance-new/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F21",
+      "title": "Confirm handover and close competing requests",
+      "shortTitle": "Two-party handover",
+      "summary": "two separate confirmations, handover snapshot, authoritative completion event, and exactly one follow-up plan.",
+      "group": "handover",
+      "phase": "adoption",
+      "branch": "trust",
+      "priority": "core",
+      "dependencies": [
+        "F20"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F21-confirm-handover-and-close-competing-requests/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F22",
+      "title": "Adoption and exchange history",
+      "shortTitle": "Placement history",
+      "summary": "member-scoped history, roles for each event, status/date filters, accepted snapshots, and returns/cancellations distinguished from successful handovers.",
+      "group": "handover",
+      "phase": "adoption",
+      "branch": "trust",
+      "priority": "core",
+      "dependencies": [
+        "F21"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F22-adoption-and-exchange-history/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F23",
+      "title": "Private post-adoption updates for 90 days",
+      "shortTitle": "Private follow-up",
+      "summary": "plan with six task dates, structured care/support answers, recent photos on later tasks, revision history, received time, and access policy agreed before handover.",
+      "group": "followup",
+      "phase": "care",
+      "branch": "adoption",
+      "priority": "core",
+      "dependencies": [
+        "F21"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F23-private-post-adoption-updates-for-90-days-expanded/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F24",
+      "title": "Follow-up reminders, lateness, and extensions",
+      "shortTitle": "Due tasks & extensions",
+      "summary": "authoritative deadlines, in-app due/overdue state, retryable reminder events, explicit extensions, and assigned review tasks.",
+      "group": "followup",
+      "phase": "care",
+      "branch": "adoption",
+      "priority": "core",
+      "dependencies": [
+        "F23"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F24-follow-up-reminders-lateness-and-extensions-new/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F25",
+      "title": "Welfare concerns, evidence, and urgent case triage",
+      "shortTitle": "Welfare case review",
+      "summary": "private case tied to pet/adoption, allegation text, optional evidence, urgency, reporter protection, reviewer assignment, response record, and outcome reasons.",
+      "group": "welfare",
+      "phase": "care",
+      "branch": "trust",
+      "priority": "core",
+      "dependencies": [
+        "F23",
+        "F29"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F25-welfare-concerns-evidence-and-urgent-case-triage-new/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F26",
+      "title": "Voluntary return, disputed recovery, and relisting",
+      "shortTitle": "Supported returns",
+      "summary": "adopter help/return request, Host concern/request, destination suitability review, transfer agreement, two confirmations, interim-care record, and custody history.",
+      "group": "welfare",
+      "phase": "care",
+      "branch": "trust",
+      "priority": "core",
+      "dependencies": [
+        "F25",
+        "F21"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F26-voluntary-return-disputed-recovery-and-relisting-new/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F27",
+      "title": "Appeals, restrictions, and sensitive-case decisions",
+      "shortTitle": "Appeals & restrictions",
+      "summary": "reasoned decisions, member notice, appeal route, reassignment, evidence access log, restriction expiry/review, and preserved support access.",
+      "group": "welfare",
+      "phase": "care",
+      "branch": "trust",
+      "priority": "core",
+      "dependencies": [
+        "F25",
+        "F05"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F27-appeals-restrictions-and-sensitive-case-decisions-new/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F28",
+      "title": "Reviews and ratings after adoption/exchange",
+      "shortTitle": "Participant reviews",
+      "summary": "one review per party per confirmed handover, limited edit window, moderation/reporting, and clear rating criteria.",
+      "group": "reputation",
+      "phase": "care",
+      "branch": "discovery",
+      "priority": "suggested",
+      "dependencies": [
+        "F21",
+        "F29"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F28-reviews-and-ratings-after-adoption-exchange/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F29",
+      "title": "General reporting of listings, posts, comments, and accounts",
+      "shortTitle": "Report content & accounts",
+      "summary": "target type/ID, category, reason, optional evidence, reporter ID/access, status, Admin resolution, and duplicate handling.",
+      "group": "welfare",
+      "phase": "care",
+      "branch": "trust",
+      "priority": "core",
+      "dependencies": [
+        "F01",
+        "F12",
+        "F39"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F29-general-reporting-of-listings-posts-comments-and-accounts/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F30",
+      "title": "Push notifications, in-app inbox, and read status",
+      "shortTitle": "Notifications & inbox",
+      "summary": "durable in-app event/inbox records, device tokens per account/device, permissions, delivery retries where appropriate, deep-link authorization, and recipient-owned read status.",
+      "group": "followup",
+      "phase": "care",
+      "branch": "adoption",
+      "priority": "suggested",
+      "dependencies": [
+        "F18",
+        "F10"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F30-push-notifications-in-app-inbox-and-read-status/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F31",
+      "title": "Community feed, personal posts, likes, comments, and news",
+      "shortTitle": "Community feed & news",
+      "summary": "explicit post type, author, text/media, visibility, moderation, pagination, reaction uniqueness, comment lifecycle, and report actions. Admin news uses the same controlled publishing model with its own authoring permissions.",
+      "group": "social",
+      "phase": "expansion",
+      "branch": "community",
+      "priority": "suggested",
+      "dependencies": [
+        "F01",
+        "F39",
+        "F29"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F31-community-feed-personal-posts-likes-comments-and-news/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F32",
+      "title": "Lost and found pets",
+      "shortTitle": "Lost & found",
+      "summary": "lost/found types, approximate area/time, photos, private proof-of-ownership questions, claim workflow, and resolved/expired states.",
+      "group": "reunite",
+      "phase": "expansion",
+      "branch": "community",
+      "priority": "suggested",
+      "dependencies": [
+        "F06",
+        "F29"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F32-lost-and-found-pets/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F33",
+      "title": "Temporary care/fostering while away",
+      "shortTitle": "Temporary care",
+      "summary": "explicit nonpermanent custody, date range, care instructions, medications, supplies/cost policy, emergency contact, both-party intake and return confirmation.",
+      "group": "temporary",
+      "phase": "expansion",
+      "branch": "community",
+      "priority": "suggested",
+      "dependencies": [
+        "F20",
+        "F25"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F33-temporary-care-fostering-while-away/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F34",
+      "title": "Pet exchange",
+      "shortTitle": "Pet exchange",
+      "summary": "definition of exchange, two pet IDs, two care disclosures, two suitability decisions, linked agreement, and a four-sided confirmation model covering each member's relinquishment and receipt.",
+      "group": "exchange",
+      "phase": "expansion",
+      "branch": "adoption",
+      "priority": "suggested",
+      "dependencies": [
+        "F18",
+        "F21",
+        "F25"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F34-pet-exchange/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F35",
+      "title": "GPS, nearby pets, and vet/pet-shop maps",
+      "shortTitle": "Nearby pets & maps",
+      "summary": "location permission, approximate location option, directory/maps provider, API credential restrictions, place freshness, distance calculation, and no-permission fallback.",
+      "group": "nearby",
+      "phase": "expansion",
+      "branch": "discovery",
+      "priority": "suggested",
+      "dependencies": [
+        "F12",
+        "F11"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F35-gps-nearby-pets-and-vet-pet-shop-maps/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F36",
+      "title": "Vaccination and deworming reminders",
+      "shortTitle": "Care-date reminders",
+      "summary": "user/vet-entered due dates, pet association, timezone, edit/cancel/snooze, and notification settings.",
+      "group": "reminders",
+      "phase": "expansion",
+      "branch": "platform",
+      "priority": "suggested",
+      "dependencies": [
+        "F21",
+        "F08"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F36-vaccination-and-deworming-reminders/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F37",
+      "title": "Personalized pet recommendations",
+      "shortTitle": "Pet recommendations",
+      "summary": "stated input signals, member opt-out/reset, an explainable ranking, and data minimization.",
+      "group": "nearby",
+      "phase": "expansion",
+      "branch": "discovery",
+      "priority": "suggested",
+      "dependencies": [
+        "F12",
+        "F13"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F37-personalized-pet-recommendations/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F38",
+      "title": "Vietnamese/English, dark mode, accessibility, and rotation",
+      "shortTitle": "Rotation & accessible UI",
+      "summary": "resource-based strings, date formats, contrast-aware themes, scalable text, screen-reader labels, responsive layout, preserved navigation/form state, and keyboard handling.",
+      "group": "platform-base",
+      "phase": "foundation",
+      "branch": "platform",
+      "priority": "foundation",
+      "dependencies": [
+        "F42"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F38-vietnamese-english-dark-mode-accessibility-and-rotation/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F39",
+      "title": "Mobile Admin content and case tools",
+      "shortTitle": "Mobile Admin tools",
+      "summary": "compact queues for listings, reports, welfare/return cases, and community/news where enabled; detail/decision screens, reason fields, revision checks, and action history.",
+      "group": "moderation",
+      "phase": "core",
+      "branch": "trust",
+      "priority": "core",
+      "dependencies": [
+        "F05",
+        "F10"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F39-mobile-admin-content-and-case-tools/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F40",
+      "title": "Dashboard and statistics",
+      "shortTitle": "Dashboard & statistics",
+      "summary": "definitions for users, pets, listings, pending review, available/reserved/placed pets, requests, confirmed handovers, reports, active cases, and returns; reporting time window and aggregation method.",
+      "group": "insights",
+      "phase": "expansion",
+      "branch": "trust",
+      "priority": "suggested",
+      "dependencies": [
+        "F10",
+        "F21",
+        "F29"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F40-dashboard-and-statistics/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F41",
+      "title": "SQLite cache, offline viewing, drafts, and synchronization",
+      "shortTitle": "SQLite & offline pages",
+      "summary": "explicit division between Firestore authority, SQLite views/drafts, and image-file cache; record versions, lastFetchedAt, account-scoped private data, logout cleanup, and reconnect policy.",
+      "group": "offline",
+      "phase": "care",
+      "branch": "platform",
+      "priority": "suggested",
+      "dependencies": [
+        "F12",
+        "F07",
+        "F01"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F41-sqlite-cache-offline-viewing-drafts-and-synchronization/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F42",
+      "title": "Firebase services, trusted operations, cost, and security",
+      "shortTitle": "Firebase & access rules",
+      "summary": "Firestore as required by course, Auth, media storage choice, protected roles, Firestore/Storage rules, trusted execution for scheduled/privileged work, bounded queries/uploads, and separate demo configuration.",
+      "group": "platform-base",
+      "phase": "foundation",
+      "branch": "platform",
+      "priority": "foundation",
+      "dependencies": [],
+      "registration": "registered",
+      "requestPath": "../request_feature/F42-firebase-services-trusted-operations-cost-and-security/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F43",
+      "title": "Account deletion, retention, and private evidence",
+      "shortTitle": "Deletion & retention",
+      "summary": "record-class retention policy, deletion request/status, public removal, dependency checks, media/local-cache cleanup, anonymization rules, and clear separation between personal data and historical events.",
+      "group": "welfare",
+      "phase": "care",
+      "branch": "trust",
+      "priority": "core",
+      "dependencies": [
+        "F01",
+        "F21",
+        "F29"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F43-account-deletion-retention-and-private-evidence-new/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    },
+    {
+      "id": "F44",
+      "title": "Support, care guidance, and prototype boundaries",
+      "shortTitle": "Help & care guidance",
+      "summary": "easy help entry points, adoption-care checklist, report/return explanations, visible simulated status, demo contacts, and clear non-emergency scope.",
+      "group": "welfare",
+      "phase": "care",
+      "branch": "trust",
+      "priority": "core",
+      "dependencies": [
+        "F01",
+        "F25"
+      ],
+      "registration": "registered",
+      "requestPath": "../request_feature/F44-support-care-guidance-and-prototype-boundaries-new/README.md",
+      "analysis": {
+        "status": "needs_analysis",
+        "revision": null,
+        "approvedRevision": null,
+        "path": "",
+        "approvalEvidence": ""
+      },
+      "implementation": {
+        "status": "not_started",
+        "evidence": ""
+      },
+      "notes": "",
+      "addedAt": "2026-10-11"
+    }
+  ],
+  "changes": [
+    {
+      "id": "initial-plan",
+      "at": "2026-10-11",
+      "kind": "baseline",
+      "summary": "Registered 44 source requests and proposed a dependency roadmap. No feature approval or implementation completion inferred."
+    }
+  ]
+}
