@@ -1,3 +1,7 @@
 <resources>
-    <string name="app_name">Project</string>
+    <string name="app_name">AniLove</string>
+    <string name="nav_home">Trang chủ</string>
+    <string name="nav_favorites">Yêu thích</string>
+    <string name="nav_chat">Tin nhắn</string>
+    <string name="nav_profile">Cá nhân</string>
 </resources>

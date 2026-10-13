@@ -1,5 +1,6 @@
 package com.gmail.manhle240406.project.profile;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -53,6 +54,13 @@ public final class ProfileActivity extends AppCompatActivity {
         button(R.id.profile_reload).setOnClickListener(v->discard(()->model.load(true)));
         button(R.id.profile_retry).setOnClickListener(v->model.retry());
         button(R.id.profile_resolve).setOnClickListener(v->showConflict());
+        button(R.id.profile_pets).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.pet.PetActivity.class)));
+        button(R.id.profile_listings).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.listing.ListingActivity.class)));
+        button(R.id.profile_logout).setOnClickListener(v -> new MaterialAlertDialogBuilder(this)
+            .setMessage(R.string.listing_logout)
+            .setPositiveButton(R.string.listing_logout_now, (d, w) -> logout())
+            .setNegativeButton(R.string.listing_logout_save, (d, w) -> startActivity(new Intent(this, com.gmail.manhle240406.project.listing.ListingActivity.class)))
+            .setNeutralButton(android.R.string.cancel, null).show());
         button(R.id.profile_back).setOnClickListener(v->discard(this::finish));
         getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){public void handleOnBackPressed(){discard(ProfileActivity.this::finish);}});
         model.changes.observe(this,ignored->render());
@@ -125,5 +133,10 @@ public final class ProfileActivity extends AppCompatActivity {
         if(model.conflictedCommand!=null && model.conflictedCommand.kind==ProfileCommand.Kind.VISIBILITY)
             edited+="\n"+getString("public".equals(model.conflictedCommand.payload.get("visibility"))?R.string.profile_show:R.string.profile_hide);
         dialog=new MaterialAlertDialogBuilder(this).setTitle(R.string.profile_conflict).setMessage(getString(R.string.profile_compare,getString(R.string.profile_conflict),privateText(model.snapshot),privateText(model.conflict),edited)).setPositiveButton(R.string.profile_keep,(d,w)->model.resolveConflict(true)).setNegativeButton(R.string.profile_discard,(d,w)->model.resolveConflict(false)).setCancelable(true).show();}
+    private void logout() {
+        ((AniloveApplication)getApplication()).auth().logout();
+        startActivity(new Intent(this, com.gmail.manhle240406.project.auth.AuthActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK));
+        finish();
+    }
     @Override protected void onDestroy(){if(dialog!=null)dialog.dismiss();super.onDestroy();}
 }

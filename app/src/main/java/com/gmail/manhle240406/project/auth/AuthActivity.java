@@ -51,11 +51,6 @@ public final class AuthActivity extends AppCompatActivity {
         button(R.id.auth_verify).setOnClickListener(v -> coordinator.sendVerification());
         button(R.id.auth_refresh).setOnClickListener(v -> coordinator.refreshVerification());
         button(R.id.auth_retry_setup).setOnClickListener(v -> coordinator.refreshReadiness());
-        button(R.id.auth_profile).setOnClickListener(v -> startActivity(new android.content.Intent(this, com.gmail.manhle240406.project.profile.ProfileActivity.class)));
-        button(R.id.auth_pets).setOnClickListener(v -> startActivity(new android.content.Intent(this, com.gmail.manhle240406.project.pet.PetActivity.class)));
-        button(R.id.auth_listings).setOnClickListener(v -> startActivity(new android.content.Intent(this, com.gmail.manhle240406.project.listing.ListingActivity.class)));
-        button(R.id.auth_community).setOnClickListener(v -> startActivity(new android.content.Intent(this, com.gmail.manhle240406.project.MainActivity.class).addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)));
-        button(R.id.auth_logout).setOnClickListener(v -> new com.google.android.material.dialog.MaterialAlertDialogBuilder(this).setMessage(R.string.listing_logout).setPositiveButton(R.string.listing_logout_now,(d,w)->logout()).setNegativeButton(R.string.listing_logout_save,(d,w)->startActivity(new android.content.Intent(this,com.gmail.manhle240406.project.listing.ListingActivity.class))).setNeutralButton(android.R.string.cancel,null).show());
         button(R.id.auth_back).setOnClickListener(v -> leave());
         button(R.id.auth_visitor).setOnClickListener(v -> leave());
         password.setOnEditorActionListener((v, action, event) -> {
@@ -64,7 +59,23 @@ public final class AuthActivity extends AppCompatActivity {
         confirm.setOnEditorActionListener((v, action, event) -> {
             if (action == EditorInfo.IME_ACTION_DONE) { submit(); return true; } return false;
         });
-        coordinator.state().observe(this, this::render);
+        AuthState initial = coordinator.state().getValue();
+        if (initial != null && initial.uid != null) {
+            navigateToMain();
+            return;
+        }
+        coordinator.state().observe(this, state -> {
+            if (state != null && state.uid != null) {
+                navigateToMain();
+                return;
+            }
+            render(state);
+        });
+    }
+    private void navigateToMain() {
+        startActivity(new android.content.Intent(this, com.gmail.manhle240406.project.MainActivity.class)
+            .addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_NEW_TASK));
+        finish();
     }
     private MaterialButton button(int id) { return findViewById(id); }
     private TextInputLayout field(int id) { return findViewById(id); }

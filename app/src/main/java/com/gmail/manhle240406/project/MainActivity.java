@@ -1,3 +1,61 @@
 package com.gmail.manhle240406.project;
-/** Native feed main entry; protected routes preserve their own authority. */
-public final class MainActivity extends com.gmail.manhle240406.project.community.SocialFeedActivity {}
+
+import android.content.Intent;
+import android.os.Bundle;
+import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import com.gmail.manhle240406.project.home.HomeFragment;
+import com.gmail.manhle240406.project.profile.ProfileActivity;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+
+public class MainActivity extends AppCompatActivity {
+
+    private BottomNavigationView bottomNav;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_main);
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_root), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0);
+            return insets;
+        });
+
+        if (savedInstanceState == null) {
+            getSupportFragmentManager().beginTransaction()
+                .replace(R.id.main_fragment_container, new HomeFragment())
+                .commit();
+        }
+
+        bottomNav = findViewById(R.id.bottom_navigation);
+        bottomNav.setOnItemSelectedListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.nav_home) {
+                getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.main_fragment_container, new HomeFragment())
+                    .commit();
+                return true;
+            } else if (id == R.id.nav_favorites) {
+                getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.main_fragment_container, new HomeFragment())
+                    .commit();
+                return true;
+            } else if (id == R.id.nav_chat) {
+                getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.main_fragment_container, new HomeFragment())
+                    .commit();
+                return true;
+            } else if (id == R.id.nav_profile) {
+                startActivity(new Intent(this, ProfileActivity.class));
+                return true;
+            }
+            return false;
+        });
+    }
+}

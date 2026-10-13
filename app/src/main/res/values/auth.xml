@@ -43,6 +43,8 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">16dp</item>
     </style>
+    <string name="auth_app_title">AniLove</string>
+    <string name="auth_app_subtitle">Pet Adoption &amp; Welfare Mobile App</string>
     <string name="auth_entry">Tài khoản</string>
     <string name="auth_back">Quay lại</string>
     <string name="auth_signin_title">Chào mừng trở lại</string>
