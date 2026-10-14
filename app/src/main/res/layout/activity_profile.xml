@@ -321,6 +321,119 @@
             android:text="@string/listing_title" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/profile_notifications"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/notification_settings" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/profile_catalogs"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/catalog_title" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/profile_review"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/listing_review_title" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/profile_discovery"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/discovery_title" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/profile_pet_care"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/pet_care_title" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:text="@string/debug_section"
+            android:textColor="@color/anilove_primary"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_inbox"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_inbox" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_notifications"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_notifications" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_photos"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_photos" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_catalogs"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_catalogs" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_care"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_care" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_review"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_review" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_discovery"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_discovery" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_favorites"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_favorites" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/profile_logout"
             style="@style/AniLoveOutlinedButton"
             android:layout_width="match_parent"

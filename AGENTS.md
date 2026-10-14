@@ -10,3 +10,7 @@ Hard approval gate: no complete, presented detailed analysis means no feature ap
 Applicable project-local skills are in the planning root's `.agents/skills/anilove-ui/SKILL.md` and `.agents/skills/anilove-firebase-code/SKILL.md`. UI discovery uses Figma Bridge; new/materially changed implemented UI requires Impeccable's native audit. No separate custom external backend.
 
 This project is currently a native Android starter using Java and XML layouts. Preserve the existing stack unless the user requests an approved change. Put app code/config/tests here; keep requests, analyses, approval, and implementation tracking in the planning root. Exported roadmap/handoff files here are planning snapshots, not approval evidence. Never print secrets from local configuration.
+
+## Requested-scope boundary — 14 October 2026
+
+Follow planning implementation/WORKFLOW.md v2.0. Bare implement-feature means non-UI domain/data code and applicable tests/audit only. Do not modify presentation/Figma/layouts/navigation or wire the main app unless explicitly requested. UI design, UI-code implementation and wiring are separate flows; UI requirement flags grant no execution permission.

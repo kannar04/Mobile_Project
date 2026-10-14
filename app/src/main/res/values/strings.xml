@@ -4,4 +4,33 @@
     <string name="nav_favorites">Yêu thích</string>
     <string name="nav_chat">Tin nhắn</string>
     <string name="nav_profile">Cá nhân</string>
+    <string name="inbox_title">Hộp thư đến</string>
+    <string name="inbox_empty">Tất cả sạch trơn!\nChưa có thông báo mới.</string>
+    <string name="notification_settings">Cài đặt Thông báo</string>
+    <string name="pref_adoption">Yêu cầu nhận nuôi mới</string>
+    <string name="pref_messages">Tin nhắn</string>
+    <string name="pref_community">Cập nhật cộng đồng</string>
+    <string name="pref_admin">Tin tức từ Admin</string>
+    <string name="photo_gallery_title">Bộ sưu tập Ảnh</string>
+    <string name="photo_select_title">Chọn Ảnh</string>
+    <string name="photo_detail_title">Chi tiết Ảnh</string>
+    <string name="photo_add">Thêm ảnh mới</string>
+    <string name="photo_cover">Đặt làm Ảnh bìa</string>
+    <string name="photo_desc_hint">Thêm mô tả...</string>
+    <string name="photo_uploading">Đang tải lên</string>
+    <string name="catalog_title">Danh mục Loài &amp; Khu vực</string>
+    <string name="pet_care_title">Chi tiết Chăm sóc &amp; Sức khỏe</string>
+    <string name="listing_review_title">Phê duyệt Tin đăng</string>
+    <string name="discovery_title">Khám phá &amp; Tìm kiếm</string>
+    <string name="favorites_title">Yêu thích đã lưu</string>
+    <string name="share_title">Chia sẻ (Facebook, Zalo)</string>
+    <string name="debug_section">=== DEBUG &amp; TEST UI ===</string>
+    <string name="test_inbox">Test Hộp thư đến (F30)</string>
+    <string name="test_notifications">Test Cài đặt Thông báo (F30)</string>
+    <string name="test_photos">Test Tải ảnh &amp; Thư viện (F09)</string>
+    <string name="test_catalogs">Test Danh mục Loài/Khu vực (F11)</string>
+    <string name="test_care">Test Chăm sóc &amp; Sức khỏe (F08)</string>
+    <string name="test_review">Test Duyệt tin đăng (F10)</string>
+    <string name="test_discovery">Test Khám phá &amp; Tìm kiếm (F12/F13)</string>
+    <string name="test_favorites">Test Yêu thích đã lưu (F14)</string>
 </resources>

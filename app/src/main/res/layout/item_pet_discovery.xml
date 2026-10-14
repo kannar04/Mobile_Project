@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="6dp"
+    android:background="@drawable/anilove_card_bg"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="140dp">
+
+        <ImageView
+            android:id="@+id/pet_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@drawable/profile_avatar_dog" />
+
+        <!-- Favorite Heart Icon -->
+        <ImageView
+            android:id="@+id/pet_favorite_btn"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_alignParentEnd="true"
+            android:layout_margin="8dp"
+            android:background="@drawable/anilove_badge_bg"
+            android:padding="6dp"
+            android:src="@drawable/ic_nav_favorite"
+            app:tint="@color/anilove_primary" />
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/pet_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="Bông"
+        android:textColor="@color/anilove_text_dark"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/pet_breed_age"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="Poodle · 3 tháng"
+        android:textColor="@color/anilove_text_muted"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/pet_region"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/anilove_chip_bg"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="3dp"
+        android:text="Quận 7, TP.HCM"
+        android:textColor="@color/anilove_text_dark"
+        android:textSize="11sp" />
+</LinearLayout>

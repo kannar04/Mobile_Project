@@ -42,14 +42,10 @@ public class MainActivity extends AppCompatActivity {
                     .commit();
                 return true;
             } else if (id == R.id.nav_favorites) {
-                getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.main_fragment_container, new HomeFragment())
-                    .commit();
+                startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.FavoritesActivity.class));
                 return true;
             } else if (id == R.id.nav_chat) {
-                getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.main_fragment_container, new HomeFragment())
-                    .commit();
+                startActivity(new Intent(this, com.gmail.manhle240406.project.notifications.InboxActivity.class));
                 return true;
             } else if (id == R.id.nav_profile) {
                 startActivity(new Intent(this, ProfileActivity.class));

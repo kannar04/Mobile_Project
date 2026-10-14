@@ -55,7 +55,20 @@ public final class ProfileActivity extends AppCompatActivity {
         button(R.id.profile_retry).setOnClickListener(v->model.retry());
         button(R.id.profile_resolve).setOnClickListener(v->showConflict());
         button(R.id.profile_pets).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.pet.PetActivity.class)));
+        button(R.id.profile_notifications).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.notifications.NotificationSettingsActivity.class)));
+        button(R.id.profile_catalogs).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.CatalogActivity.class)));
+        button(R.id.profile_review).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.ListingReviewActivity.class)));
+        button(R.id.profile_discovery).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.DiscoveryActivity.class)));
+        button(R.id.profile_pet_care).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.PetCareActivity.class)));
         button(R.id.profile_listings).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.listing.ListingActivity.class)));
+        button(R.id.debug_inbox).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.notifications.InboxActivity.class)));
+        button(R.id.debug_notifications).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.notifications.NotificationSettingsActivity.class)));
+        button(R.id.debug_photos).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.media.PhotoGalleryActivity.class)));
+        button(R.id.debug_catalogs).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.CatalogActivity.class)));
+        button(R.id.debug_care).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.PetCareActivity.class)));
+        button(R.id.debug_review).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.ListingReviewActivity.class)));
+        button(R.id.debug_discovery).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.DiscoveryActivity.class)));
+        button(R.id.debug_favorites).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.FavoritesActivity.class)));
         button(R.id.profile_logout).setOnClickListener(v -> new MaterialAlertDialogBuilder(this)
             .setMessage(R.string.listing_logout)
             .setPositiveButton(R.string.listing_logout_now, (d, w) -> logout())

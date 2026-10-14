@@ -31,6 +31,14 @@
         <activity android:name=".pet.PetDetailActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".pet.PostPetActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".profile.ProfileActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".notifications.InboxActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".notifications.NotificationSettingsActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".media.PhotoGalleryActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.CatalogActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.PetCareActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.ListingReviewActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.DiscoveryActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.FavoritesActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".auth.AuthActivity"
             android:exported="true"
