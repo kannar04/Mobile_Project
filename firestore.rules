@@ -1345,6 +1345,34 @@ service cloud.firestore {
     match /experienceReviewAggregates/{uid} {allow get: if publicFeedback(uid);allow list,write: if false;}
 
     // F06_TEST_PROBE_ANCHOR: only the emulator test loader injects a temporary predicate probe.
+    // F32-F41 scoped extensions: all consequential writes remain managed-only.
+    function extensionOn(key) {let p=get(/databases/$(database)/documents/extensionRuntimePolicy/current);return p!=null && p.data.schemaVersion==1 && p.data.get(key,false)==true;}
+    function extensionMember() {return request.auth!=null && basicMemberReady(request.auth.uid);}
+    function noticeClaimParty(n,c) {let notice=get(/databases/$(database)/documents/lostFoundNotices/$(n));let claim=get(/databases/$(database)/documents/noticeClaims/$(n)/claims/$(c));return request.auth!=null && profileOwner(request.auth.uid) && notice!=null && claim!=null && (request.auth.uid==notice.data.authorUid || request.auth.uid==claim.data.claimantUid);}
+    function extensionSubjectActive(uid) {let s=get(/databases/$(database)/documents/securitySubjects/$(uid));let m=get(/databases/$(database)/documents/communityMemberships/$(uid));return (s==null || s.data.status=='active') && m!=null && m.data.status=='active';}
+    function currentNotice(id) {let n=get(/databases/$(database)/documents/lostFoundNotices/$(id));return n!=null && n.data.state=='open' && n.data.hold=='clear' && n.data.expiresAt>request.time && extensionSubjectActive(n.data.authorUid) && scopeAllows(n.data.authorUid,'community_publication');}
+    match /lostFoundFeed/{id} {
+      allow get: if extensionOn('lostFoundPublication') && extensionMember() && currentNotice(id) && resource.data.keys().hasOnly(['schemaVersion','noticeId','authorUid','contentVersion','state','firstPublishedAt','expiresAt','type','regionId','speciesId','description','eventDate','precision','zoneId','media']);
+      // Managed bounded page reader rechecks every source; no unsafe cross-parent SDK query.
+      allow list,write: if false;
+    }
+    match /lostFoundNotices/{id} {allow get: if profileOwner(resource.data.authorUid);allow list,write: if false;match /revisions/{revision} {allow get: if profileOwner(get(/databases/$(database)/documents/lostFoundNotices/$(id)).data.authorUid);allow list,write: if false;}}
+    match /noticeProof/{id} {allow get: if profileOwner(resource.data.authorUid);allow list,write: if false;}
+    match /noticeClaims/{n}/claims/{c} {allow get: if noticeClaimParty(n,c);allow list,write: if false;match /revisions/{revision} {allow get: if noticeClaimParty(n,c);allow list,write: if false;}match /clarifications/{event} {allow get: if noticeClaimParty(n,c);allow list,write: if false;}}
+    match /{kind}/{uid}/items/{id} {allow get: if kind in ['claimPartyViews','fosterPartyViews','exchangePartyViews'] && profileOwner(uid);allow list: if kind in ['claimPartyViews','fosterPartyViews','exchangePartyViews'] && profileOwner(uid) && page20();allow write: if false;}
+    match /{kind}/{uid}/operations/{id} {allow get: if kind in ['lostFoundReceipts','fosterReceipts','exchangeReceipts','discoveryPreferenceReceipts','reminderReceipts','metricReceipts'] && profileOwner(uid);allow list: if kind in ['lostFoundReceipts','fosterReceipts','exchangeReceipts','discoveryPreferenceReceipts','reminderReceipts','metricReceipts'] && profileOwner(uid) && page20();allow write: if false;}
+    match /careAdvertisements/{id} {allow get: if profileOwner(resource.data.authorUid);allow list,write: if false;}
+    match /careAdvertFeed/{id} {allow get: if extensionMember() && extensionOn('fosterPublication') && resource.data.state=='published' && resource.data.startAt>request.time && extensionSubjectActive(resource.data.authorUid);allow list,write: if false;}
+    match /fosterArrangements/{id} {allow get: if profileOwner(resource.data.ownerUid) || profileOwner(resource.data.caregiverUid);allow list,write: if false;}
+    match /exchanges/{id} {allow get: if profileOwner(resource.data.proposerUid) || profileOwner(resource.data.recipientUid);allow list,write: if false;}
+    match /exchangeProposals/{id} {allow get: if profileOwner(resource.data.proposerUid) || profileOwner(resource.data.recipientUid);allow list,write: if false;}
+    match /users/{uid}/recommendationPreferences/{id} {allow get: if profileOwner(uid) && id=='current';allow list,write: if false;}
+    match /users/{uid}/discoveryPreferences/{id} {allow get: if profileOwner(uid) && id=='nearby';allow list,write: if false;}
+    function ownCurrentReminder(uid,d) {let entitlement=get(/databases/$(database)/documents/caregiverEntitlements/$(d.petId));let pet=get(/databases/$(database)/documents/pets/$(d.petId));return profileOwner(uid) && d.ownerUid==uid && entitlement!=null && pet!=null && pet.data.lifecycle=='active' && entitlement.data.currentUid==uid && entitlement.data.state=='active' && entitlement.data.custodyVersion==d.custodyVersion && pet.data.custodyVersion==d.custodyVersion;}
+    match /users/{uid}/careReminders/{id} {allow get: if extensionOn('careReminders') && ownCurrentReminder(uid,resource.data);allow list: if extensionOn('careReminders') && request.query.limit!=null && request.query.limit>0 && request.query.limit<=50 && ownCurrentReminder(uid,resource.data);allow write: if false;match /revisions/{revision} {allow get: if ownCurrentReminder(uid,resource.data);allow list,write: if false;}}
+    match /reminderScheduleIntents/{uid}/items/{id} {allow get: if profileOwner(uid);allow list,write: if false;}
+    // Dashboard sources/contributions/aggregates, private transfer terms, review
+    // decisions and source adapters have no raw SDK access, even for Admin.
     match /{document=**} { allow read, write: if false; }
   }
 }

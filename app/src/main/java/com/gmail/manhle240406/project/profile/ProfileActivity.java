@@ -76,6 +76,23 @@ public final class ProfileActivity extends AppCompatActivity {
         button(R.id.debug_meeting_planner).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.MeetingPlannerActivity.class)));
         button(R.id.debug_handover).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.HandoverActivity.class)));
         button(R.id.debug_adoption_history).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.AdoptionHistoryActivity.class)));
+        button(R.id.debug_f08_r3).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.AdvancedPetCareActivity.class)));
+        button(R.id.debug_f39).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.AdminCaseToolsActivity.class)));
+        button(R.id.debug_f44).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.SupportCenterActivity.class)));
+        button(R.id.debug_f23).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.PostAdoptionTimelineActivity.class)));
+        button(R.id.debug_f24).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.FollowupExtensionsActivity.class)));
+        button(R.id.debug_f25).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.WelfareConcernsActivity.class)));
+        button(R.id.debug_f26).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.VoluntaryReturnActivity.class)));
+        button(R.id.debug_f27).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.AppealsActivity.class)));
+        button(R.id.debug_f28).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.PlacementReviewsActivity.class)));
+        button(R.id.debug_f32).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.LostAndFoundActivity.class)));
+        button(R.id.debug_f33).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.FosteringActivity.class)));
+        button(R.id.debug_f34).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.PetExchangeActivity.class)));
+        button(R.id.debug_f35).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.NearbyMapActivity.class)));
+        button(R.id.debug_f36).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.RemindersActivity.class)));
+        button(R.id.debug_f37).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.RecommendationsActivity.class)));
+        button(R.id.debug_f40).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.AdminDashboardActivity.class)));
+        button(R.id.debug_f41).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.OfflineSyncActivity.class)));
         button(R.id.profile_logout).setOnClickListener(v -> new MaterialAlertDialogBuilder(this)
             .setMessage(R.string.listing_logout)
             .setPositiveButton(R.string.listing_logout_now, (d, w) -> logout())

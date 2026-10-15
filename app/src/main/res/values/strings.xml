@@ -47,4 +47,40 @@
     <string name="test_meeting_planner">Test Lên lịch hẹn (F20)</string>
     <string name="test_handover">Test Bàn giao Thú cưng (F21)</string>
     <string name="test_adoption_history">Test Lịch sử Nhận nuôi (F22)</string>
+    <string name="f08_r3_title">Chi tiết Chăm sóc Nâng cao (F08)</string>
+    <string name="f39_title">Quản trị Admin &amp; Ca phúc lợi (F39)</string>
+    <string name="f44_title">Trung tâm Trợ giúp &amp; Hướng dẫn (F44)</string>
+    <string name="f23_title">Nhật ký Sau nhận nuôi 90 ngày (F23)</string>
+    <string name="f24_title">Nhắc nhở &amp; Gia hạn Cập nhật (F24)</string>
+    <string name="f25_title">Báo cáo Phúc lợi &amp; Khẩn cấp (F25)</string>
+    <string name="f26_title">Yêu cầu Trợ giúp &amp; Trả lại (F26)</string>
+    <string name="f27_title">Kháng cáo &amp; Quyết định (F27)</string>
+    <string name="f28_title">Đánh giá &amp; Review Sau nhận nuôi (F28)</string>
+
+    <string name="test_f08_r3">Test Sức khỏe Nâng cao (F08 r3)</string>
+    <string name="test_f39">Test Quản trị Admin Hub (F39)</string>
+    <string name="test_f44">Test Trung tâm Trợ giúp (F44)</string>
+    <string name="test_f23">Test Nhật ký 90 ngày (F23)</string>
+    <string name="test_f24">Test Gia hạn Cập nhật (F24)</string>
+    <string name="test_f25">Test Báo cáo Phúc lợi (F25)</string>
+    <string name="test_f26">Test Trả lại &amp; Relisting (F26)</string>
+    <string name="test_f27">Test Kháng cáo Quyết định (F27)</string>
+    <string name="test_f28">Test Đánh giá &amp; Review (F28)</string>
+    <string name="f32_title">Thú cưng Thất lạc &amp; Tìm thấy (F32)</string>
+    <string name="f33_title">Chăm sóc Tạm thời / Fostering (F33)</string>
+    <string name="f34_title">Trao đổi Thú cưng (F34)</string>
+    <string name="f35_title">Bản đồ &amp; Thú cưng Quanh đây (F35)</string>
+    <string name="f36_title">Lịch Nhắc nhở Tiêm phòng &amp; Tẩy giun (F36)</string>
+    <string name="f37_title">Gợi ý Thú cưng Phù hợp (F37)</string>
+    <string name="f40_title">Thống kê &amp; Dashboard Quản trị (F40)</string>
+    <string name="f41_title">Dữ liệu Offline &amp; Đồng bộ (F41)</string>
+
+    <string name="test_f32">Test Thú cưng Thất lạc (F32)</string>
+    <string name="test_f33">Test Chăm sóc Tạm thời (F33)</string>
+    <string name="test_f34">Test Trao đổi Thú cưng (F34)</string>
+    <string name="test_f35">Test Bản đồ Quanh đây (F35)</string>
+    <string name="test_f36">Test Lịch Nhắc nhở (F36)</string>
+    <string name="test_f37">Test Gợi ý Thú cưng (F37)</string>
+    <string name="test_f40">Test Dashboard Thống kê (F40)</string>
+    <string name="test_f41">Test Cache Offline &amp; Sync (F41)</string>
 </resources>

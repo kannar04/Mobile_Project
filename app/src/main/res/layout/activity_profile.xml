@@ -490,6 +490,142 @@
             android:text="@string/test_adoption_history" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_f08_r3"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_f08_r3" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_f39"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_f39" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_f44"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_f44" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_f23"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_f23" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_f24"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_f24" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_f25"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_f25" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_f26"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_f26" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_f27"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_f27" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_f28"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_f28" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_f32"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_f32" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_f33"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_f33" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_f34"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_f34" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_f35"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_f35" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_f36"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_f36" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_f37"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_f37" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_f40"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_f40" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_f41"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_f41" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/profile_logout"
             style="@style/AniLoveOutlinedButton"
             android:layout_width="match_parent"

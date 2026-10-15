@@ -12,7 +12,9 @@
     "test:placement-domain": "node --test placement-domain.test.mjs",
     "test:placement-rules": "firebase emulators:exec --config ../firebase.feature-tests.json --project demo-anilove-feature-tests --only auth,firestore \"node --test placement-rules.test.mjs\"",
     "test:safety-domain": "node --test safety-domain.test.mjs",
-    "test:safety-rules": "firebase emulators:exec --config ../firebase.feature-tests.json --project demo-anilove-feature-tests --only auth,firestore \"node --test safety-rules.test.mjs\""
+    "test:safety-rules": "firebase emulators:exec --config ../firebase.feature-tests.json --project demo-anilove-feature-tests --only auth,firestore \"node --test safety-rules.test.mjs\"",
+    "test:extensions-domain": "node --test extensions-domain.test.mjs",
+    "test:extensions-rules": "firebase emulators:exec --config ../firebase.feature-tests.json --project demo-anilove-feature-tests --only auth,firestore \"node --test extensions-rules.test.mjs\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "5.0.0",

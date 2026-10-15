@@ -46,6 +46,23 @@
         <activity android:name=".adoption.MeetingPlannerActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".adoption.HandoverActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".adoption.AdoptionHistoryActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.AdvancedPetCareActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.AdminCaseToolsActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.SupportCenterActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.PostAdoptionTimelineActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.FollowupExtensionsActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.WelfareConcernsActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.VoluntaryReturnActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.AppealsActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.PlacementReviewsActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.LostAndFoundActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.FosteringActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.PetExchangeActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.NearbyMapActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.RemindersActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.RecommendationsActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.AdminDashboardActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.OfflineSyncActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".auth.AuthActivity"
             android:exported="true"
