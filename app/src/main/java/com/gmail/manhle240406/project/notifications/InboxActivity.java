@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.ViewSwitcher;
 import androidx.annotation.NonNull;
@@ -17,6 +16,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.gmail.manhle240406.project.R;
+import com.gmail.manhle240406.project.community.ChatDetailActivity;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,6 +42,11 @@ public class InboxActivity extends AppCompatActivity {
 
         switcher = findViewById(R.id.inbox_switcher);
         findViewById(R.id.inbox_toggle_empty).setOnClickListener(v -> switcher.showNext());
+        
+        View pushBanner = findViewById(R.id.inbox_push_banner);
+        if (pushBanner != null) {
+            pushBanner.setOnClickListener(v -> startActivity(new Intent(this, ChatDetailActivity.class)));
+        }
 
         RecyclerView recyclerView = findViewById(R.id.inbox_recycler);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -80,6 +85,9 @@ public class InboxActivity extends AppCompatActivity {
             holder.message.setText(item.message);
             holder.time.setText(item.time);
             holder.unreadDot.setVisibility(item.unread ? View.VISIBLE : View.GONE);
+            holder.itemView.setOnClickListener(v -> 
+                v.getContext().startActivity(new Intent(v.getContext(), ChatDetailActivity.class))
+            );
         }
 
         @Override

@@ -434,6 +434,62 @@
             android:text="@string/test_favorites" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_questionnaire"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_questionnaire" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_my_applications"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_my_applications" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_host_applications"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_host_applications" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_chat_list"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_chat_list" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_meeting_planner"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_meeting_planner" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_handover"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_handover" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_adoption_history"
+            style="@style/AniLoveOutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/test_adoption_history" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/profile_logout"
             style="@style/AniLoveOutlinedButton"
             android:layout_width="match_parent"

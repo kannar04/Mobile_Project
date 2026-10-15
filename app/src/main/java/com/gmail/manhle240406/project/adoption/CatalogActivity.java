@@ -2,11 +2,13 @@ package com.gmail.manhle240406.project.adoption;
 
 import android.os.Bundle;
 import android.widget.TextView;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -44,27 +46,25 @@ public class CatalogActivity extends AppCompatActivity {
         @NonNull
         @Override
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            TextView tv = new TextView(parent.getContext());
-            tv.setPadding(24, 24, 24, 24);
-            tv.setBackgroundResource(R.drawable.anilove_card_bg);
-            tv.setTextSize(15f);
-            tv.setTextColor(0xFF2D2D2D);
-            return new ViewHolder(tv);
+            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_catalog, parent, false);
+            return new ViewHolder(v);
         }
 
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            holder.text.setText(data.get(position));
+            holder.name.setText(data.get(position));
         }
 
         @Override
         public int getItemCount() { return data.size(); }
 
         static class ViewHolder extends RecyclerView.ViewHolder {
-            TextView text;
-            public ViewHolder(@NonNull TextView itemView) {
+            TextView name;
+            SwitchCompat switchCompat;
+            public ViewHolder(@NonNull View itemView) {
                 super(itemView);
-                text = itemView;
+                name = itemView.findViewById(R.id.catalog_name);
+                switchCompat = itemView.findViewById(R.id.catalog_switch);
             }
         }
     }

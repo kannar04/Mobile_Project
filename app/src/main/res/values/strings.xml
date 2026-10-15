@@ -33,4 +33,18 @@
     <string name="test_review">Test Duyệt tin đăng (F10)</string>
     <string name="test_discovery">Test Khám phá &amp; Tìm kiếm (F12/F13)</string>
     <string name="test_favorites">Test Yêu thích đã lưu (F14)</string>
+    <string name="questionnaire_title">Khảo sát Mức độ Phù hợp (F16)</string>
+    <string name="my_applications_title">Hồ sơ Nhận nuôi của tôi (F17)</string>
+    <string name="host_applications_title">Quản lý Yêu cầu Nhận nuôi (F18)</string>
+    <string name="chat_list_title">Tin nhắn &amp; Trò chuyện (F19)</string>
+    <string name="meeting_planner_title">Lịch hẹn &amp; Thỏa thuận (F20)</string>
+    <string name="handover_title">Xác nhận Bàn giao (F21)</string>
+    <string name="adoption_history_title">Lịch sử Nhận nuôi (F22)</string>
+    <string name="test_questionnaire">Test Khảo sát Phù hợp (F16)</string>
+    <string name="test_my_applications">Test Hồ sơ Nhận nuôi (F17)</string>
+    <string name="test_host_applications">Test Quản lý Yêu cầu (F18)</string>
+    <string name="test_chat_list">Test Trò chuyện &amp; Chat (F19)</string>
+    <string name="test_meeting_planner">Test Lên lịch hẹn (F20)</string>
+    <string name="test_handover">Test Bàn giao Thú cưng (F21)</string>
+    <string name="test_adoption_history">Test Lịch sử Nhận nuôi (F22)</string>
 </resources>

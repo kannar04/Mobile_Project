@@ -69,6 +69,13 @@ public final class ProfileActivity extends AppCompatActivity {
         button(R.id.debug_review).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.ListingReviewActivity.class)));
         button(R.id.debug_discovery).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.DiscoveryActivity.class)));
         button(R.id.debug_favorites).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.FavoritesActivity.class)));
+        button(R.id.debug_questionnaire).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.QuestionnaireActivity.class)));
+        button(R.id.debug_my_applications).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.MyApplicationsActivity.class)));
+        button(R.id.debug_host_applications).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.HostApplicationsActivity.class)));
+        button(R.id.debug_chat_list).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.community.ChatListActivity.class)));
+        button(R.id.debug_meeting_planner).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.MeetingPlannerActivity.class)));
+        button(R.id.debug_handover).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.HandoverActivity.class)));
+        button(R.id.debug_adoption_history).setOnClickListener(v -> startActivity(new Intent(this, com.gmail.manhle240406.project.adoption.AdoptionHistoryActivity.class)));
         button(R.id.profile_logout).setOnClickListener(v -> new MaterialAlertDialogBuilder(this)
             .setMessage(R.string.listing_logout)
             .setPositiveButton(R.string.listing_logout_now, (d, w) -> logout())
@@ -77,7 +84,7 @@ public final class ProfileActivity extends AppCompatActivity {
         button(R.id.profile_back).setOnClickListener(v->discard(this::finish));
         getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){public void handleOnBackPressed(){discard(ProfileActivity.this::finish);}});
         model.changes.observe(this,ignored->render());
-        ((AniloveApplication)getApplication()).auth().state().observe(this,s->{if(s.uid==null || !s.setupReady)clearAndFinish();else render();});
+        ((AniloveApplication)getApplication()).auth().state().observe(this,s->{if(s==null || s.uid==null)clearAndFinish();else render();});
     }
     private void options(View anchor){PopupMenu menu=new PopupMenu(this,anchor);menu.getMenu().add(0,1,0,R.string.profile_contact);menu.getMenu().add(0,2,1,R.string.profile_hide);menu.getMenu().add(0,3,2,R.string.profile_visibility);menu.getMenu().add(0,4,3,R.string.profile_reload);menu.setOnMenuItemClickListener(item->{if(item.getItemId()==1)findViewById(R.id.profile_contact_group).setVisibility(View.VISIBLE);else if(item.getItemId()==2)model.visibility(false);else if(item.getItemId()==3)findViewById(R.id.profile_visibility_group).setVisibility(View.VISIBLE);else discard(()->model.load(true));return true;});menu.show();}
     private void disableSavedState(View v) {v.setSaveEnabled(false);v.setSaveFromParentEnabled(false);if(v instanceof android.view.ViewGroup){android.view.ViewGroup g=(android.view.ViewGroup)v;for(int i=0;i<g.getChildCount();i++)disableSavedState(g.getChildAt(i));}}

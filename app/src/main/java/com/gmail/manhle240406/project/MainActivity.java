@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import com.gmail.manhle240406.project.auth.AuthActivity;
 import com.gmail.manhle240406.project.home.HomeFragment;
 import com.gmail.manhle240406.project.profile.ProfileActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -25,6 +26,14 @@ public class MainActivity extends AppCompatActivity {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0);
             return insets;
+        });
+
+        ((AniloveApplication) getApplication()).auth().state().observe(this, state -> {
+            if (state == null || state.uid == null) {
+                startActivity(new Intent(this, AuthActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK));
+                finish();
+            }
         });
 
         if (savedInstanceState == null) {
