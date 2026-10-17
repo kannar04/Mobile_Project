@@ -12,7 +12,8 @@ public final class AuthState {
     public final boolean configured, setupLoading;
     public final Authority authority;
     public com.gmail.manhle240406.project.foundation.MembershipRepository.State membership = com.gmail.manhle240406.project.foundation.MembershipRepository.State.UNKNOWN;
-    public boolean communityReady() { return uid!=null && setupReady && verified && verificationKnown && !pending && membership==com.gmail.manhle240406.project.foundation.MembershipRepository.State.READY; }
+    public boolean interactionReady() { return uid!=null && setupReady && !pending && membership==com.gmail.manhle240406.project.foundation.MembershipRepository.State.READY; }
+    public boolean communityReady() { return interactionReady() && verified && verificationKnown; }
     public final Notice notice;
     public AuthState(String uid, String email, boolean pending, boolean setupReady, boolean verified,
                      boolean googleLinked, boolean canLink, boolean canSend, Authority authority, Notice notice,

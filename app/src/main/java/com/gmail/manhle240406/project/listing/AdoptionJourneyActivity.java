@@ -14,6 +14,7 @@ public class AdoptionJourneyActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (com.gmail.manhle240406.project.wiring.UnavailableScreen.managed(this)) return;
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_adoption_journey);
 

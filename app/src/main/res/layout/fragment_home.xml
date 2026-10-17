@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/home_scroll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/anilove_bg"
@@ -21,6 +22,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentStart="true"
+                android:layout_toStartOf="@id/home_filter_btn"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -40,15 +42,29 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <ImageView
+            <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/home_filter_btn"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_toStartOf="@id/home_notifications_btn"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="12dp"
+                android:src="@drawable/ic_shell_explore"
+                app:tint="?attr/colorPrimary" />
+
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/home_notifications_btn"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_alignParentEnd="true"
                 android:background="@drawable/anilove_card_bg"
+                android:clickable="true"
+                android:focusable="true"
                 android:padding="8dp"
-                android:src="@drawable/ic_nav_home"
-                app:tint="@color/anilove_primary" />
+                android:src="@drawable/ic_flow_notifications"
+                app:tint="?attr/colorPrimary" />
         </RelativeLayout>
 
         <!-- Search Bar -->
@@ -58,7 +74,8 @@
             android:layout_height="48dp"
             android:layout_marginTop="16dp"
             android:background="@drawable/anilove_search_bg"
-            android:drawableStart="@drawable/ic_nav_home"
+            app:drawableStartCompat="@drawable/ic_shell_search"
+            app:drawableTint="?attr/colorOnSurface"
             android:drawablePadding="12dp"
             android:hint="Tìm kiếm thú cưng..."
             android:paddingHorizontal="16dp"
@@ -86,10 +103,11 @@
                 android:orientation="horizontal">
 
                 <ImageView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:contentDescription="Avatar"
-                    android:src="@drawable/profile_avatar_default" />
+                    android:src="@drawable/profile_avatar_default"
+                    app:tint="?attr/colorOnSurface" />
 
                 <TextView
                     android:layout_width="0dp"
@@ -122,7 +140,8 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:drawableStart="@drawable/ic_nav_home"
+                    app:drawableStartCompat="@drawable/ic_shell_photo"
+            app:drawableTint="?attr/colorOnSurface"
                     android:drawablePadding="8dp"
                     android:gravity="center"
                     android:text="Ảnh / Video"
@@ -135,7 +154,8 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:drawableStart="@drawable/ic_nav_chat"
+                    app:drawableStartCompat="@drawable/ic_nav_chat"
+            app:drawableTint="?attr/colorOnSurface"
                     android:drawablePadding="8dp"
                     android:gravity="center"
                     android:text="Bài viết / Chia sẻ"
@@ -162,11 +182,11 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
                     android:background="@drawable/anilove_chip_bg"
-                    android:backgroundTint="@color/anilove_primary"
+                    android:backgroundTint="?attr/colorPrimary"
                     android:paddingHorizontal="16dp"
                     android:paddingVertical="8dp"
                     android:text="Tất cả"
-                    android:textColor="@color/white"
+                    android:textColor="?attr/colorOnPrimary"
                     android:textStyle="bold" />
 
                 <TextView

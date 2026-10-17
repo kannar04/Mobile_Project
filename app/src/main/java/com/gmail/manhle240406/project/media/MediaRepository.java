@@ -29,7 +29,8 @@ public final class MediaRepository {
         require(ticket);return scoped(ticket,db.document("mediaAssets/"+MediaContract.id(assetId)).get(Source.SERVER));
     }
     public Task<Map<String,Object>> issue(SessionEpoch.Ticket ticket,String assetId,String operationId,String inputHash) {
-        require(ticket);Map<String,Object> input=new HashMap<>();input.put("assetId",MediaContract.id(assetId));input.put("operationId",MediaContract.id(operationId));
+        require(ticket);if(!com.gmail.manhle240406.project.wiring.SparkCapabilities.uploadsEnabled()) return Tasks.forException(new IllegalStateException("media_uploads_paused"));
+        Map<String,Object> input=new HashMap<>();input.put("assetId",MediaContract.id(assetId));input.put("operationId",MediaContract.id(operationId));
         input.put("inputHash",MediaContract.digest(inputHash));input.put("purpose","community_private");
         return scoped(ticket,commands.call("issueMediaTicket",Collections.unmodifiableMap(input)));
     }

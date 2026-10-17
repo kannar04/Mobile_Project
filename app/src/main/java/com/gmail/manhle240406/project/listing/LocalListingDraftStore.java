@@ -28,6 +28,13 @@ public final class LocalListingDraftStore extends SQLiteOpenHelper {
     @Override public void onUpgrade(SQLiteDatabase db,int old,int next){throw new IllegalStateException("unknown_schema");}
     private void invalidate(){String previous=sessionUid;sessionUid=sessions.capture().uid;if(previous!=null)executor.execute(()->{synchronized(this){try{getWritableDatabase().delete("listing_drafts",null,null);cleanupFailed=false;}catch(SQLiteException e){cleanupFailed=true;}}});}
     public void clearOnSignedOutStartup(){if(sessionUid==null)executor.execute(()->{synchronized(this){try{getWritableDatabase().delete("listing_drafts",null,null);cleanupFailed=false;}catch(SQLiteException e){cleanupFailed=true;}}});}
+    public java.util.concurrent.CompletionStage<Void> clearAccountAfterSignOut(String uid) {
+        return java.util.concurrent.CompletableFuture.runAsync(()->{synchronized(this){
+            if(uid==null || uid.isEmpty())throw new IllegalArgumentException("cleanup_uid");
+            getWritableDatabase().delete("listing_drafts","account_uid=?",new String[]{uid});
+            if(cleanupFailed)throw new IllegalStateException("local_cleanup_required");
+        }},executor);
+    }
     private void valid(SessionEpoch.Ticket t){if(t==null||t.uid==null||sessions==null||!sessions.current(t))throw new IllegalStateException("session_changed");if(cleanupFailed)throw new IllegalStateException("cleanup_failed");}
     @Override public synchronized void close(){if(sessions!=null)sessions.removeInvalidation(invalidation);executor.shutdown();super.close();}
     public synchronized void save(SessionEpoch.Ticket t,Draft d){valid(t);if(!t.uid.equals(d.uid)||!id(d.id)||!id(d.listingId)||(d.petId!=null&&!id(d.petId))||!ListingSchema.fields(d.fields,false))throw new IllegalArgumentException("invalid_input");

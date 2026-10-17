@@ -32,7 +32,8 @@ public final class FirebaseEnvironment {
             if (options == null || options.getProjectId() == null
                     || options.getApplicationId().isEmpty() || options.getApiKey().isEmpty()
                     || (BuildConfig.FIREBASE_EMULATORS && !"demo-anilove".equals(options.getProjectId()))
-                    || (!BuildConfig.FIREBASE_EMULATORS && options.getProjectId().startsWith("demo-")))
+                    || (!BuildConfig.FIREBASE_EMULATORS && (options.getProjectId().startsWith("demo-")
+                        || !options.getProjectId().equals(BuildConfig.EXPECTED_FIREBASE_PROJECT))))
                 return new FirebaseEnvironment(FoundationResult.Status.CONFIGURATION_ERROR, alias, null, null);
             FirebaseApp app = FirebaseApp.initializeApp(context, options);
             FirebaseAuth auth = FirebaseAuth.getInstance(app);

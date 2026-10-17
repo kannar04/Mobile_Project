@@ -123,7 +123,6 @@ public final class AuthCoordinator {
             }
             verificationKnown = true;
             refreshReadiness();
-            if (registration) sendVerification();
         });
     }
     public AuthMutationGate.Ticket beginGoogle() {
@@ -180,9 +179,12 @@ public final class AuthCoordinator {
         setupReady = false; membership=MembershipRepository.State.UNKNOWN; authority = AuthState.Authority.UNKNOWN; verificationSending = false;
         verificationKnown = false;
         notice = AuthState.Notice.NONE;
-        if (auth != null) environment.sessions.logout();
+        if (auth != null) {
+            auth.signOut();
+            environment.sessions.logout();
+        }
+        intent.edit().putBoolean("visitor", false).apply();
         publish();
-        intent.edit().putBoolean("visitor", true).apply();
     }
     public void refreshReadiness() {
         if (auth == null || gate.visitor() || gate.busy() || readinessLoading) { publish(); return; }
@@ -198,7 +200,7 @@ public final class AuthCoordinator {
             if (!environment.sessions.current(ticket) || generation != readinessGeneration || gate.visitor()) return;
             setupReady = task.isSuccessful() && Boolean.TRUE.equals(task.getResult());
             membership=MembershipRepository.State.UNKNOWN;
-            if(setupReady && current.isEmailVerified() && verificationKnown) {
+            if(setupReady) {
                 new MembershipRepository(FirebaseFirestore.getInstance(),environment.sessions).ensureBasicMembership(ticket).addOnCompleteListener(m->{
                     if(!environment.sessions.current(ticket) || generation!=readinessGeneration || gate.visitor())return;
                     membership=m.isSuccessful()?m.getResult():MembershipRepository.State.UNKNOWN;completeReadinessPart();

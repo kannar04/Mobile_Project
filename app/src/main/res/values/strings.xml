@@ -83,4 +83,8 @@
     <string name="test_f37">Test Gợi ý Thú cưng (F37)</string>
     <string name="test_f40">Test Dashboard Thống kê (F40)</string>
     <string name="test_f41">Test Cache Offline &amp; Sync (F41)</string>
+    <string name="test_f02">Test Khôi phục Mật khẩu (F02)</string>
+    <string name="test_f38">Test Cài đặt Nâng cao (F38)</string>
+    <string name="test_f31">Test Bản tin Cộng đồng (F31)</string>
+    <string name="test_f09_ref">Test Tải ảnh Nâng cao (F09)</string>
 </resources>

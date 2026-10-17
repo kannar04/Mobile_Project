@@ -20,7 +20,8 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:contentDescription="Avatar"
-            android:src="@drawable/profile_avatar_dog" />
+            android:src="@drawable/profile_avatar_dog"
+            app:tint="?attr/colorOnSurface" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -66,7 +67,8 @@
         android:layout_marginTop="12dp"
         android:contentDescription="Post image"
         android:scaleType="centerCrop"
-        android:src="@drawable/profile_avatar_dog" />
+        android:src="@drawable/profile_avatar_dog"
+            app:tint="?attr/colorOnSurface" />
 
     <View
         android:layout_width="match_parent"
@@ -86,38 +88,38 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:drawableStart="@drawable/ic_nav_favorite"
+            app:drawableStartCompat="@drawable/ic_nav_favorite"
             android:drawablePadding="6dp"
             android:gravity="center"
             android:text="124 Yêu thích"
             android:textColor="@color/anilove_text_dark"
-            android:textSize="13sp"
-            app:drawableTint="@color/anilove_primary" />
+            android:textSize="13sp" 
+            app:drawableTint="?attr/colorOnSurface" />
 
         <TextView
             android:id="@+id/post_comment_btn"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:drawableStart="@drawable/ic_nav_chat"
+            app:drawableStartCompat="@drawable/ic_nav_chat"
             android:drawablePadding="6dp"
             android:gravity="center"
             android:text="18 Bình luận"
             android:textColor="@color/anilove_text_dark"
-            android:textSize="13sp"
-            app:drawableTint="@color/anilove_primary" />
+            android:textSize="13sp" 
+            app:drawableTint="?attr/colorOnSurface" />
 
         <TextView
             android:id="@+id/post_share_btn"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:drawableStart="@drawable/ic_nav_home"
+            app:drawableStartCompat="@drawable/ic_social_share"
             android:drawablePadding="6dp"
             android:gravity="center"
             android:text="Chia sẻ"
             android:textColor="@color/anilove_text_dark"
-            android:textSize="13sp"
-            app:drawableTint="@color/anilove_primary" />
+            android:textSize="13sp" 
+            app:drawableTint="?attr/colorOnSurface" />
     </LinearLayout>
 </LinearLayout>

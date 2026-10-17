@@ -25,12 +25,13 @@
         <!-- Favorite Heart Icon -->
         <ImageView
             android:id="@+id/pet_favorite_btn"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="8dp"
+            android:scaleType="centerInside"
             android:layout_alignParentEnd="true"
             android:layout_margin="8dp"
             android:background="@drawable/anilove_badge_bg"
-            android:padding="6dp"
             android:src="@drawable/ic_nav_favorite"
             app:tint="@color/anilove_primary" />
     </RelativeLayout>

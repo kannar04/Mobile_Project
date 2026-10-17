@@ -1,0 +1,15 @@
+<resources>
+    <!-- Reuse existing native dark tokens when legacy layout colors are rendered after F38 applies. -->
+    <color name="anilove_primary">@color/auth_primary</color>
+    <color name="anilove_bg">@color/auth_surface</color>
+    <color name="anilove_surface">@color/auth_surface</color>
+    <color name="anilove_card_bg">@color/auth_container</color>
+    <color name="anilove_text_dark">@color/auth_on_surface</color>
+    <color name="anilove_text_muted">@color/auth_muted</color>
+    <color name="anilove_border">@color/auth_muted</color>
+    <color name="anilove_primary_container">@color/auth_container</color>
+    <color name="anilove_chip_bg">@color/auth_container</color>
+    <color name="anilove_on_primary">@color/auth_on_primary</color>
+    <color name="anilove_primary_variant">@color/auth_primary</color>
+    <color name="anilove_chip_selected">@color/auth_container</color>
+</resources>

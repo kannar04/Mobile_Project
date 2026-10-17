@@ -1,15 +1,15 @@
 <resources>
 <string name="social_title">AniLove</string><string name="social_compose">Bạn muốn chia sẻ về bé cưng?</string><string name="social_body">Câu chuyện · tối đa 2000 ký tự</string>
 <string name="social_refresh">Làm mới</string><string name="social_drafts">Bài của tôi</string><string name="social_signin">Đăng nhập để đọc và chia sẻ câu chuyện.</string>
-<string name="social_reading">Những khoảnh khắc nhỏ, thật nhiều yêu thương.</string><string name="social_new_posts">Có thay đổi mới. Chọn Làm mới khi bạn sẵn sàng.</string>
+<string name="social_reading"></string><string name="social_new_posts">Có thay đổi mới. Chọn Làm mới khi bạn sẵn sàng.</string>
 <string name="social_loading">Đang tải câu chuyện…</string><string name="social_retry">Thử lại</string><string name="social_end">Bạn đã đọc hết những câu chuyện hiện có.</string>
 <string name="social_member">Thành viên AniLove</string><string name="social_audience">Cộng đồng · người dùng đăng nhập</string><string name="social_only_me">Bản nháp · Chỉ mình tôi</string>
-<string name="social_edited">Đã chỉnh sửa</string><string name="social_illustration">Minh họa có sẵn · không phải ảnh cá nhân</string><string name="social_open">Đọc và bình luận</string>
+<string name="social_edited">Đã chỉnh sửa</string><string name="social_illustration">Minh họa có sẵn · không phải ảnh cá nhân</string><string name="social_open">Bình luận</string>
 <string name="social_close">Quay lại</string><string name="social_publish">Đăng bài</string><string name="social_save_private">Lưu riêng</string><string name="social_save_first">Lưu riêng trước, rồi xác nhận đăng bản đã lưu.</string>
 <string name="social_no_contact">Không ghi điện thoại hoặc địa chỉ. Đây không phải xác minh danh tính hay quyền nhận nuôi.</string>
 <string name="social_reconcile">Kiểm tra kết quả</string><string name="social_restart">Bỏ yêu cầu chưa được lưu</string><string name="social_sending">Đang gửi…</string><string name="social_committed">Máy chủ đã xác nhận.</string>
 <string name="social_unknown">Chưa biết kết quả. Đang chờ yêu cầu kết thúc; không gửi thêm.</string><string name="social_conflict">Nội dung đã thay đổi. Tải lại và so sánh trước khi áp dụng bản sửa.</string>
-<string name="social_unavailable">Chưa thể xác nhận. Giữ bản đang sửa, kiểm tra mạng rồi thử lại.</string><string name="social_service">Cộng đồng chưa mở đăng bài. Bạn vẫn có thể soạn và lưu riêng.</string>
+<string name="social_unavailable">Chưa gửi được. Vui lòng thử lại.</string><string name="social_service">Chưa mở đăng bài.</string>
 <string name="social_not_committed">Chưa tìm thấy kết quả. Yêu cầu không được tự động gửi lại.</string><string name="social_lost_text">Tải bài đã lưu trước khi bắt đầu lại. Nội dung chưa lưu có thể mất sau khi ứng dụng đóng.</string>
 <string name="social_legacy">Bản nháp trước đây · Chỉ mình tôi</string><string name="social_more">Tải thêm</string><string name="social_more_comments">Bình luận tiếp theo</string><string name="social_menu">Tùy chọn</string>
 <string name="social_like">Thích / Bỏ thích</string><string name="social_comment">Bình luận · tối đa 500 ký tự</string><string name="social_send_comment">Gửi bình luận</string><string name="social_comment_invalid">Nhập bình luận từ 1 đến 500 ký tự.</string>

@@ -21,7 +21,15 @@ public final class DiscoveryQuery {
     }
     public static String normalize(String name,int max){
         if(name==null||name.codePointCount(0,name.length())>80)throw new IllegalArgumentException("name_limit");
-        String value=Normalizer.normalize(name.toLowerCase(Locale.ROOT).replace('đ','d'),Normalizer.Form.NFD).replaceAll("\\p{M}+","").replaceAll("(?U)\\s+"," ").trim();
+        String decomposed=Normalizer.normalize(name.toLowerCase(Locale.ROOT).replace('đ','d'),Normalizer.Form.NFD).replaceAll("\\p{M}+","");
+        // Android's ICU Pattern rejects Java's (?U) flag. Normalize Unicode spacing
+        // explicitly so device and host tests use the same prefix contract.
+        StringBuilder collapsed=new StringBuilder();boolean pendingSpace=false;
+        for(int i=0;i<decomposed.length();){int cp=decomposed.codePointAt(i);i+=Character.charCount(cp);
+            if(Character.isWhitespace(cp)||Character.isSpaceChar(cp)||cp==0x85){pendingSpace=collapsed.length()>0;continue;}
+            if(pendingSpace)collapsed.append(' ');collapsed.appendCodePoint(cp);pendingSpace=false;
+        }
+        String value=collapsed.toString();
         if(value.length()>max||!value.matches("[a-z0-9 ]*"))throw new IllegalArgumentException("unsupported_prefix");return value;
     }
     public String successor(){if(prefix.isEmpty())throw new IllegalStateException("no_prefix");return prefix.substring(0,prefix.length()-1)+(char)(prefix.charAt(prefix.length()-1)+1);}

@@ -1,0 +1,35 @@
+<resources>
+    <string name="setup_profile_title">Hoàn thiện hồ sơ</string>
+    <string name="setup_profile_body">Bạn muốn mọi người gọi mình là gì? Tên được lưu riêng tư; hồ sơ chỉ công khai khi bạn chọn chia sẻ.</string>
+    <string name="setup_continue">Tiếp tục</string>
+    <string name="setup_load_failed">Chưa hoàn tất hồ sơ. Kiểm tra kết nối rồi thử lại.</string>
+    <string name="home_listing_unavailable">Chưa thể hiển thị thú cưng lúc này. Xem mục Khám phá.</string>
+    <string name="setup_use_saved">Dùng tên đã lưu</string>
+    <string name="setup_reapply_name">Lưu tên tôi vừa nhập</string>
+    <string name="setup_conflict_comparison">Hồ sơ đã thay đổi. Tên đang lưu: %1$s\nTên bạn vừa nhập: %2$s\nChọn tên đã lưu hoặc xác nhận lưu tên mới.</string>
+    <string name="profile_verify_email">Xác minh email</string>
+    <string name="profile_refresh_verification">Tôi đã xác minh</string>
+    <string name="profile_email_verified">Email đã xác minh</string>
+    <string name="profile_email_unverified">Xác minh email để đăng bài. Bạn vẫn có thể thích và bình luận.</string>
+    <item name="setup_display_name" type="id" />
+    <item name="setup_continue" type="id" />
+    <item name="setup_status" type="id" />
+    <item name="profile_verify_email" type="id" />
+    <item name="profile_refresh_verification" type="id" />
+    <item name="profile_verification_status" type="id" />
+    <string name="chat_load_failed">Chưa tải được cuộc trò chuyện. Thử lại.</string>
+    <string name="chat_empty_explanation">Chưa có cuộc trò chuyện. Tin nhắn riêng xuất hiện khi hai bên được chọn trong một lượt nhận nuôi.</string>
+    <string name="chat_private_participants">Chỉ những người tham gia cuộc trò chuyện mới đọc được tin nhắn.</string>
+    <string name="chat_participant_conversation">Trao đổi nhận nuôi</string>
+    <string name="chat_older">Tin nhắn trước</string>
+    <string name="chat_send_rollout_pending">Hiện có thể xem lịch sử. Gửi tin nhắn sẽ mở khi luồng xử lý báo cáo riêng tư sẵn sàng.</string>
+    <string name="chat_manage_block">Quản lý chặn</string>
+    <string name="chat_block">Chặn người tham gia</string>
+    <string name="chat_unblock">Bỏ chặn</string>
+    <string name="chat_block_explanation">Chặn ngăn tin nhắn mới và chia sẻ liên hệ mới. Thao tác này không hủy lượt nhận nuôi. Bỏ chặn không khôi phục quyền liên hệ đã hết hạn.</string>
+    <string name="chat_block_updated">Đã cập nhật lựa chọn chặn.</string>
+    <string name="chat_no_messages">Chưa có tin nhắn.</string>
+    <string name="chat_me">Bạn</string>
+    <string name="chat_participant">Người tham gia</string>
+    <item name="conversations_list" type="id" />
+</resources>

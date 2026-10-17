@@ -19,12 +19,12 @@ import static com.gmail.manhle240406.project.community.SocialViews.*;
 
 /** Native reading surface. All cards come from authorized schema2 server results. */
 public class SocialFeedActivity extends AppCompatActivity {
-    private AuthorLookup authors;
+    private final PendingReactionTracker reactionTracker=new PendingReactionTracker();private long reactionGeneration;private AuthorLookup authors;
     private FeedViewModel model;
     private DailyViewModel actions;
     private RecyclerView list;
     private LinearLayout root;
-    private TextView service;
+    private TextView service; private LinearLayout pendingPreview;
     private Adapter adapter;
     private LinearLayoutManager manager;
     private String reported,reacted;
@@ -46,6 +46,8 @@ public class SocialFeedActivity extends AppCompatActivity {
         }));
         service=text(this,"",false);service.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);root.addView(service);
         root.addView(button(this,getString(R.string.social_menu),this::menu));
+        pendingPreview=new LinearLayout(this);pendingPreview.setOrientation(LinearLayout.VERTICAL);root.addView(pendingPreview);
+        ((AniloveApplication)getApplication()).communityOutbox().entries().observe(this,queued->{Set<String> completed=reactionTracker.completedPosts(queued);if(!completed.isEmpty()){reactionGeneration++;for(String id:completed){likes.remove(id);counts.remove(id);}rowReads.clear();}checkpoint();pendingPreview.removeAllViews();int shown=0;for(CommunityOutbox.Entry e:queued)if("publish".equals(e.command.command)&&shown++<2){TextView draft=text(this,(String)e.command.input.get("body"),false);draft.setMaxLines(2);draft.setEllipsize(android.text.TextUtils.TruncateAt.END);pendingPreview.addView(draft);}if(!queued.isEmpty())pendingPreview.addView(button(this,getString(R.string.community_pending_actions)+" ("+queued.size()+")",()->startActivity(new Intent(this,PendingCommunityActivity.class))));if(adapter!=null)adapter.notifyDataSetChanged();});
         list=new RecyclerView(this);manager=new LinearLayoutManager(this);list.setLayoutManager(manager);list.setItemAnimator(null);list.setSaveEnabled(false);
         adapter=new Adapter();list.setAdapter(adapter);root.addView(list,new LinearLayout.LayoutParams(-1,0,1));
         model=new ViewModelProvider(this).get(FeedViewModel.class);
@@ -74,40 +76,42 @@ public class SocialFeedActivity extends AppCompatActivity {
     private void menu(){
         PopupMenu menu=new PopupMenu(this,service);
         if(actions.pending!=null||actions.restored){menu.getMenu().add(0,4,3,R.string.social_retry);menu.getMenu().add(0,5,4,R.string.social_reconcile);}
-        menu.getMenu().add(0,1,0,R.string.social_refresh);menu.getMenu().add(0,2,1,R.string.social_drafts);menu.getMenu().add(0,3,2,R.string.report_mine);
+        menu.getMenu().add(0,7,6,R.string.community_notices);menu.getMenu().add(0,6,5,R.string.community_pending_actions);menu.getMenu().add(0,1,0,R.string.social_refresh);menu.getMenu().add(0,2,1,R.string.social_drafts);menu.getMenu().add(0,3,2,R.string.report_mine);
         menu.setOnMenuItemClickListener(item->{
-            if(item.getItemId()==1){counts.clear();likes.clear();checkpoint();model.load(true);}
+            if(item.getItemId()==7){startActivity(new Intent(this,ModerationNoticesActivity.class));}
+            else if(item.getItemId()==6){startActivity(new Intent(this,PendingCommunityActivity.class));}
+            else if(item.getItemId()==1){counts.clear();likes.clear();checkpoint();model.load(true);}
             else if(item.getItemId()==2)startActivity(new Intent(this,SocialComposerActivity.class).putExtra("own",true));
             else if(item.getItemId()==3)startActivity(new Intent(this,MyReportsActivity.class));else if(item.getItemId()==4)actions.retry();else actions.reconcile();return true;
         });menu.show();
     }
     private void checkpoint(){
-        if(model==null)return;int p=manager.findFirstVisibleItemPosition();View v=manager.findViewByPosition(p);
+        if(model==null||manager==null||adapter==null)return;int p=manager.findFirstVisibleItemPosition();View v=manager.findViewByPosition(p);
         if(p>=0&&p<adapter.rows.size()&&v!=null)model.checkpoint(adapter.rows.get(p).getId(),v.getTop());
     }
     private void render(){
         if(model.lost){adapter.submit(Collections.emptyList());service.setText(R.string.social_signin);return;}
         adapter.submit(model.window.rows());int p=model.window.position(model.anchor);
         if(p>=0)manager.scrollToPositionWithOffset(p,model.offset);
-        service.setText(model.boundaryLost?R.string.social_boundary:model.newPosts?R.string.social_new_posts:R.string.social_reading);
+        service.setText(model.boundaryLost?R.string.social_boundary:model.newPosts?R.string.social_new_posts:R.string.social_reading);SocialSurface.hideEmpty(service);
     }
-    private void like(DocumentSnapshot row){if(actions.busy||actions.pending!=null||actions.restored||!likes.containsKey(row.getId()))return;Map<String,Object> previous=likes.get(row.getId());boolean desired=previous==null||!Boolean.TRUE.equals(previous.get("active"));com.gmail.manhle240406.project.auth.AuthState auth=((AniloveApplication)getApplication()).auth().state().getValue();if(desired&&(auth==null||!auth.communityReady())){startActivity(new Intent(this,AuthActivity.class));return;}actions.send(new SocialCommand("set_like",row.getId(),null,SocialRepository.number(row.getData(),"contentVersion"),0,SocialRepository.number(previous,"likeVersion"),SocialRepository.map("active",desired),UUID.randomUUID().toString()));}
+    private void like(DocumentSnapshot row){if(actions.busy||actions.pending!=null||actions.restored||!likes.containsKey(row.getId()))return;Map<String,Object> previous=likes.get(row.getId());CommunityOutbox.Entry queued=((AniloveApplication)getApplication()).communityOutbox().pendingLike(row.getId());boolean desired=queued!=null?!Boolean.TRUE.equals(queued.command.input.get("active")):previous==null||!Boolean.TRUE.equals(previous.get("active"));com.gmail.manhle240406.project.auth.AuthState auth=((AniloveApplication)getApplication()).auth().state().getValue();if(desired&&(auth==null||!auth.interactionReady())){startActivity(new Intent(this,AuthActivity.class));return;}actions.send(new SocialCommand("set_like",row.getId(),null,SocialRepository.number(row.getData(),"contentVersion"),0,SocialRepository.number(previous,"likeVersion"),SocialRepository.map("active",desired),UUID.randomUUID().toString()));}
     private void readReaction(DocumentSnapshot row,Holder holder,android.widget.TextView label,com.google.android.material.button.MaterialButton button,long binding){
         String id=row.getId();if(rowReads.size()>=4||!rowReads.add(id))return;
-        com.google.android.gms.tasks.Task<com.google.firebase.firestore.DocumentSnapshot> reaction=actions.social.read("communityPosts/"+id+"/likes/"+actions.ticket.uid),count=actions.social.read("communityCounts/"+id);
-        com.google.android.gms.tasks.Tasks.whenAllComplete(reaction,count).addOnCompleteListener(done->{rowReads.remove(id);if(!actions.current())return;
+        long requestGeneration=reactionGeneration;com.google.android.gms.tasks.Task<com.google.firebase.firestore.DocumentSnapshot> reaction=actions.social.read("communityPosts/"+id+"/likes/"+actions.ticket.uid),count=actions.social.read("communityCounts/"+id);
+        com.google.android.gms.tasks.Tasks.whenAllComplete(reaction,count).addOnCompleteListener(done->{if(requestGeneration!=reactionGeneration)return;rowReads.remove(id);if(!actions.current())return;
             if(reaction.isSuccessful())likes.put(id,reaction.getResult().getData());
             if(count.isSuccessful()){Map<String,Object> value=count.getResult().getData();if(value!=null&&value.get("likeCount") instanceof Long&&(Long)value.get("likeCount")>=0)counts.put(id,(Long)value.get("likeCount"));}
             while(likes.size()>100)likes.remove(likes.keySet().iterator().next());while(counts.size()>100)counts.remove(counts.keySet().iterator().next());
             if(holder.binding!=binding)return;Map<String,Object> current=likes.get(id);button.setText(current!=null&&Boolean.TRUE.equals(current.get("active"))?R.string.social_unlike:R.string.social_like_action);button.setEnabled(likes.containsKey(id)&&!actions.busy&&actions.pending==null&&!actions.restored);
-            if(counts.containsKey(id))label.setText(getString(R.string.social_likes,counts.get(id)));
+            if(counts.containsKey(id))label.setText(getString(R.string.social_likes,counts.get(id)));CommunityOutbox.Entry pending=((AniloveApplication)getApplication()).communityOutbox().pendingLike(id);if(pending!=null){button.setText(Boolean.TRUE.equals(pending.command.input.get("active"))?R.string.social_unlike:R.string.social_like_action);button.setIconResource(R.drawable.ic_social_pending);button.setEnabled(pending.replaceable()&&!actions.busy);}
         });
     }
     private void options(DocumentSnapshot d,View anchor){
-        checkpoint();PopupMenu menu=new PopupMenu(this,anchor);menu.getMenu().add(0,1,0,R.string.report_title);menu.getMenu().add(0,2,1,R.string.profile_title);
+        checkpoint();PopupMenu menu=new PopupMenu(this,anchor);menu.getMenu().add(0,1,0,R.string.report_title);if(com.gmail.manhle240406.project.BuildConfig.DEBUG)menu.getMenu().add(0,7,4,R.string.flow_share);menu.getMenu().add(0,2,1,R.string.profile_title);menu.getMenu().add(0,8,5,R.string.community_notices);
         if(actions.ticket.uid.equals(d.getString("authorUid")))menu.getMenu().add(0,3,2,R.string.social_edit);
         menu.setOnMenuItemClickListener(item->{
-            if(item.getItemId()==1)ReportSheet.target("post",d.getId(),null,SocialRepository.number(d.getData(),"contentVersion"),null).show(getSupportFragmentManager(),"report");
+            if(item.getItemId()==8)startActivity(new Intent(this,ModerationNoticesActivity.class));else if(item.getItemId()==7)DemoSharing.open(this,"p",d.getId());else if(item.getItemId()==1)ReportSheet.target("post",d.getId(),null,SocialRepository.number(d.getData(),"contentVersion"),null).show(getSupportFragmentManager(),"report");
             else if(item.getItemId()==3)startActivity(new Intent(this,SocialComposerActivity.class).putExtra("post",d.getId()));
             else {authors.clear();authors.get(d.getString("authorUid")).addOnSuccessListener(profile->{
                 if(actions.lost||isDestroyed()||isFinishing())return;
@@ -145,11 +149,11 @@ public class SocialFeedActivity extends AppCompatActivity {
                 avatar.setImageResource("cat".equals(profile.get("avatarKey"))?R.drawable.profile_avatar_cat:"dog".equals(profile.get("avatarKey"))?R.drawable.profile_avatar_dog:R.drawable.profile_avatar_default);
             });
             String time=d.getTimestamp("firstPublishedAt")==null?"":java.text.DateFormat.getDateTimeInstance().format(d.getTimestamp("firstPublishedAt").toDate());
-            h.col.addView(text(SocialFeedActivity.this,time+" · "+getString(R.string.social_audience)+(d.get("editedAt")!=null?" · "+getString(R.string.social_edited):""),false));
+            h.col.addView(text(SocialFeedActivity.this,time+" · "+getString(Long.valueOf(4).equals(d.get("schemaVersion"))?R.string.community_everyone:R.string.social_audience)+(d.get("editedAt")!=null?" · "+getString(R.string.social_edited):""),false));
             h.col.addView(text(SocialFeedActivity.this,d.getString("body"),false));
             String media=d.getString("bundledIllustrationKey");
             if(media!=null){ImageView image=new ImageView(SocialFeedActivity.this);image.setImageResource(media.equals("cat")?R.drawable.profile_avatar_cat:media.equals("dog")?R.drawable.profile_avatar_dog:R.drawable.profile_avatar_default);image.setContentDescription(getString(R.string.social_illustration));h.col.addView(image,new LinearLayout.LayoutParams(-1,dp(SocialFeedActivity.this,160)));}
-            LinearLayout actionRow=new LinearLayout(SocialFeedActivity.this);com.google.android.material.button.MaterialButton reaction=button(SocialFeedActivity.this,getString(R.string.social_like_action),()->like(d));Map<String,Object> ownLike=likes.get(d.getId());reaction.setText(ownLike!=null&&Boolean.TRUE.equals(ownLike.get("active"))?R.string.social_unlike:R.string.social_like_action);reaction.setEnabled(likes.containsKey(d.getId())&&!actions.busy&&actions.pending==null&&!actions.restored);actionRow.addView(reaction,new LinearLayout.LayoutParams(0,-2,1));actionRow.addView(button(SocialFeedActivity.this,getString(R.string.social_open),()->{checkpoint();startActivity(new Intent(SocialFeedActivity.this,SocialDetailActivity.class).putExtra("post",d.getId()));}),new LinearLayout.LayoutParams(0,-2,1));TextView counter=text(SocialFeedActivity.this,counts.containsKey(d.getId())?getString(R.string.social_likes,counts.get(d.getId())):getString(R.string.social_count_loading),false);h.col.addView(counter);h.col.addView(actionRow);if(!likes.containsKey(d.getId())||!counts.containsKey(d.getId()))readReaction(d,h,counter,reaction,bind);
+            LinearLayout actionRow=new LinearLayout(SocialFeedActivity.this);com.google.android.material.button.MaterialButton reaction=button(SocialFeedActivity.this,getString(R.string.social_like_action),()->like(d));Map<String,Object> ownLike=likes.get(d.getId());reaction.setText(ownLike!=null&&Boolean.TRUE.equals(ownLike.get("active"))?R.string.social_unlike:R.string.social_like_action);reaction.setEnabled(likes.containsKey(d.getId())&&!actions.busy&&actions.pending==null&&!actions.restored);actionRow.addView(reaction,new LinearLayout.LayoutParams(0,-2,1));actionRow.addView(button(SocialFeedActivity.this,getString(R.string.social_open),()->{checkpoint();startActivity(new Intent(SocialFeedActivity.this,SocialDetailActivity.class).putExtra("post",d.getId()));}),new LinearLayout.LayoutParams(0,-2,1));TextView counter=text(SocialFeedActivity.this,counts.containsKey(d.getId())?getString(R.string.social_likes,counts.get(d.getId())):getString(R.string.social_count_loading),false);CommunityOutbox.Entry pendingLike=((AniloveApplication)getApplication()).communityOutbox().pendingLike(d.getId());if(pendingLike!=null){reaction.setText(Boolean.TRUE.equals(pendingLike.command.input.get("active"))?R.string.social_unlike:R.string.social_like_action);reaction.setIconResource(R.drawable.ic_social_pending);reaction.setContentDescription(reaction.getText()+" - "+getString(R.string.community_pending));reaction.setEnabled(!actions.busy&&pendingLike.replaceable());}h.col.addView(counter);h.col.addView(actionRow);if(!likes.containsKey(d.getId())||!counts.containsKey(d.getId()))readReaction(d,h,counter,reaction,bind);
         }
         public void onViewRecycled(Holder h){h.binding++;h.col.removeAllViews();}
     }

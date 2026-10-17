@@ -22,10 +22,13 @@ public final class AuthActivity extends AppCompatActivity {
     private GoogleCredentialAdapter google;
     private TextInputEditText email, password, confirm, proof;
     private String lastUid;
+    private boolean accountManagement;
+    private boolean leavingForMain;
     @Override protected void onCreate(Bundle saved) {
         super.onCreate(saved);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_auth);
+        android.view.ViewGroup form=(android.view.ViewGroup)findViewById(R.id.auth_status).getParent();com.google.android.material.button.MaterialButton guest=new com.google.android.material.button.MaterialButton(this,null,com.google.android.material.R.attr.materialButtonOutlinedStyle);guest.setText(R.string.guest_stories);guest.setOnClickListener(v->startActivity(new android.content.Intent(this,com.gmail.manhle240406.project.community.GuestStoriesActivity.class)));form.addView(guest);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.auth_root), (view, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             Insets keyboard = insets.getInsets(WindowInsetsCompat.Type.ime());
@@ -52,7 +55,10 @@ public final class AuthActivity extends AppCompatActivity {
         button(R.id.auth_refresh).setOnClickListener(v -> coordinator.refreshVerification());
         button(R.id.auth_retry_setup).setOnClickListener(v -> coordinator.refreshReadiness());
         button(R.id.auth_back).setOnClickListener(v -> leave());
-        button(R.id.auth_visitor).setOnClickListener(v -> leave());
+        button(R.id.auth_visitor).setOnClickListener(v -> {
+            startActivity(new android.content.Intent(this, com.gmail.manhle240406.project.MainActivity.class));
+            finish();
+        });
         password.setOnEditorActionListener((v, action, event) -> {
             if (action == EditorInfo.IME_ACTION_DONE && !model.registering()) { submit(); return true; } return false;
         });
@@ -60,12 +66,13 @@ public final class AuthActivity extends AppCompatActivity {
             if (action == EditorInfo.IME_ACTION_DONE) { submit(); return true; } return false;
         });
         AuthState initial = coordinator.state().getValue();
-        if (initial != null && initial.uid != null) {
+        accountManagement=getIntent().getBooleanExtra("account",false)&&initial!=null&&initial.uid!=null;
+        if (initial != null && initial.uid != null && !initial.pending && !accountManagement) {
             navigateToMain();
             return;
         }
         coordinator.state().observe(this, state -> {
-            if (state != null && state.uid != null) {
+            if (state != null && state.uid != null && !state.pending && !accountManagement) {
                 navigateToMain();
                 return;
             }
@@ -73,8 +80,9 @@ public final class AuthActivity extends AppCompatActivity {
         });
     }
     private void navigateToMain() {
+        if(leavingForMain)return;leavingForMain=true;
         startActivity(new android.content.Intent(this, com.gmail.manhle240406.project.MainActivity.class)
-            .addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_NEW_TASK));
+            .addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP));
         finish();
     }
     private MaterialButton button(int id) { return findViewById(id); }
@@ -103,7 +111,8 @@ public final class AuthActivity extends AppCompatActivity {
     private void leave() { if (coordinator.busy()) logout(); clearSecrets(); finish(); }
     @Override protected void onStop() { clearSecrets(); super.onStop(); }
     @Override protected void onDestroy() {
-        if (isFinishing() && coordinator != null && coordinator.busy()) coordinator.logout();
+        // Window destruction is not a logout intent. A successful Google exchange starts a
+        // token reload; destroying this window must not cancel that app-owned refresh.
         if (google != null) google.cancel();
         super.onDestroy();
     }
@@ -135,7 +144,7 @@ public final class AuthActivity extends AppCompatActivity {
         button(R.id.auth_community).setEnabled(account && !state.pending);
         button(R.id.auth_listings).setEnabled(account && !state.pending);
         button(R.id.auth_pets).setEnabled(account && !state.pending);
-        visible(R.id.auth_verify, account && (!state.verificationKnown || !state.verified));
+        visible(R.id.auth_verify, false);
         visible(R.id.auth_proof_layout, account && state.canLink && google.available());
         visible(R.id.auth_link, account && (state.canLink || state.googleLinked));
         password.setAutofillHints(model.registering() ? "newPassword" : View.AUTOFILL_HINT_PASSWORD);

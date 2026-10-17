@@ -1,7 +1,7 @@
 <resources>
     <color name="auth_primary">#26332D</color>
     <color name="auth_on_primary">#FFFFFF</color>
-    <color name="auth_surface">#F8F7F4</color>
+    <color name="auth_surface">#FAF0E6</color>
     <color name="auth_on_surface">#26332D</color>
     <color name="auth_muted">#64726A</color>
     <color name="auth_container">#F1F3F2</color>

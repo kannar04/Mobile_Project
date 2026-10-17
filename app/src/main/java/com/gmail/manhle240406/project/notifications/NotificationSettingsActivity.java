@@ -12,6 +12,7 @@ public class NotificationSettingsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (!com.gmail.manhle240406.project.wiring.SparkCapabilities.trustedCommandsEnabled()) { com.gmail.manhle240406.project.wiring.UnavailableScreen.show(this, R.string.wiring_push_unavailable); return; }
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_notification_settings);
 

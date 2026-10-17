@@ -8,44 +8,27 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <!-- Top Header & Search -->
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/discovery_back"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:minWidth="48dp"
-            android:minHeight="48dp"
-            android:text="@string/auth_back"
-            android:textColor="@color/anilove_text_dark" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:text="@string/discovery_title"
-            android:textColor="@color/anilove_text_dark"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-    </RelativeLayout>
-
-    <EditText
-        android:id="@+id/discovery_search"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginBottom="12dp"
-        android:background="@drawable/anilove_search_bg"
-        android:hint="Tìm kiếm nâng cao..."
-        android:paddingHorizontal="16dp"
-        android:textColor="@color/anilove_text_dark"
-        android:textColorHint="@color/anilove_text_muted"
-        android:textSize="14sp" />
-
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/discovery_back"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:minHeight="64dp" android:background="?attr/colorSurface"
+        app:navigationIcon="@drawable/ic_social_back" app:navigationIconTint="?attr/colorOnSurface"
+        app:navigationContentDescription="@string/flow_back" app:title="@string/flow_discover"
+        app:titleTextColor="?attr/colorOnSurface" />
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:hint="@string/wiring_search" app:boxBackgroundMode="outline"
+        app:endIconMode="clear_text" style="@style/AuthField">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/discovery_search" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:minHeight="56dp"
+            android:singleLine="true" android:textColor="?attr/colorOnSurface"
+            android:inputType="text" android:imeOptions="actionSearch" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <LinearLayout android:id="@+id/discovery_controls" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:orientation="horizontal" />
+    <TextView android:id="@id/flow_filter_summary" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/anilove_text_muted" android:textSize="14sp" android:paddingVertical="8dp" />
+    <com.google.android.material.chip.ChipGroup android:id="@+id/discovery_chips" android:layout_width="match_parent" android:layout_height="wrap_content" />
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/discovery_recycler"
         android:layout_width="match_parent"

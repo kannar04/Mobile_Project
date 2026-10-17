@@ -4,7 +4,7 @@ service cloud.firestore {
     function self(uid) {
       return request.auth != null && request.auth.uid == uid;
     }
-    // F42 r2: separate ordinary community enrollment; protected memberReady/active unchanged.
+    // F42 r3: unverified ordinary interactions; protected and publication readiness stay verified.
     function subjectPermitsCommunity(uid) {
       let path=/databases/$(database)/documents/securitySubjects/$(uid);
       return !exists(path) || (get(path).data.keys().hasOnly(['status','roles','updatedAt'])
@@ -16,14 +16,17 @@ service cloud.firestore {
         && d.uid==uid && d.schemaVersion is int && d.schemaVersion==1 && d.status in ['active','restricted']
         && d.membershipVersion is int && d.membershipVersion>=1 && d.createdAt is timestamp && d.updatedAt is timestamp;
     }
-    function basicMemberReady(uid) {
+    function communityInteractionReady(uid) {
       let m=get(/databases/$(database)/documents/communityMemberships/$(uid)).data;
-      return profileOwner(uid) && request.auth.token.email_verified==true && membershipShape(m,uid)
+      return profileOwner(uid) && membershipShape(m,uid)
         && m.status=='active' && subjectPermitsCommunity(uid);
+    }
+    function basicMemberReady(uid) {
+      return request.auth.token.email_verified==true && communityInteractionReady(uid);
     }
     match /communityMemberships/{uid} {
       allow get: if self(uid);
-      allow create: if profileOwner(uid) && request.auth.token.email_verified==true && subjectPermitsCommunity(uid)
+      allow create: if profileOwner(uid) && subjectPermitsCommunity(uid)
         && membershipShape(request.resource.data,uid) && request.resource.data.status=='active'
         && request.resource.data.membershipVersion==1 && request.resource.data.createdAt==request.time && request.resource.data.updatedAt==request.time;
       allow list,update,delete: if false;
@@ -694,17 +697,40 @@ service cloud.firestore {
         && reportPolicy('post') && p.schemaVersion==1 && p.policyVersion is int && p.policyVersion>=1 && p.enabled==true && p.publicationMode=='post_moderated' && p.updatedAt is timestamp;
     }
     match /system/communityPolicy {allow get: if request.auth!=null && (!exists(/databases/$(database)/documents/system/communityPolicy) || resource.data.keys().size()==5 && resource.data.keys().hasOnly(['schemaVersion','policyVersion','enabled','publicationMode','updatedAt']) && resource.data.schemaVersion is int && resource.data.schemaVersion==1 && resource.data.policyVersion is int && resource.data.policyVersion>=1 && resource.data.enabled is bool && resource.data.publicationMode=='post_moderated' && resource.data.updatedAt is timestamp); allow list,write: if false;}
-    function sroot(d,id){return d.keys().size()==15 && d.keys().hasOnly(['schemaVersion','postId','authorUid','type','lifecycle','contentVersion','currentRevisionId','controlVersion','visibility','moderatorHold','firstPublishedAt','editedAt','createdAt','updatedAt','lastOperationId'])
-      && d.schemaVersion is int && d.schemaVersion==2 && d.postId==id && validId(id) && d.authorUid is string && d.type=='community' && d.lifecycle in ['active','archived']
+    function everyonePolicy(){let p=get(/databases/$(database)/documents/system/communityPublicPolicy).data;return p.keys().size()==5 && p.keys().hasOnly(['schemaVersion','policyVersion','enabled','publicationMode','updatedAt']) && p.schemaVersion==1 && p.policyVersion is int && p.policyVersion>=1 && p.enabled==true && p.publicationMode=='post_moderated' && p.updatedAt is timestamp;}
+    function publicStory(f,id){return f.keys().size()==9 && f.keys().hasOnly(['schemaVersion','postId','audience','state','contentVersion','body','bundledIllustrationKey','firstPublishedAt','editedAt']) && f.schemaVersion==4 && f.postId==id && validId(id) && f.audience=='everyone' && f.state=='visible' && f.contentVersion is int && f.contentVersion>=1 && communityFields({'body':f.body,'bundledIllustrationKey':f.bundledIllustrationKey}) && f.firstPublishedAt is timestamp && (f.editedAt==null || f.editedAt is timestamp);}
+    function publicProject(id,d){let f=getAfter(/databases/$(database)/documents/communityPublicFeed/$(id)).data;let v=getAfter(/databases/$(database)/documents/communityPosts/$(id)/revisions/$(d.currentRevisionId)).data;return f=={'schemaVersion':4,'postId':id,'audience':'everyone','state':'visible','contentVersion':d.contentVersion,'body':v.body,'bundledIllustrationKey':v.bundledIllustrationKey,'firstPublishedAt':d.firstPublishedAt,'editedAt':d.editedAt};}
+    function publicLink(id,uid,op){let d=getAfter(/databases/$(database)/documents/communityPosts/$(id)).data;return d.schemaVersion==4 && d.authorUid==uid && d.lastOperationId==op && d.updatedAt==request.time && !exists(/databases/$(database)/documents/users/$(uid)/communityOperations/$(op));}
+    function publicViews(id,d,v){return getAfter(/databases/$(database)/documents/communityFeed/$(id)).data=={'schemaVersion':4,'controlVersion':d.controlVersion,'postId':id,'authorUid':d.authorUid,'type':'community','contentVersion':d.contentVersion,'body':v.body,'bundledIllustrationKey':v.bundledIllustrationKey,'audience':'everyone','state':'visible','firstPublishedAt':d.firstPublishedAt,'editedAt':d.editedAt} && publicProject(id,d);}
+    function publicWrite(id,uid,d,old){
+      let r=sop(uid,d.lastOperationId);
+      let fresh=old==null;
+      let material=fresh || r.command in ['edit_private','edit_visible'];
+      let visible=r.command in ['publish','show','edit_visible'];
+      let cv=(fresh?0:old.contentVersion)+(material?1:0);
+      let ctl=(fresh?0:old.controlVersion)+1;
+      let v=getAfter(/databases/$(database)/documents/communityPosts/$(id)/revisions/$('v'+string(cv))).data;
+      return self(uid) && validId(id) && validId(d.lastOperationId) && !exists(/databases/$(database)/documents/users/$(uid)/communityOperations/$(d.lastOperationId))
+        && (fresh?r.command=='publish':old.schemaVersion==4 && old.authorUid==uid && old.lifecycle=='active' && r.command in ['publish','show','edit_private','edit_visible','hide','archive'])
+        && r=={'schemaVersion':2,'ownerUid':uid,'operationId':d.lastOperationId,'postId':id,'targetId':null,'command':r.command,'base':{'contentVersion':fresh?0:old.contentVersion,'controlVersion':fresh?0:old.controlVersion,'targetVersion':0},'result':{'contentVersion':cv,'controlVersion':ctl},'input':material?(fresh?{'body':v.body,'bundledIllustrationKey':v.bundledIllustrationKey,'consent':true,'audience':'everyone'}:{'body':v.body,'bundledIllustrationKey':v.bundledIllustrationKey}):(visible?{'consent':true}:{}),'status':'committed','committedAt':request.time}
+        && d=={'schemaVersion':4,'postId':id,'authorUid':uid,'type':'community','audience':'everyone','lifecycle':r.command=='archive'?'archived':'active','moderatorHold':fresh?'clear':old.moderatorHold,'contentVersion':cv,'currentRevisionId':'v'+string(cv),'controlVersion':ctl,'visibility':visible?'visible':'hidden','firstPublishedAt':fresh?request.time:old.firstPublishedAt,'editedAt':fresh?null:material?request.time:old.editedAt,'createdAt':fresh?request.time:old.createdAt,'updatedAt':request.time,'lastOperationId':r.operationId}
+        && (material?v=={'schemaVersion':4,'postId':id,'authorUid':uid,'type':'community','contentVersion':cv,'body':v.body,'bundledIllustrationKey':v.bundledIllustrationKey,'createdAt':request.time,'operationId':r.operationId} && communityFields({'body':v.body,'bundledIllustrationKey':v.bundledIllustrationKey}):true)
+        && (r.command in ['publish','show'] && !fresh?old.visibility=='hidden':true)
+        && (visible?d.moderatorHold=='clear' && basicMemberReady(uid) && scopeAllows(uid,'community_publication') && rollout() && everyonePolicy() && publicViews(id,d,v)
+          && (fresh?!exists(/databases/$(database)/documents/communityCounts/$(id)) && existsAfter(/databases/$(database)/documents/communityCounts/$(id)):exists(/databases/$(database)/documents/communityCounts/$(id)))
+          : (r.command=='edit_private'?basicMemberReady(uid):true) && !existsAfter(/databases/$(database)/documents/communityFeed/$(id)) && !existsAfter(/databases/$(database)/documents/communityPublicFeed/$(id)));
+    }
+    function sroot(d,id){return ((d.schemaVersion==2 && d.keys().size()==15) || (d.schemaVersion==4 && d.keys().size()==16 && d.audience=='everyone')) && d.keys().hasOnly(['audience','schemaVersion','postId','authorUid','type','lifecycle','contentVersion','currentRevisionId','controlVersion','visibility','moderatorHold','firstPublishedAt','editedAt','createdAt','updatedAt','lastOperationId'])
+      && d.schemaVersion is int && d.schemaVersion in [2,4] && d.postId==id && validId(id) && d.authorUid is string && d.type=='community' && d.lifecycle in ['active','archived']
       && d.contentVersion is int && d.contentVersion>=1 && d.currentRevisionId=='v'+string(d.contentVersion) && d.controlVersion is int && d.controlVersion>=1
       && d.visibility in ['hidden','visible'] && d.moderatorHold in ['clear','held'] && (d.firstPublishedAt==null || d.firstPublishedAt is timestamp)
       && (d.editedAt==null || d.editedAt is timestamp) && d.createdAt is timestamp && d.updatedAt==request.time && validId(d.lastOperationId);}
     function srevision(v,id,uid,n){return v.keys().size()==9 && v.keys().hasOnly(['schemaVersion','postId','authorUid','type','contentVersion','body','bundledIllustrationKey','createdAt','operationId'])
-      && v.schemaVersion is int && v.schemaVersion==2 && v.postId==id && v.authorUid==uid && v.type=='community' && v.contentVersion==n
+      && v.schemaVersion is int && v.schemaVersion in [2,4] && v.postId==id && v.authorUid==uid && v.type=='community' && v.contentVersion==n
       && communityFields({'body':v.body,'bundledIllustrationKey':v.bundledIllustrationKey}) && v.createdAt is timestamp && validId(v.operationId);}
-    function sfeed(f,id){return f.keys().size()==11 && f.keys().hasOnly(['schemaVersion','postId','authorUid','type','contentVersion','body','bundledIllustrationKey','audience','state','firstPublishedAt','editedAt'])
-      && f.schemaVersion is int && f.schemaVersion==2 && f.postId==id && validId(id) && f.authorUid is string && f.type=='community' && f.contentVersion is int && f.contentVersion>=1
-      && communityFields({'body':f.body,'bundledIllustrationKey':f.bundledIllustrationKey}) && f.audience=='community' && f.state=='visible' && f.firstPublishedAt is timestamp && (f.editedAt==null || f.editedAt is timestamp);}
+    function sfeed(f,id){return ((f.schemaVersion==2 && f.keys().size()==11 && f.keys().hasOnly(['schemaVersion','postId','authorUid','type','contentVersion','body','bundledIllustrationKey','audience','state','firstPublishedAt','editedAt'])) || (f.schemaVersion in [3,4] && f.keys().size()==12 && f.keys().hasOnly(['schemaVersion','postId','authorUid','type','contentVersion','controlVersion','body','bundledIllustrationKey','audience','state','firstPublishedAt','editedAt']) && f.controlVersion is int && f.controlVersion>=1))
+      && f.schemaVersion is int && f.postId==id && validId(id) && f.authorUid is string && f.type=='community' && f.contentVersion is int && f.contentVersion>=1
+      && communityFields({'body':f.body,'bundledIllustrationKey':f.bundledIllustrationKey}) && f.audience==(f.schemaVersion==4?'everyone':'community') && f.state=='visible' && f.firstPublishedAt is timestamp && (f.editedAt==null || f.editedAt is timestamp);}
     function sreceipt(r,uid,op){return r.keys().size()==11 && r.keys().hasOnly(['schemaVersion','ownerUid','operationId','postId','targetId','command','base','result','input','status','committedAt'])
       && r.schemaVersion is int && r.schemaVersion==2 && r.ownerUid==uid && r.operationId==op && validId(op) && validId(r.postId) && (r.targetId==null || validId(r.targetId))
       && r.command in ['create_private','publish','edit_private','edit_visible','show','hide','archive','set_like','add_comment','edit_comment','withdraw_comment']
@@ -714,33 +740,33 @@ service cloud.firestore {
     function srootLink(id,uid,op){
       let n=getAfter(/databases/$(database)/documents/communityPosts/$(id)).data;
       let r=sop(uid,op);
-      return n.schemaVersion is int && n.schemaVersion==2 && n.updatedAt==request.time && n.authorUid==uid && n.lastOperationId==op && r.postId==id && r.targetId==null && r.base.targetVersion==0
+      return n.schemaVersion is int && n.schemaVersion in [2,4] && n.updatedAt==request.time && n.authorUid==uid && n.lastOperationId==op && r.postId==id && r.targetId==null && r.base.targetVersion==0
         && r.result=={'contentVersion':n.contentVersion,'controlVersion':n.controlVersion} && r.committedAt==request.time
         && !exists(/databases/$(database)/documents/users/$(uid)/communityOperations/$(op));
     }
     function sproject(id,d){
       let v=getAfter(/databases/$(database)/documents/communityPosts/$(id)/revisions/$(d.currentRevisionId)).data;
       let f=getAfter(/databases/$(database)/documents/communityFeed/$(id)).data;
-      return f.schemaVersion is int && f.schemaVersion==2 && f.authorUid==d.authorUid && f.contentVersion==d.contentVersion && f.body==v.body && f.bundledIllustrationKey==v.bundledIllustrationKey
+      return f.schemaVersion is int && f.schemaVersion==(d.schemaVersion==4?4:3) && f.controlVersion==d.controlVersion && f.authorUid==d.authorUid && f.contentVersion==d.contentVersion && f.body==v.body && f.bundledIllustrationKey==v.bundledIllustrationKey
         && f.firstPublishedAt==d.firstPublishedAt && f.editedAt==d.editedAt && d.lifecycle=='active' && d.moderatorHold=='clear'
-        && existsAfter(/databases/$(database)/documents/communityCounts/$(id));
+        && existsAfter(/databases/$(database)/documents/communityCounts/$(id)) && (d.schemaVersion==2 || everyonePolicy() && publicProject(id,d));
     }
     function smaterial(id,d,r){
       let v=getAfter(/databases/$(database)/documents/communityPosts/$(id)/revisions/$(d.currentRevisionId)).data;
-      return v.schemaVersion is int && v.schemaVersion==2 && v.authorUid==d.authorUid && v.postId==id && v.contentVersion==d.contentVersion && v.operationId==d.lastOperationId && v.createdAt==request.time
-        && (r.command=='publish'?r.input=={'body':v.body,'bundledIllustrationKey':v.bundledIllustrationKey,'consent':true}:r.input=={'body':v.body,'bundledIllustrationKey':v.bundledIllustrationKey});
+      return v.schemaVersion is int && v.schemaVersion==d.schemaVersion && v.authorUid==d.authorUid && v.postId==id && v.contentVersion==d.contentVersion && v.operationId==d.lastOperationId && v.createdAt==request.time
+        && (r.command=='publish'?r.input==(d.schemaVersion==4?{'body':v.body,'bundledIllustrationKey':v.bundledIllustrationKey,'consent':true,'audience':'everyone'}:{'body':v.body,'bundledIllustrationKey':v.bundledIllustrationKey,'consent':true}):r.input=={'body':v.body,'bundledIllustrationKey':v.bundledIllustrationKey});
     }
     function screate(id,uid,d){
       let r=sop(uid,d.lastOperationId);
       return self(uid) && sroot(d,id) && srootLink(id,uid,d.lastOperationId) && d.lifecycle=='active' && d.contentVersion==1 && d.controlVersion==1
-        && d.moderatorHold=='clear' && d.editedAt==null && d.createdAt==request.time
+        && (d.schemaVersion==2 || r.command=='publish' && everyonePolicy() && publicProject(id,d)) && d.moderatorHold=='clear' && d.editedAt==null && d.createdAt==request.time
         && basicMemberReady(uid) && scopeAllows(uid,'community_publication') && r.base=={'contentVersion':0,'controlVersion':0,'targetVersion':0} && smaterial(id,d,r)
         && (r.command=='create_private'?d.visibility=='hidden' && d.firstPublishedAt==null && !existsAfter(/databases/$(database)/documents/communityFeed/$(id))
           :r.command=='publish' && rollout() && d.visibility=='visible' && d.firstPublishedAt==request.time && getAfter(/databases/$(database)/documents/communityFeed/$(id)).data.contentVersion==1 && existsAfter(/databases/$(database)/documents/communityCounts/$(id)));
     }
     function supdate(id,uid,d,old){
       let r=sop(uid,d.lastOperationId);
-      return self(uid) && old.schemaVersion is int && d.schemaVersion==2 && old.authorUid==uid && old.lifecycle=='active' && sroot(d,id) && srootLink(id,uid,d.lastOperationId)
+      return self(uid) && old.schemaVersion is int && d.schemaVersion==old.schemaVersion && (d.schemaVersion==2 || d.schemaVersion==4 && d.audience==old.audience) && old.authorUid==uid && old.lifecycle=='active' && sroot(d,id) && srootLink(id,uid,d.lastOperationId)
         && d.authorUid==old.authorUid && d.type==old.type && d.createdAt==old.createdAt && d.moderatorHold==old.moderatorHold
         && d.controlVersion==old.controlVersion+1 && d.lastOperationId!=old.lastOperationId && r.base.contentVersion==old.contentVersion && r.base.controlVersion==old.controlVersion
         && (old.firstPublishedAt==null ? (d.firstPublishedAt==null || d.firstPublishedAt==request.time && r.command in ['publish','show','edit_visible']) : d.firstPublishedAt==old.firstPublishedAt)
@@ -748,29 +774,29 @@ service cloud.firestore {
         && (r.command in ['edit_private','edit_visible'] ? d.contentVersion==old.contentVersion+1 && smaterial(id,d,r) : d.contentVersion==old.contentVersion)
         && (r.command=='archive' ? d.lifecycle=='archived' : d.lifecycle=='active')
         && (r.command in ['publish','show','edit_visible'] ? d.visibility=='visible' && basicMemberReady(uid) && scopeAllows(uid,'community_publication') && sproject(id,d)
-          && (r.command=='edit_visible' || r.input=={'consent':true}) : r.command in ['edit_private','hide','archive'] && (r.command=='edit_private'?basicMemberReady(uid):true) && d.visibility=='hidden' && !existsAfter(/databases/$(database)/documents/communityFeed/$(id)))
+          && (r.command=='edit_visible' || r.input=={'consent':true}) : r.command in ['edit_private','hide','archive'] && (r.command=='edit_private'?basicMemberReady(uid):true) && d.visibility=='hidden' && !existsAfter(/databases/$(database)/documents/communityFeed/$(id)) && (d.schemaVersion==2 || !existsAfter(/databases/$(database)/documents/communityPublicFeed/$(id))))
         && (r.command in ['publish','show'] ? old.visibility=='hidden' : true);
     }
     match /communityPosts/{id} {
-      allow create: if request.auth!=null && screate(id,request.auth.uid,request.resource.data);
-      allow update: if request.auth!=null && supdate(id,request.auth.uid,request.resource.data,resource.data);
+      allow create: if request.auth!=null && (request.resource.data.schemaVersion==4?publicWrite(id,request.auth.uid,request.resource.data,null):screate(id,request.auth.uid,request.resource.data));
+      allow update: if request.auth!=null && (resource.data.schemaVersion==4?publicWrite(id,request.auth.uid,request.resource.data,resource.data):supdate(id,request.auth.uid,request.resource.data,resource.data));
       match /revisions/{v} {
-        allow create: if request.auth!=null && srevision(request.resource.data,id,request.auth.uid,request.resource.data.contentVersion)
+        allow create: if request.auth!=null && ((publicLink(id,request.auth.uid,request.resource.data.operationId) && v==getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.currentRevisionId) || srevision(request.resource.data,id,request.auth.uid,request.resource.data.contentVersion)
           && v=='v'+string(request.resource.data.contentVersion) && request.resource.data.createdAt==request.time
-          && srootLink(id,request.auth.uid,request.resource.data.operationId) && getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.currentRevisionId==v;
+          && srootLink(id,request.auth.uid,request.resource.data.operationId) && getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.currentRevisionId==v);
       }
     }
     match /communityFeed/{id} {
       allow get: if request.auth!=null && (!exists(/databases/$(database)/documents/communityFeed/$(id)) || sfeed(resource.data,id));
       // Query authorization deliberately uses only projected state: rules are not filters.
-      allow list: if request.auth!=null && page20() && resource.data.schemaVersion==2 && resource.data.audience=='community' && resource.data.state=='visible';
-      allow create,update: if request.auth!=null && rollout() && sfeed(request.resource.data,id) && srootLink(id,request.auth.uid,getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.lastOperationId)
-        && sproject(id,getAfter(/databases/$(database)/documents/communityPosts/$(id)).data);
-      allow delete: if request.auth!=null && srootLink(id,request.auth.uid,getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.lastOperationId)
+      allow list: if request.auth!=null && page20() && resource.data.schemaVersion in [2,3,4] && resource.data.audience in ['community','everyone'] && resource.data.state=='visible';
+      allow create,update: if request.auth!=null && (publicLink(id,request.auth.uid,getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.lastOperationId) || rollout() && sfeed(request.resource.data,id) && srootLink(id,request.auth.uid,getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.lastOperationId)
+        && sproject(id,getAfter(/databases/$(database)/documents/communityPosts/$(id)).data));
+      allow delete: if request.auth!=null && (publicLink(id,request.auth.uid,getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.lastOperationId) || srootLink(id,request.auth.uid,getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.lastOperationId))
         && getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.visibility=='hidden';
     }
-    function parentVisibleAfter(id){return existsAfter(/databases/$(database)/documents/communityFeed/$(id)) && getAfter(/databases/$(database)/documents/communityFeed/$(id)).data.schemaVersion==2 && getAfter(/databases/$(database)/documents/communityFeed/$(id)).data.state=='visible';}
-    function parentVisible(id){return exists(/databases/$(database)/documents/communityFeed/$(id)) && get(/databases/$(database)/documents/communityFeed/$(id)).data.schemaVersion==2 && get(/databases/$(database)/documents/communityFeed/$(id)).data.state=='visible';}
+    function parentVisibleAfter(id){return existsAfter(/databases/$(database)/documents/communityFeed/$(id)) && getAfter(/databases/$(database)/documents/communityFeed/$(id)).data.schemaVersion in [2,3,4] && getAfter(/databases/$(database)/documents/communityFeed/$(id)).data.state=='visible';}
+    function parentVisible(id){return exists(/databases/$(database)/documents/communityFeed/$(id)) && get(/databases/$(database)/documents/communityFeed/$(id)).data.schemaVersion in [2,3,4] && get(/databases/$(database)/documents/communityFeed/$(id)).data.state=='visible';}
     function scount(d,id){return d.keys().size()==6 && d.keys().hasOnly(['schemaVersion','postId','likeCount','countVersion','updatedAt','lastOperationId']) && d.schemaVersion is int && d.schemaVersion==2 && d.postId==id && d.likeCount is int && d.likeCount>=0 && d.countVersion is int && d.countVersion>=0 && d.updatedAt==request.time && validId(d.lastOperationId);}
     function slike(d,id,uid){return d.keys().size()==8 && d.keys().hasOnly(['schemaVersion','uid','postId','active','likeVersion','sourceContentVersion','updatedAt','lastOperationId']) && d.schemaVersion is int && d.schemaVersion==2 && d.uid==uid && d.postId==id && d.active is bool && d.likeVersion is int && d.likeVersion>=1 && d.sourceContentVersion is int && d.sourceContentVersion>=1 && d.updatedAt==request.time && validId(d.lastOperationId);}
     function likeDelta(id,uid,op){
@@ -785,13 +811,13 @@ service cloud.firestore {
         && n.active!=oldActive && n.likeVersion==oldVersion+1 && r.command=='set_like' && r.postId==id && r.targetId==null
         && r.base.targetVersion==oldVersion && r.result=={'targetVersion':n.likeVersion} && r.input=={'active':n.active} && r.committedAt==request.time
         && next.likeCount==count.likeCount+(n.active?1:-1) && next.countVersion==count.countVersion+1
-        && (n.active ? basicMemberReady(uid) && parentVisibleAfter(id) && n.sourceContentVersion==get(/databases/$(database)/documents/communityFeed/$(id)).data.contentVersion && r.base.contentVersion==n.sourceContentVersion : oldActive && n.sourceContentVersion==(parentVisible(id)?get(/databases/$(database)/documents/communityFeed/$(id)).data.contentVersion:get(path).data.sourceContentVersion));
+        && (n.active ? communityInteractionReady(uid) && parentVisibleAfter(id) && n.sourceContentVersion==get(/databases/$(database)/documents/communityFeed/$(id)).data.contentVersion && r.base.contentVersion==n.sourceContentVersion : oldActive && n.sourceContentVersion==(parentVisible(id)?get(/databases/$(database)/documents/communityFeed/$(id)).data.contentVersion:get(path).data.sourceContentVersion));
     }
     function likeNoop(r,uid){
       let p=/databases/$(database)/documents/communityPosts/$(r.postId)/likes/$(uid);
       return r.command=='set_like' && r.targetId==null && r.input.keys().size()==1 && r.input.active is bool
         && r.base.targetVersion==(exists(p)?get(p).data.likeVersion:0) && r.result=={'targetVersion':r.base.targetVersion}
-        && r.input.active==(exists(p)?get(p).data.active:false) && (r.input.active ? basicMemberReady(uid) && parentVisible(r.postId) : true);
+        && r.input.active==(exists(p)?get(p).data.active:false) && (r.input.active ? communityInteractionReady(uid) && parentVisible(r.postId) : true);
     }
     match /communityPosts/{id}/likes/{uid} {
       allow get: if self(uid);allow list,delete: if false;
@@ -799,8 +825,8 @@ service cloud.firestore {
     }
     match /communityCounts/{id} {
       allow get: if request.auth!=null && (!exists(/databases/$(database)/documents/communityCounts/$(id)) || parentVisible(id) || get(/databases/$(database)/documents/communityPosts/$(id)/likes/$(request.auth.uid)).data.active==true || communityOwner(id));
-      allow create: if request.auth!=null && scount(request.resource.data,id) && request.resource.data.likeCount==0 && request.resource.data.countVersion==0
-        && srootLink(id,request.auth.uid,request.resource.data.lastOperationId) && getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.visibility=='visible';
+      allow create: if request.auth!=null && ((!exists(/databases/$(database)/documents/communityPosts/$(id)) && publicLink(id,request.auth.uid,request.resource.data.lastOperationId) && scount(request.resource.data,id) && request.resource.data.likeCount==0 && request.resource.data.countVersion==0) || scount(request.resource.data,id) && request.resource.data.likeCount==0 && request.resource.data.countVersion==0
+        && srootLink(id,request.auth.uid,request.resource.data.lastOperationId) && getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.visibility=='visible');
       allow update: if request.auth!=null && likeDelta(id,request.auth.uid,request.resource.data.lastOperationId);
       allow list,delete: if false;
     }
@@ -817,7 +843,7 @@ service cloud.firestore {
         && (exists(path)?get(path).data.authorUid==uid && get(path).data.state=='visible' && n.createdAt==get(path).data.createdAt && n.editedAt==request.time:r.command=='add_comment' && n.createdAt==request.time && n.editedAt==null)
         && v=={'schemaVersion':2,'postId':id,'commentId':cid,'authorUid':uid,'commentVersion':n.commentVersion,'sourceContentVersion':n.sourceContentVersion,'body':n.body,'state':n.state,'createdAt':request.time,'operationId':op}
         && (r.command=='withdraw_comment'? n.state=='withdrawn' && r.input=={} && n.body==get(path).data.body && n.sourceContentVersion==get(path).data.sourceContentVersion && !existsAfter(/databases/$(database)/documents/communityCommentFeed/$(id)/comments/$(cid))
-          : r.command in ['add_comment','edit_comment'] && n.state=='visible' && r.input=={'body':n.body} && basicMemberReady(uid) && scopeAllows(uid,'community_publication') && parentVisibleAfter(id) && n.sourceContentVersion==r.base.contentVersion && n.sourceContentVersion==get(/databases/$(database)/documents/communityFeed/$(id)).data.contentVersion
+          : r.command in ['add_comment','edit_comment'] && n.state=='visible' && r.input=={'body':n.body} && communityInteractionReady(uid) && scopeAllows(uid,'community_publication') && parentVisibleAfter(id) && n.sourceContentVersion==r.base.contentVersion && n.sourceContentVersion==get(/databases/$(database)/documents/communityFeed/$(id)).data.contentVersion
           && f=={'schemaVersion':2,'postId':id,'commentId':cid,'authorUid':uid,'commentVersion':n.commentVersion,'sourceContentVersion':n.sourceContentVersion,'body':n.body,'state':'visible','createdAt':n.createdAt,'editedAt':n.editedAt});
     }
     match /communityPosts/{id}/comments/{cid} {
@@ -833,9 +859,9 @@ service cloud.firestore {
       allow create,update,delete: if request.auth!=null && commentLink(id,cid,request.auth.uid,getAfter(/databases/$(database)/documents/communityPosts/$(id)/comments/$(cid)).data.operationId);
     }
     match /users/{uid}/communityOperations/{op} {
-      allow create: if self(uid) && sreceipt(request.resource.data,uid,op)
+      allow create: if self(uid) && (publicLink(request.resource.data.postId,uid,op) || sreceipt(request.resource.data,uid,op)
         && (request.resource.data.command=='set_like'?likeNoop(request.resource.data,uid) || likeDelta(request.resource.data.postId,uid,op)
-          :request.resource.data.command in ['add_comment','edit_comment','withdraw_comment']?commentLink(request.resource.data.postId,request.resource.data.targetId,uid,op):srootLink(request.resource.data.postId,uid,op));
+          :request.resource.data.command in ['add_comment','edit_comment','withdraw_comment']?commentLink(request.resource.data.postId,request.resource.data.targetId,uid,op):srootLink(request.resource.data.postId,uid,op)));
     }
 
     // F29 intake only. No client reviewer/status/hold capability.
@@ -845,6 +871,14 @@ service cloud.firestore {
         && p.schemaVersion==1 && p.policyVersion is int && p.policyVersion>=1 && p.intakeEnabled==true && p.supportedTargetKinds is list
         && p.supportedTargetKinds.hasOnly(['post','comment']) && kind in p.supportedTargetKinds && p.updatedAt is timestamp;
     }
+    match /system/communityPublicPolicy {allow get: if true;allow list,write: if false;}
+    match /communityPublicFeed/{id} {
+      allow get: if everyonePolicy() && (!exists(/databases/$(database)/documents/communityPublicFeed/$(id)) || publicStory(resource.data,id));
+      allow list: if everyonePolicy() && page20() && resource.data.schemaVersion==4 && resource.data.audience=='everyone' && resource.data.state=='visible';
+      allow create,update: if request.auth!=null && publicLink(id,request.auth.uid,getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.lastOperationId);
+      allow delete: if request.auth!=null && (publicLink(id,request.auth.uid,getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.lastOperationId) || srootLink(id,request.auth.uid,getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.lastOperationId)) && getAfter(/databases/$(database)/documents/communityPosts/$(id)).data.visibility=='hidden';
+    }
+    match /users/{uid}/moderationNotices/{id} {allow get: if self(uid);allow list: if self(uid) && page20();allow write: if false;}
     match /system/reportPolicy {allow get: if request.auth!=null && (!exists(/databases/$(database)/documents/system/reportPolicy) || resource.data.keys().size()==5 && resource.data.keys().hasOnly(['schemaVersion','policyVersion','intakeEnabled','supportedTargetKinds','updatedAt']) && resource.data.schemaVersion is int && resource.data.schemaVersion==1 && resource.data.policyVersion is int && resource.data.policyVersion>=1 && resource.data.intakeEnabled is bool && resource.data.supportedTargetKinds is list && resource.data.supportedTargetKinds.hasOnly(['post','comment']) && resource.data.updatedAt is timestamp);allow list,write: if false;}
     function reportKey(r){return r.targetKind=='post'?'post_'+r.targetId:'comment_'+r.parentId+'_'+r.targetId;}
     function reportPayload(statement,evidence){return statement.toUtf8().size()+(evidence==null?0:evidence.toUtf8().size())<=6144;}
@@ -1343,6 +1377,18 @@ service cloud.firestore {
     function publicFeedback(uid) {let own=get(/databases/$(database)/documents/users/$(request.auth.uid));let c=get(/databases/$(database)/documents/publicFeedbackConsents/$(uid));let profile=get(/databases/$(database)/documents/publicProfiles/$(uid));let control=get(/databases/$(database)/documents/publicProfileControls/$(uid));let h=get(/databases/$(database)/documents/profileModeration/$(uid));return request.auth!=null && own!=null && own.data.uid==request.auth.uid && own.data.schemaVersion==1 && own.data.keys().size()==3 && c!=null && c.data.enabled==true && profile!=null && control!=null && control.data.visibility=='public' && h!=null && h.data.hold=='clear' && get(/databases/$(database)/documents/safetyRuntimePolicy/current).data.publicFeedbackAdaptersEnabled==true;}
     match /publicExperienceReviews/{id} {allow get: if publicFeedback(resource.data.subjectUid) && resource.data.subjectConsentVersion==get(/databases/$(database)/documents/publicFeedbackConsents/$(resource.data.subjectUid)).data.version && resource.data.profileVersion==get(/databases/$(database)/documents/publicProfiles/$(resource.data.subjectUid)).data.publicationVersion && get(/databases/$(database)/documents/experienceReviewClearance/$(get(/databases/$(database)/documents/publicExperienceReviewGuards/$(id)).data.sourceReviewId)).data.state=='clear';allow list: if publicFeedback(resource.data.subjectUid) && page20();allow write: if false;}
     match /experienceReviewAggregates/{uid} {allow get: if publicFeedback(uid);allow list,write: if false;}
+
+    // F43 safe own status only; all managed work/hold/lifecycle writes remain denied.
+    match /users/{uid}/closureViews/{requestId} {
+      allow get: if self(uid) && resource.data.keys().size()==9
+        && resource.data.keys().hasOnly(['schemaVersion','ownerUid','requestId','phase','version','policyVersion','manifestVersion','acceptedAt','updatedAt'])
+        && resource.data.schemaVersion==1 && resource.data.ownerUid==uid && resource.data.requestId==requestId
+        && resource.data.version is int && resource.data.version>=1 && resource.data.policyVersion is int && resource.data.policyVersion>=1
+        && resource.data.manifestVersion is int && resource.data.manifestVersion>=1
+        && resource.data.phase in ['received_needs_inventory','closing','inventory_or_case_review','public_removal_in_progress','erasing','provider_delete_pending','completed_scope','needs_operator']
+        && resource.data.acceptedAt is timestamp && resource.data.updatedAt is timestamp;
+      allow list,write: if false;
+    }
 
     // F06_TEST_PROBE_ANCHOR: only the emulator test loader injects a temporary predicate probe.
     // F32-F41 scoped extensions: all consequential writes remain managed-only.

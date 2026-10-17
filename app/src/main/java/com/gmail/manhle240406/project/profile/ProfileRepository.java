@@ -76,6 +76,13 @@ public final class ProfileRepository {
         });
         return wrap(Tasks.withTimeout(combined,15,TimeUnit.SECONDS),ticket,false);
     }
+    /** Exact own private draft only; onboarding never queries contact or public profiles. */
+    public Task<Result<Map<String,Object>>> ownDraft(SessionEpoch.Ticket ticket) {
+        if(ticket.uid==null || !sessions.current(ticket))return Tasks.forResult(new Result<>(Code.SESSION_CHANGED,null));
+        Task<Map<String,Object>> read=ref(ticket.uid,ProfileCommand.Kind.DRAFT).get(Source.SERVER)
+            .continueWith(done->{if(!done.isSuccessful())throw Objects.requireNonNull(done.getException());return checked(done.getResult(),ProfileSchema.DRAFT,ticket.uid);});
+        return wrap(Tasks.withTimeout(read,15,TimeUnit.SECONDS),ticket,false);
+    }
     public Task<Result<Map<String,Object>>> execute(SessionEpoch.Ticket ticket,ProfileCommand command) {
         if(!sessions.current(ticket) || ticket.uid==null) return Tasks.forResult(new Result<>(Code.SESSION_CHANGED,null));
         final String uid=ticket.uid;
