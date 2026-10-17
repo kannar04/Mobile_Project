@@ -1,0 +1,58 @@
+package com.gmail.manhle240406.project.community;
+
+import android.os.Bundle;
+import android.view.*;
+import android.widget.*;
+import androidx.recyclerview.widget.*;
+import com.gmail.manhle240406.project.*;
+import com.gmail.manhle240406.project.R;
+import com.gmail.manhle240406.project.adoption.ParticipantCommunicationRepository;
+import com.gmail.manhle240406.project.foundation.*;
+import com.gmail.manhle240406.project.wiring.MainPageFragment;
+import com.google.firebase.firestore.*;
+import com.google.android.material.button.MaterialButton;
+import java.util.*;
+
+/** Own bounded participant index. Never invents strangers, memberships or message previews. */
+public final class ConversationsFragment extends MainPageFragment {
+    private ParticipantCommunicationRepository repository;
+    private SessionGateway sessions; private SessionEpoch.Ticket ticket;
+    private final List<DocumentSnapshot> rows=new ArrayList<>();
+    private DocumentSnapshot cursor; private boolean busy,more=true; private long generation;
+    private TextView status; private MaterialButton retry; private RecyclerView list;
+    private final Runnable invalidation=()->{generation++;rows.clear();if(list!=null)list.getAdapter().notifyDataSetChanged();};
+    @Override protected void createPage(Bundle saved){
+        LinearLayout root=SocialViews.column(requireContext());root.setPadding(0,0,0,0);setContentView(root);
+        root.setBackgroundResource(R.color.anilove_bg);SocialViews.privateView(root);
+        com.google.android.material.appbar.MaterialToolbar header=SocialSurface.header(requireContext(),root,R.string.nav_chat,this::finish);
+        header.setNavigationIcon(null);
+        LinearLayout body=SocialViews.column(requireContext());root.addView(body,new LinearLayout.LayoutParams(-1,-1));
+        status=SocialSurface.muted(requireContext(),getString(R.string.wiring_loading));body.addView(status);
+        retry=SocialSurface.quiet(requireContext(),getString(R.string.wiring_retry),this::load);retry.setVisibility(View.GONE);body.addView(retry);
+        list=new RecyclerView(requireContext());list.setId(R.id.conversations_list);list.setLayoutManager(new LinearLayoutManager(requireContext()));list.setAdapter(new Rows());body.addView(list,new LinearLayout.LayoutParams(-1,0,1));
+        FirebaseEnvironment environment=((AniloveApplication)getApplication()).foundation();sessions=environment.sessions;ticket=sessions==null?null:sessions.capture();
+        if(ticket==null||ticket.uid==null){status.setText(R.string.wiring_auth_required);return;}
+        sessions.onInvalidated(invalidation);repository=new ParticipantCommunicationRepository(FirebaseFirestore.getInstance(),sessions);load();
+        list.addOnScrollListener(new RecyclerView.OnScrollListener(){@Override public void onScrolled(RecyclerView v,int x,int y){if(y>0&&((LinearLayoutManager)list.getLayoutManager()).findLastVisibleItemPosition()>=rows.size()-5)load();}});
+    }
+    private boolean current(){return !isDestroyed()&&!isFinishing()&&sessions!=null&&sessions.current(ticket);}
+    private void load(){if(busy||!more||repository==null||!current())return;busy=true;long epoch=++generation;retry.setVisibility(View.GONE);
+        repository.inbox(ticket,cursor).addOnCompleteListener(result->{if(!current()||epoch!=generation)return;busy=false;
+            if(!result.isSuccessful()){status.setText(R.string.chat_load_failed);retry.setVisibility(View.VISIBLE);return;}
+            for(DocumentSnapshot row:result.getResult())if(rows.stream().noneMatch(old->old.getId().equals(row.getId())))rows.add(row);
+            if(!result.getResult().isEmpty())cursor=result.getResult().getDocuments().get(result.getResult().size()-1);
+            more=result.getResult().size()==20;while(rows.size()>100)rows.remove(0);list.getAdapter().notifyDataSetChanged();
+            status.setText(rows.isEmpty()?R.string.chat_empty_explanation:R.string.chat_private_participants);
+        });
+    }
+    private final class Rows extends RecyclerView.Adapter<Holder>{
+        @Override public int getItemCount(){return rows.size();}
+        @Override public Holder onCreateViewHolder(ViewGroup parent,int type){MaterialButton button=SocialSurface.quiet(requireContext(),"",()->{});button.setLayoutParams(new RecyclerView.LayoutParams(-1,-2));return new Holder(button);}
+        @Override public void onBindViewHolder(Holder holder,int position){DocumentSnapshot row=rows.get(position);MaterialButton button=(MaterialButton)holder.itemView;
+            String activity=row.getTimestamp("updatedAt")==null?"":java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM,java.text.DateFormat.SHORT).format(row.getTimestamp("updatedAt").toDate());
+            button.setText(getString(R.string.chat_participant_conversation)+(activity.isEmpty()?"":"\n"+activity));button.setIconResource(R.drawable.ic_nav_chat);
+            button.setOnClickListener(v->((MainActivity)requireActivity()).conversation(row.getId()));}
+    }
+    private static final class Holder extends RecyclerView.ViewHolder{Holder(View view){super(view);}}
+    @Override public void onDestroyView(){generation++;if(repository!=null)repository.close();if(sessions!=null)sessions.removeInvalidation(invalidation);list=null;super.onDestroyView();}
+}

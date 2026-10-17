@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Basic Palette -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- AniLove Brand Palette -->
+    <color name="anilove_bg">#FAF0E6</color>
+    <color name="anilove_primary">#E87A5D</color>
+    <color name="anilove_primary_variant">#D6684C</color>
+    <color name="anilove_primary_container">#FDE2DC</color>
+    <color name="anilove_on_primary">#FFFFFF</color>
+    <color name="anilove_card_bg">#FFFFFF</color>
+    <color name="anilove_surface">#FFFFFF</color>
+
+    <!-- Typography Colors -->
+    <color name="anilove_text_dark">#2D231E</color>
+    <color name="anilove_text_muted">#6B5F57</color>
+    <color name="anilove_border">#EBE3DB</color>
+
+    <!-- Interactive Elements -->
+    <color name="anilove_chip_bg">#F4EBE2</color>
+    <color name="anilove_chip_selected">#E87A5D</color>
+
+    <!-- Status Badge Colors -->
+    <color name="anilove_badge_green_bg">#E8F5E9</color>
+    <color name="anilove_badge_green_text">#2E7D32</color>
+    <color name="anilove_badge_orange_bg">#FFF3E0</color>
+    <color name="anilove_badge_orange_text">#EF6C00</color>
+    <color name="anilove_badge_red_bg">#FFEBEE</color>
+    <color name="anilove_badge_red_text">#C62828</color>
+</resources>

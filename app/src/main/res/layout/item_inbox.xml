@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    android:background="@drawable/anilove_card_bg"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="16dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
+
+    <!-- Unread Red Indicator Dot -->
+    <View
+        android:id="@+id/inbox_unread_dot"
+        android:layout_width="10dp"
+        android:layout_height="10dp"
+        android:layout_marginEnd="12dp"
+        android:background="@drawable/anilove_chip_bg"
+        android:backgroundTint="@color/anilove_primary" />
+
+    <!-- Avatar -->
+    <ImageView
+        android:id="@+id/inbox_avatar"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:contentDescription="Avatar"
+        android:src="@drawable/profile_avatar_default" />
+
+    <!-- Content Text -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/inbox_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Message from Host"
+            android:textColor="@color/anilove_text_dark"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/inbox_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="'Is Bông good with cats?'"
+            android:textColor="@color/anilove_text_muted"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <!-- Timestamp -->
+    <TextView
+        android:id="@+id/inbox_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="14 ngày"
+        android:textColor="@color/anilove_text_muted"
+        android:textSize="12sp" />
+</LinearLayout>

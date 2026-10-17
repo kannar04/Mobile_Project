@@ -1,0 +1,12 @@
+<resources>
+    <item name="flow_current_password" type="id" />
+    <item name="flow_new_password" type="id" />
+    <item name="flow_confirm_password" type="id" />
+    <item name="flow_status" type="id" />
+    <item name="flow_submit" type="id" />
+    <item name="flow_filters" type="id" />
+    <item name="flow_search" type="id" />
+    <item name="flow_filter_summary" type="id" />
+    <item name="flow_detail_save" type="id" />
+    <item name="flow_detail_share" type="id" />
+</resources>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/map_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/anilove_bg"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Top Header -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/map_back"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:text="@string/auth_back"
+            android:textColor="@color/anilove_text_dark" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="@string/f35_title"
+            android:textColor="@color/anilove_text_dark"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </RelativeLayout>
+
+    <!-- Simulated Map View Card -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@drawable/anilove_card_bg"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:contentDescription="@string/app_name"
+            android:src="@drawable/ic_nav_home"
+            app:tint="@color/anilove_primary" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:text="Bản đồ Thú cưng &amp; Cửa hàng Quanh đây (F35)\n\nHiển thị vị trí GPS của các bé thú cưng, trạm cứu hộ và phòng khám thú y gần bạn."
+            android:textColor="@color/anilove_text_muted"
+            android:textSize="14sp" />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/AniLovePrimaryButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Quét vị trí GPS quanh đây" />
+    </LinearLayout>
+</LinearLayout>
