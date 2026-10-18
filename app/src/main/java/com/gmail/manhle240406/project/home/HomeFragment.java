@@ -73,11 +73,12 @@ public final class HomeFragment extends Fragment {
  }
  private void browse(){View input=header.findViewById(R.id.home_search_input);((MainActivity)requireActivity()).discovery(input instanceof EditText?((EditText)input).getText().toString():"",false);}
  private void refresh(){com.gmail.manhle240406.project.media.SessionImageCache.clear();if(model==null||model.busy){if(refresh!=null)refresh.setRefreshing(false);return;}reactionGeneration++;reactionReads.clear();reactionFailures.clear();likes.clear();if(authors!=null)authors.clear();model.refresh();loadPets();}
+ private final Runnable refreshListings=()->{if(discovery!=null&&alive&&!isHidden()){discovery.clear();pets.replace(Collections.emptyList());loadPets();}};
  private void loadPets(){if(discovery==null||!alive||!sessions.current(ticket))return;discovery.page(ticket,new DiscoveryQuery("","available",Collections.emptyMap()),null).addOnCompleteListener(done->{if(!alive||!sessions.current(ticket))return;pets.message=done.isSuccessful()?R.string.wiring_empty:R.string.home_listing_unavailable;pets.replace(done.isSuccessful()?done.getResult().getDocuments():Collections.emptyList());});}
  private void checkpoint(){if(streamLayout==null||posts==null||model==null)return;int p=streamLayout.findFirstVisibleItemPosition()-1;View child=streamLayout.findViewByPosition(p+1);if(p>=0&&p<posts.rows.size()&&child!=null)model.checkpoint(posts.rows.get(p).getId(),child.getTop());}
- @Override public void onStart(){super.onStart();if(model!=null&&!isHidden())model.start();}
- @Override public void onStop(){checkpoint();if(model!=null)model.stop();super.onStop();}
- @Override public void onHiddenChanged(boolean hidden){super.onHiddenChanged(hidden);if(model!=null){if(hidden){checkpoint();}else if(getLifecycle().getCurrentState().isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED))model.start();}}
+ @Override public void onStart(){super.onStart();if(model!=null&&!isHidden())model.start();com.gmail.manhle240406.project.adoption.BrowsePulse.add(refreshListings);refreshListings.run();}
+ @Override public void onStop(){com.gmail.manhle240406.project.adoption.BrowsePulse.remove(refreshListings);checkpoint();if(model!=null)model.stop();super.onStop();}
+ @Override public void onHiddenChanged(boolean hidden){super.onHiddenChanged(hidden);if(hidden)com.gmail.manhle240406.project.adoption.BrowsePulse.remove(refreshListings);else{com.gmail.manhle240406.project.adoption.BrowsePulse.add(refreshListings);refreshListings.run();}if(model!=null){if(hidden){checkpoint();}else if(getLifecycle().getCurrentState().isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED))model.start();}}
  @Override public void onDestroyView(){alive=false;reactionGeneration++;if(sessions!=null&&invalidation!=null)sessions.removeInvalidation(invalidation);if(authors!=null)authors.close();if(discovery!=null)discovery.close();if(favorites!=null)favorites.close();likes.clear();reactionReads.clear();reactionFailures.clear();posts=null;pets=null;stream=null;header=null;refresh=null;super.onDestroyView();}
  private void bindReaction(DocumentSnapshot row,TextView heart){
   String id=row.getId();heart.setTag(id);CommunityOutbox.Entry pending=((AniloveApplication)requireActivity().getApplication()).communityOutbox().pendingLike(id);Map<String,Object> previous=likes.get(id);boolean active=pending!=null?Boolean.TRUE.equals(pending.command.input.get("active")):previous!=null&&Boolean.TRUE.equals(previous.get("active"));
@@ -99,13 +100,18 @@ public final class HomeFragment extends Fragment {
    posts.reactionChanged(id);
   });
  }
+ private static final class CardRow {
+  final DocumentSnapshot document;final String id;final Map<String,Object> data;
+  CardRow(Object value){document=value instanceof DocumentSnapshot?(DocumentSnapshot)value:null;if(document!=null){id=document.getId();data=document.getData();}else{com.gmail.manhle240406.project.adoption.ListingRow r=(com.gmail.manhle240406.project.adoption.ListingRow)value;id=r.getId();data=r.getData();}}
+  String getId(){return id;}Map<String,Object> getData(){return data;}String getString(String k){return (String)data.get(k);}Object get(String k){return data.get(k);}com.google.firebase.Timestamp getTimestamp(String k){return (com.google.firebase.Timestamp)data.get(k);}
+ }
  private final class Rows extends RecyclerView.Adapter<Holder>{
-  final boolean listing; final List<DocumentSnapshot> rows=new ArrayList<>();int message=R.string.wiring_loading;
+  final boolean listing; final List<CardRow> rows=new ArrayList<>();int message=R.string.wiring_loading;
   Rows(boolean listing){this.listing=listing;}
   void reactionsChanged(){if(!rows.isEmpty())notifyItemRangeChanged(0,rows.size(),"reaction");}
   void reactionChanged(String id){for(int p=0;p<rows.size();p++)if(rows.get(p).getId().equals(id)){notifyItemChanged(p,"reaction");return;}}
-  @Override public void onBindViewHolder(@NonNull Holder h,int p,@NonNull List<Object> payloads){if(!listing&&!payloads.isEmpty()&&p<rows.size()){bindReaction(rows.get(p),h.itemView.findViewById(R.id.post_like_btn));return;}onBindViewHolder(h,p);}
-  void replace(List<DocumentSnapshot> values){List<DocumentSnapshot> next=new ArrayList<>(values.subList(0,Math.min(listing?4:100,values.size())));List<DocumentSnapshot> old=new ArrayList<>(rows);androidx.recyclerview.widget.DiffUtil.DiffResult diff=androidx.recyclerview.widget.DiffUtil.calculateDiff(new androidx.recyclerview.widget.DiffUtil.Callback(){public int getOldListSize(){return old.isEmpty()?1:old.size()+(listing?0:1);}public int getNewListSize(){return next.isEmpty()?1:next.size()+(listing?0:1);}public boolean areItemsTheSame(int a,int b){return a>=old.size()||b>=next.size()?a>=old.size()&&b>=next.size():old.get(a).getId().equals(next.get(b).getId());}public boolean areContentsTheSame(int a,int b){return a<old.size()&&b<next.size()&&Objects.equals(old.get(a).getData(),next.get(b).getData());}});rows.clear();rows.addAll(next);if(!listing){Set<String> retained=new HashSet<>();for(DocumentSnapshot row:rows)retained.add(row.getId());likes.keySet().retainAll(retained);reactionFailures.retainAll(retained);}diff.dispatchUpdatesTo(this);}
+  @Override public void onBindViewHolder(@NonNull Holder h,int p,@NonNull List<Object> payloads){if(!listing&&!payloads.isEmpty()&&p<rows.size()){bindReaction(rows.get(p).document,h.itemView.findViewById(R.id.post_like_btn));return;}onBindViewHolder(h,p);}
+  void replace(List<?> values){List<CardRow> next=new ArrayList<>();for(Object v:values.subList(0,Math.min(listing?4:100,values.size())))next.add(new CardRow(v));List<CardRow> old=new ArrayList<>(rows);androidx.recyclerview.widget.DiffUtil.DiffResult diff=androidx.recyclerview.widget.DiffUtil.calculateDiff(new androidx.recyclerview.widget.DiffUtil.Callback(){public int getOldListSize(){return old.isEmpty()?1:old.size()+(listing?0:1);}public int getNewListSize(){return next.isEmpty()?1:next.size()+(listing?0:1);}public boolean areItemsTheSame(int a,int b){return a>=old.size()||b>=next.size()?a>=old.size()&&b>=next.size():old.get(a).getId().equals(next.get(b).getId());}public boolean areContentsTheSame(int a,int b){return a<old.size()&&b<next.size()&&Objects.equals(old.get(a).getData(),next.get(b).getData());}});rows.clear();rows.addAll(next);if(!listing){Set<String> retained=new HashSet<>();for(CardRow row:rows)retained.add(row.getId());likes.keySet().retainAll(retained);reactionFailures.retainAll(retained);}diff.dispatchUpdatesTo(this);}
 
   public int getItemCount(){return rows.isEmpty()?1:rows.size()+(listing?0:1);}
   public int getItemViewType(int p){return rows.isEmpty()||p==rows.size()?1:0;}
@@ -115,7 +121,7 @@ public final class HomeFragment extends Fragment {
   }
   public void onBindViewHolder(@NonNull Holder h,int p){
    if(rows.isEmpty()||p==rows.size()){((TextView)h.itemView).setText(rows.isEmpty()?message:model.failed?R.string.social_retry:model.busy?R.string.social_loading:model.end?R.string.social_end:R.string.social_reading);h.itemView.setEnabled(listing||model.failed);h.itemView.setOnClickListener(v->{if(listing)browse();else model.load(false);});return;}
-   DocumentSnapshot row=rows.get(p);
+   CardRow row=rows.get(p);
    if(listing){
     ((TextView)h.itemView.findViewById(R.id.pet_name)).setText(row.getString("petName"));
     ((TextView)h.itemView.findViewById(R.id.pet_breed_age)).setText(row.getString("title"));
@@ -141,7 +147,7 @@ public final class HomeFragment extends Fragment {
     gallery.bind(row.get("mediaAssetIds"));
     AdoptionPostCard adoption=imageParent.findViewWithTag("adoption_post_card");if(adoption==null){adoption=new AdoptionPostCard(requireContext());adoption.setTag("adoption_post_card");imageParent.addView(adoption);}adoption.bind(row.getData());
 
-    TextView heart=h.itemView.findViewById(R.id.post_like_btn);heart.setText(R.string.social_like_action);bindReaction(row,heart);h.itemView.findViewById(R.id.post_like_btn).setMinimumHeight(SocialViews.dp(requireContext(),48));h.itemView.findViewById(R.id.post_comment_btn).setMinimumHeight(SocialViews.dp(requireContext(),48));
+    TextView heart=h.itemView.findViewById(R.id.post_like_btn);heart.setText(R.string.social_like_action);bindReaction(row.document,heart);h.itemView.findViewById(R.id.post_like_btn).setMinimumHeight(SocialViews.dp(requireContext(),48));h.itemView.findViewById(R.id.post_comment_btn).setMinimumHeight(SocialViews.dp(requireContext(),48));
     ((TextView)h.itemView.findViewById(R.id.post_comment_btn)).setText(R.string.social_open);
     View.OnClickListener open=v->startActivity(new Intent(requireContext(),SocialDetailActivity.class).putExtra("post",row.getId()));
     h.itemView.setOnClickListener(open);h.itemView.findViewById(R.id.post_comment_btn).setOnClickListener(open);

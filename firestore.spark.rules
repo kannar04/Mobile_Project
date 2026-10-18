@@ -54,15 +54,13 @@ service cloud.firestore {
         && request.resource.data.lastOperationId != resource.data.lastOperationId;
     }
     function publicShape(d,uid) {
-      return d.keys().hasOnly(['ownerUid','schemaVersion','publicationVersion','sourceDraftVersion','displayName','avatarKey','regionCode','bio','publishedAt'])
-        && d.keys().hasAll(['ownerUid','schemaVersion','publicationVersion','sourceDraftVersion','displayName','avatarKey','regionCode','bio','publishedAt'])
+      return d.keys().hasOnly(['ownerUid','schemaVersion','publicationVersion','sourceDraftVersion','displayName','avatarKey','regionCode','bio','publishedAt']) && d.keys().size()==9
         && d.ownerUid == uid && d.schemaVersion is int && d.schemaVersion == 1
         && d.publicationVersion is int && d.publicationVersion >= 1
         && d.sourceDraftVersion is int && d.sourceDraftVersion >= 1 && content(d) && d.publishedAt is timestamp;
     }
     function controlShape(d,uid) {
-      return d.keys().hasOnly(['ownerUid','schemaVersion','version','visibility','lastOperationId','updatedAt'])
-        && d.keys().hasAll(['ownerUid','schemaVersion','version','visibility','lastOperationId','updatedAt'])
+      return d.keys().hasOnly(['ownerUid','schemaVersion','version','visibility','lastOperationId','updatedAt']) && d.keys().size()==6
         && d.ownerUid == uid && d.schemaVersion is int && d.schemaVersion == 1 && d.version is int && d.version >= 1
         && d.visibility in ['hidden','public'] && validId(d.lastOperationId) && d.updatedAt is timestamp;
     }
@@ -72,8 +70,7 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/profileModeration/$(uid)).data.hold == 'clear';
     }
     function draftShape(d,uid) {
-      return d.keys().hasOnly(['ownerUid','schemaVersion','version','displayName','avatarKey','regionCode','bio','submission','lastOperationId','updatedAt'])
-        && d.keys().hasAll(['ownerUid','schemaVersion','version','displayName','avatarKey','regionCode','bio','submission','lastOperationId','updatedAt'])
+      return d.keys().hasOnly(['ownerUid','schemaVersion','version','displayName','avatarKey','regionCode','bio','submission','lastOperationId','updatedAt']) && d.keys().size()==10
         && ownerVersion(d,uid) && content(d) && d.submission in ['draft','submitted'];
     }
     function profileHold(d,uid) {
@@ -117,8 +114,7 @@ service cloud.firestore {
         && (s == '' || s.matches('(?s).*[^\\s\\x00-\\x1f\\x7f].*'));
     }
     function petIdentity(d) {
-      return d.keys().hasOnly(['displayName','species','breed','sex','ageMonths','ageObservedAt','marks','marksUnknown','illustrationKey'])
-        && d.keys().hasAll(['displayName','species','breed','sex','ageMonths','ageObservedAt','marks','marksUnknown','illustrationKey'])
+      return d.keys().hasOnly(['displayName','species','breed','sex','ageMonths','ageObservedAt','marks','marksUnknown','illustrationKey']) && d.keys().size()==9
         && bounded(d.displayName,0,80,320) && bounded(d.species,1,40,160) && bounded(d.breed,0,80,320)
         && d.sex in ['unknown','female','male']
         && ((d.ageMonths == null && d.ageObservedAt == null) || (d.ageMonths is int && d.ageMonths >= 0 && d.ageMonths <= 1200 && d.ageObservedAt is timestamp && d.ageObservedAt <= request.time))
@@ -126,14 +122,13 @@ service cloud.firestore {
         && ((d.marksUnknown && d.marks == '') || (!d.marksUnknown && d.marks.size() >= 1)) && d.illustrationKey in ['default','cat','dog'];
     }
     function declaration(d) {
-      return d.keys().hasOnly(['basis','reportedCare','explanation']) && d.keys().hasAll(['basis','reportedCare','explanation'])
+      return d.keys().hasOnly(['basis','reportedCare','explanation']) && d.keys().size()==3
         && d.basis in ['claimed_owner','authorized_caregiver','other_permission'] && d.reportedCare is bool
         && bounded(d.explanation,d.basis == 'claimed_owner' ? 0 : 1,1000,3000);
     }
     function claimInput(c) { return {'basis':c.basis,'reportedCare':c.reportedCare,'explanation':c.explanation}; }
     function petHeader(p,id) {
-      return p.keys().hasOnly(['schemaVersion','petId','registrarUid','editorUid','identityVersion','currentRevisionId','custodyVersion','lifecycle','createdAt','updatedAt','lastOperationId'])
-        && p.keys().hasAll(['schemaVersion','petId','registrarUid','editorUid','identityVersion','currentRevisionId','custodyVersion','lifecycle','createdAt','updatedAt','lastOperationId'])
+      return p.keys().hasOnly(['schemaVersion','petId','registrarUid','editorUid','identityVersion','currentRevisionId','custodyVersion','lifecycle','createdAt','updatedAt','lastOperationId']) && p.keys().size()==11
         && p.schemaVersion is int && p.schemaVersion == 1 && p.petId == id && validId(id)
         && p.registrarUid is string && p.editorUid is string && p.identityVersion is int && p.identityVersion >= 1
         && p.custodyVersion is int && p.custodyVersion >= 0 && p.lifecycle in ['active','archived'] && validId(p.currentRevisionId)
@@ -141,8 +136,7 @@ service cloud.firestore {
     }
     function petEditor(id) {return request.auth != null && get(/databases/$(database)/documents/pets/$(id)).data.editorUid == request.auth.uid;}
     function petReceipt(r,uid,id) {
-      return r.keys().hasOnly(['schemaVersion','ownerUid','operationId','petId','type','role','baseIdentityVersion','baseClaimVersion','baseAuthorityVersion','result','input','status','recordedAt'])
-        && r.keys().hasAll(['schemaVersion','ownerUid','operationId','petId','type','role','baseIdentityVersion','baseClaimVersion','baseAuthorityVersion','result','input','status','recordedAt'])
+      return r.keys().hasOnly(['schemaVersion','ownerUid','operationId','petId','type','role','baseIdentityVersion','baseClaimVersion','baseAuthorityVersion','result','input','status','recordedAt']) && r.keys().size()==13
         && r.schemaVersion is int && r.schemaVersion == 1 && r.ownerUid == uid && r.operationId == id && validId(id) && validId(r.petId)
         && r.type in ['register_pet','revise_identity','submit_claim','revise_claim','withdraw_claim','suspend_offering','submit_challenge']
         && r.role in ['registrar','editor','claimant','offer_actor','reporter']
@@ -216,26 +210,24 @@ service cloud.firestore {
         && next.diff(a).affectedKeys().hasOnly(['status','authorityVersion','updatedAt','lastOperationId']);
     }
     function claimShape(c,id,uid) {
-      return c.keys().hasOnly(['schemaVersion','petId','claimantUid','claimVersion','identityVersion','basis','reportedCare','explanation','reviewState','submittedRevisionId','submittedAt','createdAt','updatedAt','lastOperationId'])
-        && c.keys().hasAll(['schemaVersion','petId','claimantUid','claimVersion','identityVersion','basis','reportedCare','explanation','reviewState','submittedRevisionId','submittedAt','createdAt','updatedAt','lastOperationId'])
+      return c.keys().hasOnly(['schemaVersion','petId','claimantUid','claimVersion','identityVersion','basis','reportedCare','explanation','reviewState','submittedRevisionId','submittedAt','createdAt','updatedAt','lastOperationId']) && c.keys().size()==14
         && c.schemaVersion is int && c.schemaVersion == 1 && c.petId == id && c.claimantUid == uid && c.claimVersion is int && c.claimVersion >= 1 && c.identityVersion is int && c.identityVersion >= 1
         && declaration(claimInput(c)) && c.reviewState in ['draft','submitted','needs_information','accepted_for_demo','rejected','withdrawn']
         && (c.submittedRevisionId == null || validId(c.submittedRevisionId)) && (c.submittedAt == null || c.submittedAt is timestamp)
         && c.createdAt is timestamp && c.updatedAt is timestamp && validId(c.lastOperationId);
     }
     function authorityShape(a,id) {
-      return a.keys().hasOnly(['schemaVersion','petId','offerUid','claimUid','claimVersion','identityVersion','authorityVersion','status','hold','decisionId','custodyVersion','updatedAt','lastOperationId'])
-        && a.keys().hasAll(['schemaVersion','petId','offerUid','claimUid','claimVersion','identityVersion','authorityVersion','status','hold','decisionId','custodyVersion','updatedAt','lastOperationId'])
+      return a.keys().hasOnly(['schemaVersion','petId','offerUid','claimUid','claimVersion','identityVersion','authorityVersion','status','hold','decisionId','custodyVersion','updatedAt','lastOperationId']) && a.keys().size()==13
         && a.schemaVersion is int && a.schemaVersion == 1 && a.petId == id && (a.offerUid == null || a.offerUid is string) && a.claimUid is string
         && a.claimVersion is int && a.claimVersion >= 1 && a.identityVersion is int && a.identityVersion >= 1 && a.authorityVersion is int && a.authorityVersion >= 0 && a.custodyVersion is int && a.custodyVersion >= 0
         && a.status in ['blocked','enabled','suspended'] && a.hold in ['clear','held'] && (a.decisionId == null || validId(a.decisionId)) && a.updatedAt is timestamp && validId(a.lastOperationId);
     }
     function slotShape(s,id) {
-      return s.keys().hasOnly(['schemaVersion','petId','activeListingId','slotVersion','updatedAt']) && s.keys().hasAll(['schemaVersion','petId','activeListingId','slotVersion','updatedAt'])
+      return s.keys().hasOnly(['schemaVersion','petId','activeListingId','slotVersion','updatedAt']) && s.keys().size()==5
         && s.schemaVersion is int && s.schemaVersion == 1 && s.petId == id && s.slotVersion is int && s.slotVersion >= 0 && (s.activeListingId == null || validId(s.activeListingId)) && s.updatedAt is timestamp;
     }
     function gateShape(g,id) {
-      return g.keys().hasOnly(['schemaVersion','petId','state','activeReservationId','activePlacementId','gateVersion','custodyVersion','updatedAt']) && g.keys().hasAll(['schemaVersion','petId','state','activeReservationId','activePlacementId','gateVersion','custodyVersion','updatedAt'])
+      return g.keys().hasOnly(['schemaVersion','petId','state','activeReservationId','activePlacementId','gateVersion','custodyVersion','updatedAt']) && g.keys().size()==8
         && g.schemaVersion is int && g.schemaVersion == 1 && g.petId == id && g.state in ['none','reserved','placed','unknown'] && g.gateVersion is int && g.gateVersion >= 0 && g.custodyVersion is int && g.custodyVersion >= 0
         && (g.activeReservationId == null || validId(g.activeReservationId)) && (g.activePlacementId == null || validId(g.activePlacementId)) && g.updatedAt is timestamp;
     }
@@ -277,8 +269,7 @@ service cloud.firestore {
     function challengeCreate(uid,id) {
       let c=getAfter(/databases/$(database)/documents/users/$(uid)/petChallenges/$(id)).data;
       let r=getAfter(/databases/$(database)/documents/users/$(uid)/petReceipts/$(id)).data;
-      return self(uid) && validId(id) && c.keys().hasOnly(['schemaVersion','ownerUid','operationId','targetPetId','statement','challengeVersion','status','response','submittedAt'])
-        && c.keys().hasAll(['schemaVersion','ownerUid','operationId','targetPetId','statement','challengeVersion','status','response','submittedAt'])
+      return self(uid) && validId(id) && c.keys().hasOnly(['schemaVersion','ownerUid','operationId','targetPetId','statement','challengeVersion','status','response','submittedAt']) && c.keys().size()==9
         && c.schemaVersion is int && c.schemaVersion == 1 && c.ownerUid == uid && c.operationId == id && validId(c.targetPetId) && bounded(c.statement,1,1000,3000)
         && c.challengeVersion == 1 && c.status == 'received' && c.response == '' && c.submittedAt == request.time
         && petReceipt(r,uid,id) && r.type == 'submit_challenge' && r.role == 'reporter' && r.petId == c.targetPetId
@@ -652,9 +643,9 @@ service cloud.firestore {
     }
     function inboxShape(d,uid) {
       return d.keys().size()==14 && d.keys().hasOnly(['schemaVersion','recipientUid','kind','routeType','targetId','sourceVersion','templateKey','createdAt','updatedAt','expiresAt','itemVersion','state','readAt','dismissedAt'])
-        && d.schemaVersion == 1 && d.recipientUid == uid && d.kind in ['comment','own_intake','summary']
-        && d.routeType in ['post','own_report','inbox'] && d.targetId is string && d.targetId.size()<=128
-        && d.templateKey in ['comments_on_post','report_received','daily_activity']
+        && d.schemaVersion == 1 && d.recipientUid == uid && d.kind in ['comment','own_intake','summary','pet_review']
+        && d.routeType in ['post','own_report','inbox','pet'] && d.targetId is string && d.targetId.size()<=128
+        && d.templateKey in ['comments_on_post','report_received','daily_activity','pet_approved','pet_rejected']
         && d.sourceVersion is int && d.sourceVersion>=1 && d.itemVersion is int && d.itemVersion>=1
         && d.createdAt is timestamp && d.updatedAt is timestamp && d.expiresAt is timestamp
         && d.state in ['active','unavailable','dismissed'] && (d.readAt==null || d.readAt is timestamp)
@@ -703,21 +694,6 @@ service cloud.firestore {
         && d.careCues.keys().hasOnly(['source','healthState']) && d.careCues.keys().size()==2 && d.careCues.source=='owner_report' && d.careCues.healthState in ['unknown','no_concerns_reported','concerns_reported']
         && (d.bundledIllustrationKey==null || d.bundledIllustrationKey in ['default','cat','dog']) && d.mediaDescriptors is list && d.mediaDescriptors.size()==0;
     }
-    function discoveryCurrent(d) {
-      let l=get(/databases/$(database)/documents/listings/$(d.listingId)).data;
-      let p=get(/databases/$(database)/documents/listingPublication/$(d.listingId)).data;
-      let pet=get(/databases/$(database)/documents/pets/$(d.petId)).data;
-      let a=get(/databases/$(database)/documents/petOfferAuthorities/$(d.petId)).data;
-      let g=get(/databases/$(database)/documents/petActivityGates/$(d.petId)).data;
-      let s=get(/databases/$(database)/documents/petListingSlots/$(d.petId)).data;
-      return l.ownerUid==d.ownerUid && l.petId==d.petId && l.contentVersion==d.contentVersion && l.lifecycle=='open' && (d.schemaVersion==2?l.schemaVersion==2 && l.visibility=='shown':l.visibility=='visible')
-        && p.schemaVersion==d.schemaVersion && p.state=='eligible' && p.approvedContentVersion==d.contentVersion && p.publicationVersion==d.publicationVersion
-        && pet.schemaVersion==1 && pet.petId==d.petId && pet.lifecycle=='active' && pet.editorUid==d.ownerUid && a.schemaVersion==1 && a.petId==d.petId && a.status=='enabled' && a.hold=='clear' && a.offerUid==d.ownerUid && a.identityVersion==pet.identityVersion && a.custodyVersion==pet.custodyVersion && a.decisionId!=null
-        && g.schemaVersion==1 && g.petId==d.petId && g.custodyVersion==pet.custodyVersion && (d.availability=='available'?g.state=='none' && g.activeReservationId==null && g.activePlacementId==null:g.state=='reserved' && g.activeReservationId!=null && g.activePlacementId==null)
-        && s.schemaVersion==1 && s.petId==d.petId && s.activeListingId==d.listingId
-        && (d.schemaVersion==1 || discoveryCare2(d,l));
-    }
-    function discoveryCare2(d,l) {let r=get(/databases/$(database)/documents/listings/$(d.listingId)/revisions/$(l.activeRevisionId)).data;let c=get(/databases/$(database)/documents/petCare/$(d.petId)).data;let subject=get(/databases/$(database)/documents/securitySubjects/$(d.ownerUid)).data;return r.schemaVersion==2 && r.careDigest==d.careDigest && r.careVersion==c.currentCareVersion && subject.status=='active';}
     function favoriteShape(d,uid,id) {return d.keys().size()==6 && d.keys().hasOnly(['schemaVersion','uid','listingId','savedAt','favoriteVersion','lastOperationId']) && d.schemaVersion==1 && d.uid==uid && d.listingId==id && validId(id) && d.savedAt is timestamp && d.favoriteVersion is int && d.favoriteVersion>=1 && validId(d.lastOperationId);}
     function favoriteMeta(d,uid) {return d.keys().size()==6 && d.keys().hasOnly(['schemaVersion','uid','activeCount','metaVersion','lastOperationId','updatedAt']) && d.schemaVersion==1 && d.uid==uid && d.activeCount is int && d.activeCount>=0 && d.activeCount<=200 && d.metaVersion is int && d.metaVersion>=1 && validId(d.lastOperationId) && d.updatedAt is timestamp;}
     function favoriteOperation(uid,op) {
@@ -749,6 +725,15 @@ service cloud.firestore {
     function communicationGrant(id) {return get(/databases/$(database)/documents/reservationCommunication/$(id)).data;}
     function communicationPair(id) {return request.auth!=null && (communicationGrant(id).hostUid==request.auth.uid || communicationGrant(id).applicantUid==request.auth.uid);}
     function notBlocked(id,uid) {let b=get(/databases/$(database)/documents/conversationBlocks/$(id)/members/$(uid));return b==null || b.data.blocked==false;}
+    function communicationAccount(uid) {
+      let shell=get(/databases/$(database)/documents/users/$(uid));
+      let member=get(/databases/$(database)/documents/communityMemberships/$(uid));
+      let subject=get(/databases/$(database)/documents/securitySubjects/$(uid));
+      return self(uid) && request.auth.token.email_verified==true && shell!=null
+        && shell.data.keys().size()==3 && shell.data.keys().hasOnly(['uid','schemaVersion','createdAt']) && shell.data.uid==uid && shell.data.schemaVersion==1 && shell.data.createdAt is timestamp
+        && member!=null && membershipShape(member.data,uid) && member.data.status=='active'
+        && (subject==null || subject.data.keys().hasOnly(['status','roles','updatedAt']) && subject.data.keys().hasAll(['status','roles','updatedAt']) && subject.data.status=='active' && subject.data.roles is list && subject.data.updatedAt is timestamp);
+    }
     function communicationActive(id,chat) {
       let g=communicationGrant(id);let r=get(/databases/$(database)/documents/reservations/$(id)).data;
       let gate=get(/databases/$(database)/documents/petActivityGates/$(r.petId)).data;
@@ -759,8 +744,29 @@ service cloud.firestore {
         && (chat?g.textEnabled==true:g.contactEnabled==true)
         && notBlocked(id,r.hostUid) && notBlocked(id,r.applicantUid);
     }
+    function sharedCard(d,id,uid) {
+      let g=communicationGrant(id);let source=get(/databases/$(database)/documents/users/$(uid)/private/contact).data;
+      return d.keys().size()==10 && d.keys().hasOnly(['schemaVersion','reservationId','ownerUid','counterpartUid','consent','consentVersion','phoneE164','sourceVersion','updatedAt','operationId'])
+        && d.schemaVersion==1 && d.reservationId==id && d.ownerUid==uid && d.counterpartUid==(uid==g.hostUid?g.applicantUid:g.hostUid)
+        && d.consent is bool && d.consentVersion is int && d.consentVersion>=1 && d.sourceVersion==source.version
+        && source.ownerUid==uid && source.schemaVersion==1 && source.keys().size()==6 && source.keys().hasOnly(['ownerUid','schemaVersion','version','phoneE164','lastOperationId','updatedAt']) && source.version is int && d.phoneE164==source.phoneE164 && d.phoneE164 is string && d.phoneE164.matches('[+][0-9]{7,15}') && validId(d.operationId);
+    }
     function sendReceipt(uid,op) {return getAfter(/databases/$(database)/documents/conversationReceipts/$(uid)/operations/$(op)).data;}
     function freshSendLink(uid,op,id,messageId) {let r=sendReceipt(uid,op);return self(uid) && validId(op) && !exists(/databases/$(database)/documents/conversationReceipts/$(uid)/operations/$(op)) && r.uid==uid && r.reservationId==id && r.messageId==messageId && r.operationId==op && r.committedAt==request.time;}
+    function receiptInvariant(uid,op) {
+      let r=request.resource.data;let id=r.reservationId;
+      let cp=/databases/$(database)/documents/conversationCounters/$(id);let before=get(cp).data;let counter=getAfter(cp).data;
+      let message=getAfter(/databases/$(database)/documents/conversations/$(id)/messages/$(r.messageId)).data;
+      let rate=getAfter(/databases/$(database)/documents/conversationSendLimits/$(id)/members/$(uid)).data;
+      let grant=communicationGrant(id);
+      return self(uid) && r.keys().size()==9 && r.keys().hasOnly(['schemaVersion','uid','operationId','reservationId','messageId','inputDigest','baseVersion','sequence','committedAt']) && r.schemaVersion==1 && r.uid==uid && r.operationId==op && validId(op) && validId(id) && validId(r.messageId) && r.inputDigest.matches('[0-9a-f]{64}') && r.committedAt==request.time
+        && !exists(/databases/$(database)/documents/conversations/$(id)/messages/$(r.messageId)) && r.baseVersion is int && r.sequence is int && r.baseVersion==before.version && r.sequence==before.nextSequence && before.messageCount<1000
+        && counter.keys().size()==5 && counter.keys().hasOnly(['schemaVersion','reservationId','nextSequence','messageCount','version']) && counter.schemaVersion==1 && counter.reservationId==id && counter.nextSequence is int && counter.messageCount is int && counter.version is int && counter.nextSequence==before.nextSequence+1 && counter.messageCount==before.messageCount+1 && counter.version==before.version+1
+        && message.senderUid==uid && message.reservationId==id && message.sequence==r.sequence && message.operationId==op && message.createdAt==request.time
+        && rate.lastSentAt==request.time && rate.operationId==op
+        && getAfter(/databases/$(database)/documents/users/$(grant.hostUid)/conversationIndex/$(id)).data.updatedAt==request.time
+        && getAfter(/databases/$(database)/documents/users/$(grant.applicantUid)/conversationIndex/$(id)).data.updatedAt==request.time;
+    }
     function scopeAllows(uid,scope) {let r=get(/databases/$(database)/documents/accountRestrictionState/$(uid));return r==null || r.data.schemaVersion==1 && r.data.scopes is list && !(scope in r.data.scopes);}
     match /communityMemberships/{uid} {
       allow get: if self(uid);
@@ -782,8 +788,7 @@ service cloud.firestore {
     }
     match /users/{uid}/private/contact {
       function contactShape(d) {
-        return d.keys().hasOnly(['ownerUid','schemaVersion','version','phoneE164','lastOperationId','updatedAt'])
-          && d.keys().hasAll(['ownerUid','schemaVersion','version','phoneE164','lastOperationId','updatedAt'])
+        return d.keys().hasOnly(['ownerUid','schemaVersion','version','phoneE164','lastOperationId','updatedAt']) && d.keys().size()==6
           && ownerVersion(d,uid) && (d.phoneE164 == null || (d.phoneE164 is string && d.phoneE164.matches('[+][0-9]{7,15}')));
       }
       allow get: if self(uid);
@@ -906,13 +911,8 @@ service cloud.firestore {
       allow list, update, delete: if false;
     }
     match /users/{uid}/petPrivate/{id} {
-      function chipShape(d) {return d.keys().hasOnly(['schemaVersion','ownerUid','petId','chip','notes','verification','privateVersion','lastOperationId','createdAt','updatedAt'])
-        && d.keys().hasAll(['schemaVersion','ownerUid','petId','chip','notes','verification','privateVersion','lastOperationId','createdAt','updatedAt']) && d.schemaVersion is int && d.schemaVersion == 1 && d.ownerUid == uid && d.petId == id && validId(id)
-        && (d.chip == null || bounded(d.chip,1,64,256)) && bounded(d.notes,0,500,2000) && d.verification == 'unverified' && d.privateVersion is int && d.privateVersion >= 1 && validId(d.lastOperationId) && d.createdAt is timestamp && d.updatedAt == request.time;}
       allow get: if self(uid);
-      allow create: if memberReady(uid) && petEditor(id) && chipShape(request.resource.data) && request.resource.data.privateVersion == 1 && request.resource.data.createdAt == request.time;
-      allow update: if memberReady(uid) && petEditor(id) && chipShape(request.resource.data) && request.resource.data.privateVersion == resource.data.privateVersion + 1 && request.resource.data.createdAt == resource.data.createdAt && request.resource.data.lastOperationId != resource.data.lastOperationId;
-      allow list, delete: if false;
+      allow create,update,delete: if false;
     }
     match /users/{uid}/petChallenges/{id} {
       allow get: if self(uid);
@@ -1131,13 +1131,8 @@ service cloud.firestore {
       match /operations/{op} {allow get: if careRead(id) && (!exists(/databases/$(database)/documents/petCare/$(id)/operations/$(op)) || resource.data.actorUid==request.auth.uid);allow create: if false;allow list,update,delete: if false;}
     }
     match /petCarePrivate/{id}/revisions/{version} {allow get: if careRead(id) && resource.data.actorUid==request.auth.uid;allow create: if false;allow list,update,delete: if false;}
-    match /listingDiscovery/{id} {
-      allow get: if request.auth!=null && discoveryReady() && discoveryShape(resource.data,id) && discoveryCurrent(resource.data);
-      // Full field schemas cannot be proved by a query. Trusted source writers must
-      // validate the whitelist before enabling this bridge; exact reads recheck it.
-      allow list: if request.auth!=null && discoveryReady() && resource.data.audience=='signed_in' && resource.data.state=='visible' && resource.data.availability in ['available','reserved'] && page20();
-      allow write: if false;
-    }
+    match /listingDiscovery/{id} {allow read,write: if false;}
+    match /adoptionBrowseRelease/{id} {allow read,write: if false;}
     match /adoptionSelfReviewDemoPolicy/{id} {allow read,write: if false;}
     match /adoptionReviewAudit/{id} {allow get: if request.auth!=null && (resource.data.ownerUid==request.auth.uid || resource.data.reviewerUid==request.auth.uid) && basicMemberReady(request.auth.uid);allow list,write: if false;}
     match /listingReviewRequests/{id}/versions/{v} {allow get: if request.auth!=null && resource.data.ownerUid==request.auth.uid;allow list: if request.auth!=null && resource.data.ownerUid==request.auth.uid && page20();allow write: if false;}
@@ -1164,11 +1159,27 @@ service cloud.firestore {
       allow create,update: if self(uid) && communicationPair(id) && request.resource.data.keys().size()==5 && request.resource.data.keys().hasOnly(['uid','blocked','version','updatedAt','operationId']) && request.resource.data.uid==uid && request.resource.data.blocked is bool && request.resource.data.version is int && request.resource.data.version==(exists(/databases/$(database)/documents/conversationBlocks/$(id)/members/$(uid))?resource.data.version+1:1) && request.resource.data.updatedAt==request.time && validId(request.resource.data.operationId);
       allow delete: if false;
     }
+    match /reservationContactCards/{id}/owners/{uid} {
+      allow get: if self(uid) && communicationPair(id) || communicationActive(id,false) && communicationAccount(request.auth.uid) && resource.data.consent==true && sharedCard(resource.data,id,uid);
+      allow create: if self(uid) && communicationAccount(uid) && communicationActive(id,false) && sharedCard(request.resource.data,id,uid) && request.resource.data.consentVersion==1 && request.resource.data.updatedAt==request.time;
+      allow update: if self(uid) && communicationPair(id) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['consent','consentVersion','phoneE164','sourceVersion','updatedAt','operationId']) && request.resource.data.consentVersion is int && request.resource.data.consentVersion==resource.data.consentVersion+1 && request.resource.data.updatedAt==request.time && validId(request.resource.data.operationId)
+        && (request.resource.data.consent==false && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['consent','consentVersion','updatedAt','operationId']) || communicationAccount(uid) && communicationActive(id,false) && sharedCard(request.resource.data,id,uid));
+      allow list,delete: if false;
+    }
     match /conversations/{id}/messages/{mid} {
       allow get: if communicationPair(id);allow list: if communicationPair(id) && page20();
       allow create: if communicationActive(id,true) && request.resource.data.keys().size()==9 && request.resource.data.keys().hasOnly(['schemaVersion','senderUid','reservationId','messageId','sequence','body','source','createdAt','operationId']) && request.resource.data.schemaVersion==1 && request.resource.data.senderUid==request.auth.uid && request.resource.data.reservationId==id && request.resource.data.messageId==mid && validId(mid) && request.resource.data.sequence is int && request.resource.data.body is string && request.resource.data.body.matches('(?s).{1,1000}.{0,1000}') && request.resource.data.body.toUtf8().size()<=8000 && request.resource.data.body==request.resource.data.body.trim() && request.resource.data.source=='participant_message' && request.resource.data.createdAt==request.time && freshSendLink(request.auth.uid,request.resource.data.operationId,id,mid);
       allow update,delete: if false;
     }
+    match /conversationCounters/{id} {
+      allow get: if communicationPair(id);allow list,create,delete: if false;
+      allow update: if basicMemberReady(request.auth.uid) && freshSendLink(request.auth.uid,getAfter(/databases/$(database)/documents/conversationSendLimits/$(id)/members/$(request.auth.uid)).data.operationId,id,sendReceipt(request.auth.uid,getAfter(/databases/$(database)/documents/conversationSendLimits/$(id)/members/$(request.auth.uid)).data.operationId).messageId);
+    }
+    match /conversationSendLimits/{id}/members/{uid} {
+      allow get: if self(uid) && communicationPair(id);allow list,delete: if false;
+      allow create,update: if self(uid) && request.resource.data.keys().size()==5 && request.resource.data.keys().hasOnly(['uid','lastSentAt','version','operationId','reservationId']) && request.resource.data.uid==uid && request.resource.data.reservationId==id && request.resource.data.version is int && request.resource.data.version==(exists(/databases/$(database)/documents/conversationSendLimits/$(id)/members/$(uid))?resource.data.version+1:1) && request.resource.data.lastSentAt==request.time && (!exists(/databases/$(database)/documents/conversationSendLimits/$(id)/members/$(uid)) || request.time>=resource.data.lastSentAt+duration.value(2,'s')) && freshSendLink(uid,request.resource.data.operationId,id,sendReceipt(uid,request.resource.data.operationId).messageId);
+    }
+    match /conversationReceipts/{uid}/operations/{op} {allow get: if profileOwner(uid);allow list: if profileOwner(uid) && page20();allow create: if receiptInvariant(uid,op);allow update,delete: if false;}
     match /users/{uid}/conversationIndex/{id} {
       allow get: if profileOwner(uid);allow list: if profileOwner(uid) && page20();allow create,delete: if false;
       allow update: if request.auth!=null && communicationPair(id) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['updatedAt']) && request.resource.data.updatedAt==request.time && getAfter(/databases/$(database)/documents/conversationCounters/$(id)).data.version==get(/databases/$(database)/documents/conversationCounters/$(id)).data.version+1

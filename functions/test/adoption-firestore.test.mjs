@@ -8,6 +8,7 @@ test('source2 runtime requires both reports, finalizes once and never transfers 
  const f=await fixture();try{
   const clock=Date.now(),runtime=new AdoptionRuntime(f.db),call=(a,command,values,expectedVersion)=>runtime.execute(a,'placement',{command,operationId:randomUUID(),expectedVersion,...values});
   await f.service.execute(host,'show',{operationId:randomUUID(),listingId:f.listing,expectedControlVersion:1});
+  await f.db.doc('adoptionBrowseRelease/current').delete(); // Legacy full private adapter regression; not an activated browse/share path.
   const offer=await runtime.read(applicant,'offerSource',{listingId:f.listing}),applicationId=randomUUID(),reservationId=randomUUID();
   await call(applicant,'submit',{applicationId,listingId:f.listing,sourceHash:offer.sourceHash,templateHash:offer.templateHash,answers:{care:'needs_discussion',routine:'Discuss daily care'},message:''},0);
   await call(host,'select',{applicationId,reservationId,reason:'Synthetic preparation'},1);

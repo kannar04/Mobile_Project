@@ -85,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
     public void navigate(String requested){
         if(isFinishing()||isDestroyed())return;
         if(!profileReady){requestedPage=requested;return;}
+        if(requested!=null&&requested.startsWith("conversation:")&&com.gmail.manhle240406.project.profile.ProfileSchema.validOperationId(requested.substring("conversation:".length())))conversationId=requested.substring("conversation:".length());
         if(requested!=null&&requested.startsWith("conversation:")&&com.gmail.manhle240406.project.profile.ProfileSchema.validOperationId(conversationId)){show("conversation:"+conversationId);return;}
         final String page=java.util.Arrays.asList("home","favorites","chat","profile","notifications","discovery","tools","tools:0","tools:1","tools:2","tools:3","tools:4","tools:5").contains(requested)?requested:"home";
         Fragment current=getSupportFragmentManager().getPrimaryNavigationFragment();

@@ -20,7 +20,7 @@ public final class ConversationFragment extends MainPageFragment {
     private SessionEpoch.Ticket ticket; private String reservation;
     private final List<DocumentSnapshot> rows=new ArrayList<>();
     private DocumentSnapshot cursor;private boolean busy,more=true;private long generation;
-    private TextView status;private RecyclerView list;private MaterialButton older;
+    private ChatSendModel composer;private com.google.android.material.textfield.TextInputEditText message;private MaterialButton send;private TextView status;private RecyclerView list;private MaterialButton older;
     private androidx.appcompat.app.AlertDialog dialog;
     private final Runnable invalidation=()->{generation++;rows.clear();if(list!=null)list.getAdapter().notifyDataSetChanged();};
     public static ConversationFragment create(String id){ConversationFragment f=new ConversationFragment();Bundle b=new Bundle();b.putString("reservation",id);f.setArguments(b);return f;}
@@ -32,12 +32,16 @@ public final class ConversationFragment extends MainPageFragment {
         status=SocialSurface.muted(requireContext(),getString(R.string.wiring_loading));body.addView(status);
         older=SocialSurface.quiet(requireContext(),getString(R.string.chat_older),this::load);body.addView(older);
         list=new RecyclerView(requireContext());list.setLayoutManager(new LinearLayoutManager(requireContext()));list.setAdapter(new Messages());body.addView(list,new LinearLayout.LayoutParams(-1,0,1));
-        body.addView(SocialSurface.muted(requireContext(),getString(R.string.chat_send_rollout_pending)));
+        message=SocialViews.field(requireContext(),body,getString(R.string.feedback_chat_message),2);message.setTag("chat_message_input");message.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(2000)});message.setSaveEnabled(false);
+        send=SocialViews.primaryButton(requireContext(),getString(R.string.feedback_chat_send),()->{if(composer!=null)composer.send(reservation);});send.setTag("chat_send");body.addView(send);
+
         MaterialButton block=SocialSurface.quiet(requireContext(),getString(R.string.chat_manage_block),this::manageBlock);body.addView(block);
         FirebaseEnvironment env=((AniloveApplication)getApplication()).foundation();sessions=env.sessions;ticket=sessions==null?null:sessions.capture();
         if(ticket==null||ticket.uid==null){status.setText(R.string.wiring_auth_required);return;}
-        sessions.onInvalidated(invalidation);repository=new ParticipantCommunicationRepository(FirebaseFirestore.getInstance(),sessions);load();
+        sessions.onInvalidated(invalidation);repository=new ParticipantCommunicationRepository(FirebaseFirestore.getInstance(),sessions);composer=new androidx.lifecycle.ViewModelProvider(this).get(ChatSendModel.class);message.setText(composer.body);message.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int b,int c){}public void afterTextChanged(android.text.Editable e){}public void onTextChanged(CharSequence s,int a,int b,int c){if(composer!=null&&!composer.pending())composer.body=s.toString();}});composer.changes.observe(getViewLifecycleOwner(),x->{if(!current())return;message.setEnabled(!composer.busy&&!composer.pending());send.setEnabled(!composer.busy);send.setText(composer.pending()?R.string.ad_retry_same:R.string.feedback_chat_send);if(!composer.error.isEmpty())status.setText(R.string.ad_unknown_outcome);if(composer.committed){composer.committed=false;message.setText("");}});
     }
+    @Override public void onResume(){super.onResume();if(repository==null||!current())return;repository.listen(ticket,reservation,(snapshot,error)->{if(!current()||list==null)return;if(error!=null){status.setText(R.string.chat_load_failed);return;}if(snapshot==null||snapshot.getMetadata().isFromCache())return;for(DocumentSnapshot row:snapshot.getDocuments()){rows.removeIf(old->old.getId().equals(row.getId()));rows.add(row);}rows.sort(Comparator.comparingLong(d->d.getLong("sequence")==null?0:d.getLong("sequence")));while(rows.size()>100)rows.remove(0);if(cursor==null&&!snapshot.isEmpty()){cursor=snapshot.getDocuments().get(snapshot.size()-1);more=snapshot.size()==20;}older.setVisibility(more?View.VISIBLE:View.GONE);list.getAdapter().notifyDataSetChanged();status.setText(rows.isEmpty()?R.string.chat_no_messages:R.string.chat_private_participants);});}
+    @Override public void onPause(){if(repository!=null)repository.stop();super.onPause();}
     private boolean current(){return !isDestroyed()&&!isFinishing()&&sessions!=null&&sessions.current(ticket);}
     private void load(){if(busy||!more||repository==null||!current())return;busy=true;older.setEnabled(false);long epoch=++generation;
         repository.messages(ticket,reservation,cursor).addOnCompleteListener(result->{if(!current()||epoch!=generation)return;busy=false;older.setEnabled(true);

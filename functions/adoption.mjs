@@ -1,8 +1,11 @@
+import {currentBrowseSource} from './domain/adoption-release.mjs';
+import {Work} from './domain/safety-common.mjs';
 import {ensure,uuid} from './contract.mjs';
 
 /** Same current-source fence as F12 discovery; never writes protected adoption data. */
 export async function adoptionSource(read,uid,input){
  ensure(uuid(input.listingId)&&Number.isSafeInteger(input.listingContentVersion)&&input.listingContentVersion>0&&Number.isSafeInteger(input.listingPublicationVersion)&&input.listingPublicationVersion>0,'invalid_listing');
+ const release=await read('adoptionBrowseRelease/current');if(release){const r=await currentBrowseSource(new Work({get:read}),input.listingId);ensure(r.discovery.ownerUid===uid,'listing_unavailable');ensure(r.discovery.contentVersion===input.listingContentVersion&&r.discovery.publicationVersion===input.listingPublicationVersion,'listing_changed');return {...input};}
  const id=input.listingId,d=await read(`listingDiscovery/${id}`),policy=await read('listingDiscoveryPolicy/current');
  ensure(policy?.schemaVersion===1&&policy.enabled===true&&[1,2].includes(policy.writerSetVersion)&&[1,2].includes(d?.schemaVersion)&&d.listingId===id&&d.ownerUid===uid&&d.offerType==='adoption'&&d.audience==='signed_in'&&d.state==='visible'&&['available','reserved'].includes(d.availability)&&uuid(d.petId),'listing_unavailable');
  ensure(d.contentVersion===input.listingContentVersion&&d.publicationVersion===input.listingPublicationVersion,'listing_changed');

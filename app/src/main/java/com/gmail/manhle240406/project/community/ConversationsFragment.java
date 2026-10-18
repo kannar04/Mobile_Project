@@ -32,9 +32,11 @@ public final class ConversationsFragment extends MainPageFragment {
         list=new RecyclerView(requireContext());list.setId(R.id.conversations_list);list.setLayoutManager(new LinearLayoutManager(requireContext()));list.setAdapter(new Rows());body.addView(list,new LinearLayout.LayoutParams(-1,0,1));
         FirebaseEnvironment environment=((AniloveApplication)getApplication()).foundation();sessions=environment.sessions;ticket=sessions==null?null:sessions.capture();
         if(ticket==null||ticket.uid==null){status.setText(R.string.wiring_auth_required);return;}
-        sessions.onInvalidated(invalidation);repository=new ParticipantCommunicationRepository(FirebaseFirestore.getInstance(),sessions);load();
+        sessions.onInvalidated(invalidation);repository=new ParticipantCommunicationRepository(FirebaseFirestore.getInstance(),sessions);
         list.addOnScrollListener(new RecyclerView.OnScrollListener(){@Override public void onScrolled(RecyclerView v,int x,int y){if(y>0&&((LinearLayoutManager)list.getLayoutManager()).findLastVisibleItemPosition()>=rows.size()-5)load();}});
     }
+    @Override public void onResume(){super.onResume();if(repository==null||!current())return;repository.listenInbox(ticket,(snapshot,error)->{if(!current()||list==null)return;if(error!=null){status.setText(R.string.chat_load_failed);retry.setVisibility(View.VISIBLE);return;}if(snapshot==null||snapshot.getMetadata().isFromCache())return;for(DocumentSnapshot row:snapshot.getDocuments()){rows.removeIf(old->old.getId().equals(row.getId()));rows.add(row);}rows.sort((a,b)->{com.google.firebase.Timestamp x=a.getTimestamp("updatedAt"),y=b.getTimestamp("updatedAt");return x==null?1:y==null?-1:y.compareTo(x);});while(rows.size()>100)rows.remove(rows.size()-1);if(cursor==null&&!snapshot.isEmpty()){cursor=snapshot.getDocuments().get(snapshot.size()-1);more=snapshot.size()==20;}list.getAdapter().notifyDataSetChanged();status.setText(rows.isEmpty()?R.string.feedback_contacts_empty:R.string.chat_private_participants);});}
+    @Override public void onPause(){if(repository!=null)repository.stop();super.onPause();}
     private boolean current(){return !isDestroyed()&&!isFinishing()&&sessions!=null&&sessions.current(ticket);}
     private void load(){if(busy||!more||repository==null||!current())return;busy=true;long epoch=++generation;retry.setVisibility(View.GONE);
         repository.inbox(ticket,cursor).addOnCompleteListener(result->{if(!current()||epoch!=generation)return;busy=false;
@@ -42,7 +44,7 @@ public final class ConversationsFragment extends MainPageFragment {
             for(DocumentSnapshot row:result.getResult())if(rows.stream().noneMatch(old->old.getId().equals(row.getId())))rows.add(row);
             if(!result.getResult().isEmpty())cursor=result.getResult().getDocuments().get(result.getResult().size()-1);
             more=result.getResult().size()==20;while(rows.size()>100)rows.remove(0);list.getAdapter().notifyDataSetChanged();
-            status.setText(rows.isEmpty()?R.string.chat_empty_explanation:R.string.chat_private_participants);
+            status.setText(rows.isEmpty()?R.string.feedback_contacts_empty:R.string.chat_private_participants);
         });
     }
     private final class Rows extends RecyclerView.Adapter<Holder>{

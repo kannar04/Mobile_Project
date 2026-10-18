@@ -1,4 +1,6 @@
 <resources>
+    <string name="feed_listing_end">Bạn đã xem hết tin nhận nuôi hiện có.</string>
+    <string name="feed_listing_window_empty">Chưa có tin phù hợp trong phần này. Tải tiếp.</string>
     <string name="feed_liked_posts">Bài viết đã thích</string>
     <string name="feed_saved_pets">Thú cưng đã lưu</string>
     <string name="feed_no_liked_posts">Bạn chưa thích bài viết nào.</string>

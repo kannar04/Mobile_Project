@@ -11,7 +11,8 @@ public final class InboxContract {
     public static boolean route(String kind,String route,String target,String template) {
         if(kind==null||route==null||template==null||target==null||target.length()>128)return false;
         boolean uuid=target.matches("[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}");
-        return (kind.equals("comment")&&route.equals("post")&&uuid&&template.equals("comments_on_post"))
+        return (kind.equals("pet_review")&&route.equals("pet")&&uuid&&(template.equals("pet_approved")||template.equals("pet_rejected")))
+            ||(kind.equals("comment")&&route.equals("post")&&uuid&&template.equals("comments_on_post"))
             ||(kind.equals("own_intake")&&route.equals("own_report")&&uuid&&template.equals("report_received"))
             ||(kind.equals("summary")&&route.equals("inbox")&&target.equals("main")&&template.equals("daily_activity"));
     }

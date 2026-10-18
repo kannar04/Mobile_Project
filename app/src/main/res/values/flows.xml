@@ -35,7 +35,7 @@
     <string-array name="flow_sex_labels"><item>Tất cả</item><item>Chưa rõ</item><item>Đực</item><item>Cái</item></string-array>
     <string-array name="flow_age_labels"><item>Tất cả</item><item>Chưa rõ</item><item>Sơ sinh</item><item>Nhỏ</item><item>Trưởng thành</item><item>Cao tuổi</item></string-array>
     <string name="flow_filters">Bộ lọc</string>
-    <string name="flow_clear_filters">Bỏ lọc</string>
+    <string name="flow_clear_filters">Xóa bộ lọc</string>
     <string name="flow_apply_filters">Áp dụng</string>
     <string name="flow_available">Có thể tìm hiểu</string>
     <string name="flow_reserved">Đã giữ chỗ</string>

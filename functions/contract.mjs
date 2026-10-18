@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 export const LIMIT=1_000_000_000, RESERVATION=8*1024*1024;
 export const CANDIDATE=5*1024*1024, DISPLAY=2.5*1024*1024, THUMBNAIL=.5*1024*1024;
-export const PURPOSES=['post_image','profile_avatar','google_avatar'];
+export const PURPOSES=['post_image','pet_photo','profile_avatar','google_avatar'];
 export const uuid=x=>typeof x==='string'&&/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(x);
 export const fail=code=>{throw new Error(code);};
 export const ensure=(test,code='invalid')=>{if(!test)fail(code);};

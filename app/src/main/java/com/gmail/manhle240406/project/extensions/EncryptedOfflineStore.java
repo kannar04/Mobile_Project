@@ -62,7 +62,7 @@ public final class EncryptedOfflineStore implements AutoCloseable {
     private static final int CACHE_CAP=500, DRAFT_CAP=20, THUMB_CAP=200;
     private static final long CACHE_BYTES=10L*1024*1024, THUMB_BYTES=50L*1024*1024;
     private static final Set<String> DEFAULT_MATRIX_KINDS=new HashSet<>(Arrays.asList(
-            "listing_card","listing_detail","community_feed","community_post","catalog","f07_draft","f31_draft"));
+            "listing_card","listing_detail","community_feed","community_post","catalog","f06_draft","f07_draft","f31_draft"));
 
     public EncryptedOfflineStore(Context c, SessionGateway s, SessionEpoch.Ticket t,
                                  String sessionNonce, Map<String,Consumer> adapters) {

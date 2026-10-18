@@ -49,13 +49,13 @@ public final class InboxRepository implements AutoCloseable {
         return scoped(ticket,db.document(path).get(Source.SERVER)).continueWithTask(done->{
             require(ticket);DocumentSnapshot row=done.getResult();Timestamp expiry=row.getTimestamp("expiresAt");
             if(!row.exists()||!ticket.uid.equals(row.getString("recipientUid"))||expiry==null||expiry.compareTo(now)<=0||!"active".equals(row.getString("state"))||!InboxContract.route(row.getString("kind"),row.getString("routeType"),row.getString("targetId"),row.getString("templateKey")))return Tasks.forResult(false);
-            String route=row.getString("routeType"),target=row.getString("targetId");if("inbox".equals(route))return Tasks.forResult(true);
+            String route=row.getString("routeType"),target=row.getString("targetId");if("pet".equals(route))return com.gmail.manhle240406.project.adoption.AdoptionApi.call("pet",com.gmail.manhle240406.project.adoption.AdoptionFlowModel.map("petId",target)).continueWith(fresh->{require(ticket);return fresh.isSuccessful();});if("inbox".equals(route))return Tasks.forResult(true);
             String current="post".equals(route)?"communityFeed/"+target:"users/"+ticket.uid+"/reportStatus/"+target;
             return scoped(ticket,db.document(current).get(Source.SERVER)).continueWith(fresh->{require(ticket);if(!fresh.isSuccessful())return false;DocumentSnapshot value=fresh.getResult();return value.exists()&&("post".equals(route)?com.gmail.manhle240406.project.community.SocialSchema.feed(value.getData(),value.getId()):Long.valueOf(1).equals(value.getLong("schemaVersion")));});
         });
     }
     public synchronized void listenHead(SessionEpoch.Ticket ticket,com.google.firebase.firestore.EventListener<QuerySnapshot> callback) {
-        require(ticket);detach();head=candidates(ticket,null).addSnapshotListener((rows,error)->{if(sessions.current(ticket))callback.onEvent(rows,error);});
+        require(ticket);detach();head=candidates(ticket,null).addSnapshotListener(MetadataChanges.INCLUDE,(rows,error)->{if(sessions.current(ticket))callback.onEvent(rows,error);});
     }
     public synchronized void detach() { if(head!=null){head.remove();head=null;} }
     public Task<Void> markRead(SessionEpoch.Ticket ticket,Map<String,Long> expected) { return mark(ticket,InboxContract.readSet(expected),false); }

@@ -40,7 +40,7 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
         verifyEmail=com.gmail.manhle240406.project.community.SocialSurface.quiet(requireContext(),getString(R.string.profile_verify_email),()->((AniloveApplication)getApplication()).auth().sendVerification());verifyEmail.setId(R.id.profile_verify_email);verification.addView(verifyEmail);
         refreshEmail=com.gmail.manhle240406.project.community.SocialSurface.quiet(requireContext(),getString(R.string.profile_refresh_verification),()->((AniloveApplication)getApplication()).auth().refreshVerification());refreshEmail.setId(R.id.profile_refresh_verification);verification.addView(refreshEmail);
         ((android.view.ViewGroup)findViewById(R.id.profile_summary).getParent()).addView(verification);
-        avatar=findViewById(R.id.profile_avatar);region=findViewById(R.id.profile_region);
+        avatar=findViewById(R.id.profile_avatar);region=findViewById(R.id.profile_region);avatar.setAdapter(new ArrayAdapter<>(requireContext(),android.R.layout.simple_spinner_dropdown_item,getResources().getStringArray(R.array.profile_avatar_labels)));region.setAdapter(new ArrayAdapter<>(requireContext(),android.R.layout.simple_spinner_dropdown_item,getResources().getStringArray(R.array.profile_region_labels)));
         model=new ViewModelProvider(this).get(ProfileViewModel.class);
         LinearLayout photoControls=new LinearLayout(requireContext());photoControls.setOrientation(LinearLayout.VERTICAL);
         android.view.ViewGroup identity=(android.view.ViewGroup)findViewById(R.id.profile_summary).getParent();identity.addView(photoControls,identity.indexOfChild(findViewById(R.id.profile_summary))+1);
@@ -55,8 +55,8 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
         button(R.id.profile_preview).setOnClickListener(v->preview());
         button(R.id.profile_hide).setOnClickListener(v->model.visibility(false));
         button(R.id.profile_show).setOnClickListener(v->{dialog=new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.profile_show).setMessage(R.string.profile_visibility_help).setPositiveButton(R.string.profile_show,(d,w)->model.visibility(true)).setNegativeButton(R.string.auth_cancelled,null).show();});
-        button(R.id.profile_edit).setOnClickListener(v->{model.editingProfile=true;render();});
-        button(R.id.profile_options).setOnClickListener(v->options(v));
+        button(R.id.profile_edit).setOnClickListener(v->editPersonal());
+        button(R.id.profile_options).setOnClickListener(v->startActivity(new Intent(requireActivity(), EnhancedSettingsActivity.class)));
         button(R.id.profile_reviews).setOnClickListener(v->model.history(false));
         button(R.id.profile_more).setOnClickListener(v->model.history(true));
         button(R.id.profile_reload).setOnClickListener(v->discard(()->model.load(true)));
@@ -68,7 +68,7 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
         button(R.id.profile_review).setOnClickListener(v -> startActivity(new Intent(requireActivity(), com.gmail.manhle240406.project.adoption.ListingReviewActivity.class)));
         button(R.id.profile_discovery).setOnClickListener(v -> ((com.gmail.manhle240406.project.MainActivity)requireActivity()).discovery("",false));
         button(R.id.profile_pet_care).setOnClickListener(v -> startActivity(new Intent(requireActivity(), com.gmail.manhle240406.project.adoption.PetCareActivity.class)));
-        button(R.id.profile_listings).setOnClickListener(v -> startActivity(new Intent(requireActivity(), com.gmail.manhle240406.project.listing.ListingActivity.class)));
+        button(R.id.profile_listings).setOnClickListener(v -> startActivity(new Intent(requireActivity(), com.gmail.manhle240406.project.community.SocialComposerActivity.class).putExtra("own",true)));
         button(R.id.profile_tools).setOnClickListener(v -> ((com.gmail.manhle240406.project.MainActivity)requireActivity()).navigate("tools"));
         button(R.id.profile_settings).setOnClickListener(v -> startActivity(new Intent(requireActivity(), EnhancedSettingsActivity.class)));
         button(R.id.profile_logout).setOnClickListener(v -> new MaterialAlertDialogBuilder(requireActivity())
@@ -78,6 +78,19 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
             .setNeutralButton(android.R.string.cancel, null).show());
         button(R.id.profile_back).setOnClickListener(v->finish());
 
+        for(int id:new int[]{R.id.profile_notifications,R.id.profile_discovery,R.id.profile_tools,R.id.profile_pet_care,R.id.profile_catalogs})findViewById(id).setVisibility(View.GONE);
+        button(R.id.profile_listings).setText(R.string.feedback_my_posts);
+        button(R.id.profile_options).setText(R.string.wiring_settings_title);
+        findViewById(R.id.profile_settings).setVisibility(View.GONE);
+        button(R.id.profile_review).setText(R.string.feedback_received_requests);
+        button(R.id.profile_review).setOnClickListener(v->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.adoption.AdoptionFlowActivity.class).putExtra("mode","hostApplications")));
+        LinearLayout shortcuts=(LinearLayout)findViewById(R.id.profile_pets).getParent();
+        MaterialButton contacts=com.gmail.manhle240406.project.community.SocialSurface.quiet(requireContext(),getString(R.string.feedback_private_contacts),()->((com.gmail.manhle240406.project.MainActivity)requireActivity()).navigate("chat"));shortcuts.addView(contacts,shortcuts.indexOfChild(findViewById(R.id.profile_pets)));
+        MaterialButton applications=com.gmail.manhle240406.project.community.SocialSurface.quiet(requireContext(),getString(R.string.ad_my_applications),()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.adoption.AdoptionFlowActivity.class).putExtra("mode","applications")));shortcuts.addView(applications,shortcuts.indexOfChild(findViewById(R.id.profile_review))+1);
+        photoControls.setVisibility(View.GONE);findViewById(R.id.profile_avatar_image).setOnClickListener(v->editPersonal());
+        button(R.id.profile_back).setText("");button(R.id.profile_back).setIconResource(R.drawable.ic_social_back);button(R.id.profile_back).setContentDescription(getString(R.string.auth_back));button(R.id.profile_back).setCornerRadius(com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),24));
+        android.widget.HorizontalScrollView quick=new android.widget.HorizontalScrollView(requireContext());quick.setHorizontalScrollBarEnabled(false);LinearLayout petCards=new LinearLayout(requireContext());quick.addView(petCards);shortcuts.addView(quick,shortcuts.indexOfChild(findViewById(R.id.profile_pets))+1);
+        com.gmail.manhle240406.project.adoption.OwnedPets.read(((AniloveApplication)getApplication()).foundation().sessions,8,null).addOnSuccessListener(data->{if(!isAdded()||getView()==null)return;for(Map<String,Object> pet:com.gmail.manhle240406.project.adoption.AdoptionFlowModel.rows(data.get("pets"))){if(petCards.getChildCount()>=8)break;Map<String,Object> petIdentity=com.gmail.manhle240406.project.adoption.AdoptionFlowModel.object(pet.get("identity"));MaterialButton card=com.gmail.manhle240406.project.community.SocialSurface.quiet(requireContext(),String.valueOf(petIdentity.getOrDefault("displayName","")),()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.pet.PetActivity.class)));card.setIconResource("dog".equals(petIdentity.get("species"))?R.drawable.profile_avatar_dog:R.drawable.profile_avatar_cat);card.setIconSize(com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),40));petCards.addView(card);}});
         model.changes.observe(getViewLifecycleOwner(),ignored->render());
         ((AniloveApplication)getApplication()).auth().state().observe(getViewLifecycleOwner(),s->{
             if(s!=null && s.uid!=null)render();
@@ -85,6 +98,21 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
     }
     // Switching tabs preserves the private in-memory edit instead of discarding or prompting twice.
     @Override public void leave(Runnable action){capture();action.run();}
+    private View modalFields,modalContacts;
+    @Override protected <T extends View> T findViewById(int id){T view=super.findViewById(id);if(view==null&&modalFields!=null)view=modalFields.findViewById(id);if(view==null&&modalContacts!=null)view=modalContacts.findViewById(id);return view;}
+    private android.view.ViewGroup editHome;private int editPosition;
+    private void editPersonal(){
+        if(dialog!=null&&dialog.isShowing())return;
+        View fields=findViewById(R.id.profile_public_fields);modalFields=fields;editHome=(android.view.ViewGroup)fields.getParent();editPosition=editHome.indexOfChild(fields);editHome.removeView(fields);
+        LinearLayout panel=new LinearLayout(requireContext());panel.setOrientation(LinearLayout.VERTICAL);int pad=(int)(20*getResources().getDisplayMetrics().density);panel.setPadding(pad,0,pad,0);panel.addView(fields);fields.setVisibility(View.VISIBLE);model.editingProfile=true;
+        LinearLayout avatarActions=new LinearLayout(requireContext());avatarActions.setOrientation(LinearLayout.VERTICAL);panel.addView(avatarActions);
+        avatarActions.addView(com.gmail.manhle240406.project.community.SocialSurface.quiet(requireContext(),getString(R.string.media_change_avatar),()->avatarPicker.launch(new androidx.activity.result.PickVisualMediaRequest.Builder().setMediaType(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE).build())));
+        new PersonalDetailsEditor(requireContext(),panel,getViewLifecycleOwner());
+        View contact=findViewById(R.id.profile_contact_group);modalContacts=contact;android.view.ViewGroup contactHome=(android.view.ViewGroup)contact.getParent();int contactPosition=contactHome.indexOfChild(contact);contactHome.removeView(contact);panel.addView(contact);contact.setVisibility(View.VISIBLE);
+        ScrollView scroll=new ScrollView(requireContext());scroll.addView(panel);
+        dialog=new MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.social_edit).setView(scroll).setPositiveButton(R.string.feedback_done,null).create();
+        dialog.setOnDismissListener(d->{capture();model.editingProfile=false;panel.removeView(fields);editHome.addView(fields,Math.min(editPosition,editHome.getChildCount()));fields.setVisibility(View.GONE);panel.removeView(contact);contactHome.addView(contact,Math.min(contactPosition,contactHome.getChildCount()));contact.setVisibility(View.GONE);modalFields=null;modalContacts=null;});dialog.show();
+    }
     private void options(View anchor){PopupMenu menu=new PopupMenu(requireActivity(),anchor);menu.getMenu().add(0,1,0,R.string.profile_contact);menu.getMenu().add(0,2,1,R.string.profile_hide);menu.getMenu().add(0,3,2,R.string.profile_visibility);menu.getMenu().add(0,4,3,R.string.profile_reload);menu.setOnMenuItemClickListener(item->{if(item.getItemId()==1)findViewById(R.id.profile_contact_group).setVisibility(View.VISIBLE);else if(item.getItemId()==2)model.visibility(false);else if(item.getItemId()==3)findViewById(R.id.profile_visibility_group).setVisibility(View.VISIBLE);else discard(()->model.load(true));return true;});menu.show();}
     private void disableSavedState(View v) {v.setSaveEnabled(false);v.setSaveFromParentEnabled(false);if(v instanceof android.view.ViewGroup){android.view.ViewGroup g=(android.view.ViewGroup)v;for(int i=0;i<g.getChildCount();i++)disableSavedState(g.getChildAt(i));}}
     private MaterialButton button(int id){return findViewById(id);}

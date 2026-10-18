@@ -6,5 +6,5 @@ import com.google.android.gms.tasks.*;
 public final class ShareCoordinator {
     private final ListingDiscoveryRepository reader;private final ShareLinks links;private final SessionGateway sessions;
     public ShareCoordinator(ListingDiscoveryRepository reader,ShareLinks links,SessionGateway sessions){this.reader=reader;this.links=links;this.sessions=sessions;}
-    public Task<String> prepare(SessionEpoch.Ticket t,String listingId){return reader.detail(t,listingId).continueWith(done->{if(t.uid==null||!sessions.current(t))throw new IllegalStateException("session_changed");if(!done.isSuccessful())throw java.util.Objects.requireNonNull(done.getException());if(!done.getResult().exists())throw new IllegalStateException("unavailable");return links.genericText(listingId);});}
+    public Task<String> prepare(SessionEpoch.Ticket t,String listingId){return reader.detail(t,listingId).continueWith(done->{if(t.uid==null||!sessions.current(t))throw new IllegalStateException("session_changed");if(!done.isSuccessful())throw java.util.Objects.requireNonNull(done.getException());if(done.getResult()==null)throw new IllegalStateException("unavailable");return links.genericText(listingId);});}
 }

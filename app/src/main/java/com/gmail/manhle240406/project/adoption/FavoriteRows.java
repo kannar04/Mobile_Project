@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 
 /** Recycling saved rows avoids retaining a view hierarchy for every saved item. */
 final class FavoriteRows extends RecyclerView.Adapter<FavoriteRows.Holder> {
- static final class Row {final String id;DocumentSnapshot source;boolean resolved;Row(String id){this.id=id;}}
+ static final class Row {final String id;ListingRow source;boolean resolved;Row(String id){this.id=id;}}
  final List<Row> rows=new ArrayList<>();boolean busy,end,mutation,failed;
  private final android.content.Context context;private final Consumer<Row> open,remove;private final Runnable more;
  FavoriteRows(android.content.Context c,Consumer<Row> o,Consumer<Row> r,Runnable m){context=c;open=o;remove=r;more=m;}

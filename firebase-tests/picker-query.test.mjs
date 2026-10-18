@@ -1,0 +1,13 @@
+import {before,after,beforeEach,test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {initializeTestEnvironment,assertSucceeds,assertFails} from '@firebase/rules-unit-testing';
+import {doc,setDoc,getDocs,collection,query,where,limit,orderBy,documentId,Timestamp} from 'firebase/firestore';
+let env;
+before(async()=>env=await initializeTestEnvironment({projectId:'demo-picker-query',firestore:{host:'127.0.0.1',port:8180,rules:await readFile('../firestore.spark.rules','utf8')}}));
+after(async()=>env?.cleanup());
+beforeEach(async()=>{await env.clearFirestore();await env.withSecurityRulesDisabled(async c=>{const db=c.firestore();await setDoc(doc(db,'listingDiscoveryPolicy/current'),{schemaVersion:1,enabled:true,writerSetVersion:2});for(const [id,availability]of [['a','available'],['b','reserved'],['c','closed']])await setDoc(doc(db,'listingDiscovery/'+id),{ownerUid:'owner',audience:'signed_in',state:'visible',availability,firstPublishedAt:Timestamp.now()});});});
+const picker=(db,constrained=true)=>query(collection(db,'listingDiscovery'),where('ownerUid','==','owner'),where('audience','==','signed_in'),where('state','==','visible'),...(constrained?[where('availability','in',['available','reserved'])]:[]),orderBy('firstPublishedAt','desc'),orderBy(documentId(),'desc'),limit(20));
+test('raw owner picker stays denied after managed release migration',async()=>{const db=env.authenticatedContext('owner').firestore();await assertFails(getDocs(picker(db,false)));await assertFails(getDocs(picker(db)));});
+test('closed discovery gate still denies corrected picker',async()=>{await env.withSecurityRulesDisabled(c=>setDoc(doc(c.firestore(),'listingDiscoveryPolicy/current'),{schemaVersion:1,enabled:false,writerSetVersion:2}));await assertFails(getDocs(picker(env.authenticatedContext('owner').firestore())));});
+test('guest cannot query adoption picker',async()=>{await assertFails(getDocs(picker(env.unauthenticatedContext().firestore())));});

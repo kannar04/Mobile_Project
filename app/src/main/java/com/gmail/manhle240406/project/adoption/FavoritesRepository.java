@@ -17,9 +17,9 @@ public final class FavoritesRepository implements AutoCloseable {
     private <T> Task<T> scoped(SessionEpoch.Ticket t,Task<T> task){return Tasks.withTimeout(task,15,TimeUnit.SECONDS).continueWith(done->{current(t);if(!done.isSuccessful())throw Objects.requireNonNull(done.getException());return done.getResult();});}
     private Query query(SessionEpoch.Ticket t,DocumentSnapshot cursor){String path=own(t)+"favorites";Query q=db.collection(path).orderBy("savedAt",Query.Direction.DESCENDING).orderBy(FieldPath.documentId(),Query.Direction.DESCENDING).limit(20);if(cursor!=null){if(!cursor.getReference().getParent().getPath().equals(path))throw new IllegalArgumentException("foreign_cursor");q=q.startAfter(cursor);}return q;}
     public Task<QuerySnapshot> page(SessionEpoch.Ticket t,DocumentSnapshot cursor){return scoped(t,query(t,cursor).get(Source.SERVER));}
-    public Task<DocumentSnapshot> resolve(SessionEpoch.Ticket t,ListingDiscoveryRepository reader,String listingId){
+    public Task<ListingRow> resolve(SessionEpoch.Ticket t,ListingDiscoveryRepository reader,String listingId){
         current(t);AdoptionValues.listingId(listingId);if(resolving.incrementAndGet()>5){resolving.decrementAndGet();return Tasks.forException(new IllegalStateException("detail_resolution_limit"));}
-        Task<DocumentSnapshot> task;try{task=scoped(t,reader.detail(t,listingId)).continueWith(done->{current(t);if(!done.isSuccessful()){Exception error=done.getException();if(error instanceof FirebaseFirestoreException&&((FirebaseFirestoreException)error).getCode()==FirebaseFirestoreException.Code.PERMISSION_DENIED)return null;throw Objects.requireNonNull(error);}return done.getResult().exists()?done.getResult():null;});}catch(RuntimeException failed){resolving.decrementAndGet();throw failed;}
+        Task<ListingRow> task;try{task=scoped(t,reader.detail(t,listingId)).continueWith(done->{current(t);if(!done.isSuccessful()){Exception error=done.getException();if(error instanceof FirebaseFirestoreException&&((FirebaseFirestoreException)error).getCode()==FirebaseFirestoreException.Code.PERMISSION_DENIED)return null;throw Objects.requireNonNull(error);}return done.getResult();});}catch(RuntimeException failed){resolving.decrementAndGet();throw failed;}
         task.addOnCompleteListener(Runnable::run,done->resolving.decrementAndGet());return task;
     }
     public synchronized void listenHead(SessionEpoch.Ticket t,com.google.firebase.firestore.EventListener<QuerySnapshot> callback){current(t);detach();head=query(t,null).addSnapshotListener((rows,error)->{if(sessions.current(t))callback.onEvent(rows,error);});}
@@ -27,11 +27,7 @@ public final class FavoritesRepository implements AutoCloseable {
     public Task<Map<String,Object>> setSaved(SessionEpoch.Ticket t,String listingId,boolean desired,String operationId,long favoriteVersion,long metaVersion){
         String own=own(t);AdoptionValues.listingId(listingId);AdoptionValues.listingId(operationId);if(favoriteVersion<0||metaVersion<0)throw new IllegalArgumentException("favorite_base");
         Map<String,Object> base=PetSchema.map("favoriteVersion",favoriteVersion,"metaVersion",metaVersion);String digest=AdoptionValues.digest(AdoptionValues.canonical(PetSchema.map("listingId",listingId,"desiredState",desired,"base",base)));
-        DocumentReference item=db.document(own+"favorites/"+listingId),meta=db.document(own+"favoriteMeta/main"),receipt=db.document(own+"favoriteOperations/"+operationId);
-        // A bounded namespace inventory detects legacy/imported rows without meta; never resets them.
-        return scoped(t,meta.get(Source.SERVER)).continueWithTask(first->{current(t);if(first.getResult().exists())return commit(t,item,meta,receipt,listingId,desired,operationId,base,digest);
-            return scoped(t,db.collection(own+"favorites").limit(1).get(Source.SERVER)).continueWithTask(scan->{current(t);if(!scan.getResult().isEmpty())throw new IllegalStateException("favorite_meta_repair_required");return commit(t,item,meta,receipt,listingId,desired,operationId,base,digest);});
-        });
+        return scoped(t,AdoptionApi.call("favorite",AdoptionFlowModel.map("operationId",operationId,"listingId",listingId,"desiredState",desired,"base",base)));
     }
     private Task<Map<String,Object>> commit(SessionEpoch.Ticket t,DocumentReference item,DocumentReference meta,DocumentReference receipt,String listing,boolean desired,String op,Map<String,Object> base,String digest){
         return scoped(t,db.runTransaction(new TransactionOptions.Builder().setMaxAttempts(3).build(),tx->{

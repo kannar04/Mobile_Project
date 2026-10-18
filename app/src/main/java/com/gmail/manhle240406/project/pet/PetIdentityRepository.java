@@ -14,8 +14,8 @@ public final class PetIdentityRepository {
     public enum Code { COMMITTED, SERVER, NOT_FOUND, CONFLICT, DENIED, UNKNOWN_SCHEMA, UNAVAILABLE, UNKNOWN_OUTCOME, SESSION_CHANGED }
     public static final class Result<T>{public final Code code;public final T value;Result(Code c,T v){code=c;value=v;}}
     public static final class Detail {
-        public final Map<String,Object> pet,revision,claim,authority,slot,gate,chip;
-        Detail(Map<String,Object> p,Map<String,Object> r,Map<String,Object> c,Map<String,Object> a,Map<String,Object> s,Map<String,Object> g,Map<String,Object> chip){pet=p;revision=r;claim=c;authority=a;slot=s;gate=g;this.chip=chip;}
+        public final Map<String,Object> pet,revision,claim,authority,slot,gate;
+        Detail(Map<String,Object> p,Map<String,Object> r,Map<String,Object> c,Map<String,Object> a,Map<String,Object> s,Map<String,Object> g){pet=p;revision=r;claim=c;authority=a;slot=s;gate=g;}
     }
     public static final class Page {public final List<Map<String,Object>> rows;public final DocumentSnapshot cursor;Page(List<Map<String,Object>> r,DocumentSnapshot c){rows=Collections.unmodifiableList(r);cursor=c;}}
     private final FirebaseFirestore db;
@@ -30,12 +30,12 @@ public final class PetIdentityRepository {
         Task<Detail> read=ref(petPath(id)).get(Source.SERVER).continueWithTask(first->{
             if(!first.isSuccessful())throw Objects.requireNonNull(first.getException());
             Map<String,Object> p=data(first.getResult());require(p!=null,"not_found");require(root(p,id),"unknown_schema");
-            List<Task<DocumentSnapshot>> rest=Arrays.asList(ref(petPath(id)+"/identityRevisions/"+p.get("currentRevisionId")).get(Source.SERVER),ref(petPath(id)+"/claims/"+t.uid).get(Source.SERVER),ref("petOfferAuthorities/"+id).get(Source.SERVER),ref("petListingSlots/"+id).get(Source.SERVER),ref("petActivityGates/"+id).get(Source.SERVER),ref("users/"+t.uid+"/petPrivate/"+id).get(Source.SERVER));
+            List<Task<DocumentSnapshot>> rest=Arrays.asList(ref(petPath(id)+"/identityRevisions/"+p.get("currentRevisionId")).get(Source.SERVER),ref(petPath(id)+"/claims/"+t.uid).get(Source.SERVER),ref("petOfferAuthorities/"+id).get(Source.SERVER),ref("petListingSlots/"+id).get(Source.SERVER),ref("petActivityGates/"+id).get(Source.SERVER));
             return Tasks.whenAllSuccess(rest).continueWith(done->{
                 if(!done.isSuccessful())throw Objects.requireNonNull(done.getException());
-                Map<String,Object> r=data(rest.get(0).getResult()),c=data(rest.get(1).getResult()),a=data(rest.get(2).getResult()),s=data(rest.get(3).getResult()),g=data(rest.get(4).getResult()),chip=data(rest.get(5).getResult());
-                require(revision(r,id,version(p,"identityVersion"))&&claim(c,id,t.uid)&&PetOfferAuthority.authority(a,id)&&PetOfferAuthority.slot(s,id)&&PetOfferAuthority.gate(g,id)&&(chip==null||privateChip(chip,t.uid,id)),"unknown_schema");
-                return new Detail(p,r,c,a,s,g,chip);
+                Map<String,Object> r=data(rest.get(0).getResult()),c=data(rest.get(1).getResult()),a=data(rest.get(2).getResult()),s=data(rest.get(3).getResult()),g=data(rest.get(4).getResult());
+                require(revision(r,id,version(p,"identityVersion"))&&claim(c,id,t.uid)&&PetOfferAuthority.authority(a,id)&&PetOfferAuthority.slot(s,id)&&PetOfferAuthority.gate(g,id),"unknown_schema");
+                return new Detail(p,r,c,a,s,g);
             });
         });return wrap(Tasks.withTimeout(read,15,TimeUnit.SECONDS),t,false);
     }
@@ -63,7 +63,7 @@ public final class PetIdentityRepository {
     private boolean valid(SessionEpoch.Ticket t){return t!=null&&t.uid!=null&&sessions.current(t);}
     public Task<Result<Map<String,Object>>> execute(SessionEpoch.Ticket t,PetCommand c){
         if(!valid(t))return Tasks.forResult(new Result<>(Code.SESSION_CHANGED,null));
-        if("save_chip".equals(c.type))return chip(t,c);
+
         Task<Map<String,Object>> operation=db.runTransaction(new TransactionOptions.Builder().setMaxAttempts(3).build(),tx->{
             require(valid(t),"session_changed");String uid=t.uid,base=petPath(c.petId);
             DocumentReference receiptRef=ref("users/"+uid+"/petReceipts/"+c.operationId);Map<String,Object> previous=data(tx.get(receiptRef));
@@ -125,18 +125,8 @@ public final class PetIdentityRepository {
         });
     }
     public Task<Result<Map<String,Object>>> ownAuthority(SessionEpoch.Ticket t,String pet){if(!valid(t)||!PetSchema.id(pet))return Tasks.forResult(new Result<>(Code.DENIED,null));Task<Map<String,Object>> task=ref("petOfferAuthorities/"+pet).get(Source.SERVER).continueWith(read->{if(!read.isSuccessful())throw Objects.requireNonNull(read.getException());Map<String,Object> a=data(read.getResult());require(PetOfferAuthority.authority(a,pet),"unknown_schema");require(t.uid.equals(a.get("offerUid")),"denied");return a;});return wrap(Tasks.withTimeout(task,15,TimeUnit.SECONDS),t,false);}
-    public Task<Result<Map<String,Object>>> reconcileChip(SessionEpoch.Ticket t,String pet,String op,long base){if(!valid(t))return Tasks.forResult(new Result<>(Code.SESSION_CHANGED,null));Task<Map<String,Object>> task=ref("users/"+t.uid+"/petPrivate/"+pet).get(Source.SERVER).continueWith(read->{if(!read.isSuccessful())throw Objects.requireNonNull(read.getException());Map<String,Object> chip=data(read.getResult());require(chip!=null,"not_found");require(privateChip(chip,t.uid,pet),"unknown_schema");require(op.equals(chip.get("lastOperationId"))&&version(chip,"privateVersion")==base+1,"conflict");return chip;});return wrap(Tasks.withTimeout(task,15,TimeUnit.SECONDS),t,false);}
+
     private Map<String,Object> revisionRecord(String uid,String pet,long v,String op,Map<String,Object> identity,Object now){return map("schemaVersion",1L,"petId",pet,"version",v,"actorUid",uid,"identity",identity,"operationId",op,"createdAt",now);}
-    private Task<Result<Map<String,Object>>> chip(SessionEpoch.Ticket t,PetCommand c){
-        Task<Map<String,Object>> operation=db.runTransaction(new TransactionOptions.Builder().setMaxAttempts(3).build(),tx->{
-            require(valid(t),"session_changed");require(keys(c.input,"chip","notes")&&(c.input.get("chip")==null||text(c.input.get("chip"),1,64,256))&&text(c.input.get("notes"),0,500,2000),"unknown_schema");
-            DocumentReference target=ref("users/"+t.uid+"/petPrivate/"+c.petId);Map<String,Object> current=data(tx.get(target));
-            require(current==null||privateChip(current,t.uid,c.petId),"unknown_schema");
-            if(current!=null&&c.operationId.equals(current.get("lastOperationId"))){require(version(current,"privateVersion")==c.privateVersion+1&&Objects.equals(current.get("chip"),c.input.get("chip"))&&Objects.equals(current.get("notes"),c.input.get("notes")),"conflict");return current;}
-            require(c.privateVersion==version(current,"privateVersion"),"conflict");Object now=FieldValue.serverTimestamp();Map<String,Object> next=map("schemaVersion",1L,"ownerUid",t.uid,"petId",c.petId,"chip",c.input.get("chip"),"notes",c.input.get("notes"),"verification","unverified","privateVersion",c.privateVersion+1,"lastOperationId",c.operationId,"createdAt",current==null?now:current.get("createdAt"),"updatedAt",now);
-            require(valid(t),"session_changed");tx.set(target,next);return next;
-        });return wrap(operation,t,true);
-    }
     public static boolean receipt(Map<String,Object> r,String uid,String id){
         if(!keys(r,"schemaVersion","ownerUid","operationId","petId","type","role","baseIdentityVersion","baseClaimVersion","baseAuthorityVersion","result","input","status","recordedAt")||!Long.valueOf(1).equals(r.get("schemaVersion"))||!uid.equals(r.get("ownerUid"))||!id.equals(r.get("operationId"))||!PetSchema.id(id)||!PetSchema.id(r.get("petId"))||!number(r.get("baseIdentityVersion"),0)||!number(r.get("baseClaimVersion"),0)||!number(r.get("baseAuthorityVersion"),0)||!"committed".equals(r.get("status"))||!(r.get("recordedAt") instanceof Timestamp)||!(r.get("result") instanceof Map)||!(r.get("input") instanceof Map))return false;
         Map<String,Object> result=nested(r,"result"),input=nested(r,"input");if(!keys(result,"identityVersion","claimVersion","authorityVersion")||!number(result.get("identityVersion"),0)||!number(result.get("claimVersion"),0)||!number(result.get("authorityVersion"),0))return false;
