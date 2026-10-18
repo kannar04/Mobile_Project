@@ -16,12 +16,14 @@ public final class AniloveApplication extends Application {
         registerActivityLifecycleCallbacks(new com.gmail.manhle240406.project.wiring.MainNavigation());
         foundation = FirebaseEnvironment.initialize(this);
         com.gmail.manhle240406.project.media.ManagedMediaClient.configure(foundation.sessions);
+        if(foundation.sessions!=null)foundation.sessions.onInvalidated(com.gmail.manhle240406.project.community.SessionAliases::clear);
         communityOutbox = new com.gmail.manhle240406.project.community.CommunityOutbox(this, foundation.sessions);
         listingDrafts = new com.gmail.manhle240406.project.listing.LocalListingDraftStore(this, foundation.sessions);
         listingDrafts.clearOnSignedOutStartup();
         auth = new AuthCoordinator(this, foundation);
         services = new com.gmail.manhle240406.project.wiring.AppServices(this, foundation);
     }
+    @Override public void onTrimMemory(int level) { super.onTrimMemory(level); com.gmail.manhle240406.project.media.SessionImageCache.clear(); com.gmail.manhle240406.project.community.SessionAliases.clear(); }
     public FirebaseEnvironment foundation() { return foundation; }
     public AuthCoordinator auth() { return auth; }
     public com.gmail.manhle240406.project.community.CommunityOutbox communityOutbox() { return communityOutbox; }

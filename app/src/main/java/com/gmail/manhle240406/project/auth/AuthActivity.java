@@ -119,6 +119,9 @@ public final class AuthActivity extends AppCompatActivity {
     private void visible(int id, boolean show) { findViewById(id).setVisibility(show ? View.VISIBLE : View.GONE); }
     private void render(AuthState state) {
         if (state == null) return;
+        boolean restoring=state.uid!=null&&!accountManagement;
+        visible(R.id.auth_startup_loading,restoring);visible(R.id.auth_form,!restoring);
+        if(restoring)return;
         boolean account = state.uid != null;
         if (lastUid != null && !lastUid.equals(state.uid)) { clearSecrets(); email.setText(""); model.registering(false); }
         lastUid = state.uid;

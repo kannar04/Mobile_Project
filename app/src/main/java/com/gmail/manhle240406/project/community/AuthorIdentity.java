@@ -10,12 +10,16 @@ import java.util.Map;
 public final class AuthorIdentity {
  private AuthorIdentity(){}
  public static void bind(AuthorLookup lookup,String uid,TextView name,ImageView avatar){
-  Object binding=new Object();name.setTag(R.id.post_author_name,binding);name.setText(R.string.social_member);
+  String key=uid+":"+(lookup==null?"none":lookup.identityGeneration());
+  Object old=name.getTag(R.id.post_author_name);
+  if(old instanceof Binding&&((Binding)old).key.equals(key)&&android.os.SystemClock.elapsedRealtime()<((Binding)old).expires)return;
+  Binding binding=new Binding(key);name.setTag(R.id.post_author_name,binding);name.setText(R.string.social_member);
   avatar.setTag(new Object());placeholder(avatar,R.drawable.profile_avatar_default);
   avatar.setImportantForAccessibility(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO);
   if(lookup==null||uid==null)return;
-  lookup.get(uid).addOnSuccessListener(profile->{if(name.getTag(R.id.post_author_name)!=binding||profile==null)return;apply(profile,name,avatar);});
+  lookup.get(uid).addOnSuccessListener(profile->{if(name.getTag(R.id.post_author_name)!=binding)return;if(profile==null){binding.expires=android.os.SystemClock.elapsedRealtime()+5_000;return;}apply(profile,name,avatar);});
  }
+ private static final class Binding {final String key;long expires=android.os.SystemClock.elapsedRealtime()+60_000;Binding(String key){this.key=key;}}
  private static void placeholder(ImageView image,int resource){android.graphics.drawable.Drawable icon=androidx.appcompat.content.res.AppCompatResources.getDrawable(image.getContext(),resource);image.setImageTintList(null);if(icon!=null){icon=icon.mutate();androidx.core.graphics.drawable.DrawableCompat.setTint(icon,com.google.android.material.color.MaterialColors.getColor(image,com.google.android.material.R.attr.colorOnSurfaceVariant));}image.setImageDrawable(icon);}
  public static void apply(Map<String,Object> profile,TextView name,ImageView avatar){
   name.setText((String)profile.get("displayName"));avatar.setImageTintList(null);

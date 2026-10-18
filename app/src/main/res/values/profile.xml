@@ -21,7 +21,7 @@
     <string name="profile_reviews">Lịch sử hồ sơ riêng tư</string>
     <string name="profile_more_reviews">Trang lịch sử tiếp theo</string>
     <string name="profile_reload">Tải lại từ máy chủ</string>
-    <string name="profile_loading">Đang kiểm tra máy chủ…</string>
+    <string name="profile_loading">Đang tải…</string>
     <string name="profile_loaded">Đã tải hồ sơ. Lưu riêng không thay đổi nội dung đang công khai.</string>
     <string name="profile_saved">Đã xác nhận lưu trên máy chủ. Các phần khác chưa tự động được lưu.</string>
     <string name="profile_submitted">Đã công khai cho người dùng đăng nhập.</string>

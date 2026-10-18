@@ -13,11 +13,11 @@ public final class ManagedMediaClient {
     private static final ExecutorService WORK=Executors.newFixedThreadPool(2);
     private static final String BASE="https://asia-east2-aniloveproject.cloudfunctions.net/mediaApi/";
     private static com.gmail.manhle240406.project.foundation.SessionGateway sessions;
-    public static void configure(com.gmail.manhle240406.project.foundation.SessionGateway gateway){sessions=gateway;}
+    public static void configure(com.gmail.manhle240406.project.foundation.SessionGateway gateway){sessions=gateway;if(gateway!=null)gateway.onInvalidated(SessionImageCache::clear);}
     private ManagedMediaClient(){}
     public static Map<String,Object> map(Object... pairs){Map<String,Object> m=new HashMap<>();for(int i=0;i<pairs.length;i+=2)m.put((String)pairs[i],pairs[i+1]);return m;}
     public static Task<Map<String,Object>> call(String operation,Map<String,Object> body){
-        return request(operation,new JSONObject(body).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8),null).continueWith(WORK,t->{byte[] b=t.getResult();return object(new JSONObject(new String(b,java.nio.charset.StandardCharsets.UTF_8)));});
+        return request(operation,new JSONObject(body).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8),null).continueWith(WORK,t->{byte[] b=t.getResult();Map<String,Object> result=object(new JSONObject(new String(b,java.nio.charset.StandardCharsets.UTF_8)));if(java.util.Arrays.asList("avatar","google","remove","saveProfile","publishProfile","post").contains(operation)){SessionImageCache.clear();com.gmail.manhle240406.project.community.SessionAliases.clear();}return result;});
     }
     public static Task<Map<String,Object>> upload(String id,byte[] bytes){return request("receive",bytes,id).continueWith(WORK,t->object(new JSONObject(new String(t.getResult(),java.nio.charset.StandardCharsets.UTF_8))));}
     public static Task<byte[]> image(String id,String variant){return request("read",new JSONObject(map("assetId",id,"variant",variant)).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8),null);}

@@ -62,8 +62,9 @@ public class MainActivity extends AppCompatActivity {
         requestedPage=saved!=null?destination:getIntent().getStringExtra(PAGE)==null?destination:getIntent().getStringExtra(PAGE);
         readiness=com.gmail.manhle240406.project.community.SocialViews.column(this);
         readiness.setGravity(android.view.Gravity.CENTER);
+        android.widget.ProgressBar startupProgress=new android.widget.ProgressBar(this);startupProgress.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);readiness.addView(startupProgress);
         readinessText=com.gmail.manhle240406.project.community.SocialSurface.muted(this,getString(R.string.profile_loading));readiness.addView(readinessText);
-        readinessRetry=com.gmail.manhle240406.project.community.SocialSurface.quiet(this,getString(R.string.wiring_retry),()->{((AniloveApplication)getApplication()).auth().refreshReadiness();profileGate.load();});readiness.addView(readinessRetry);
+        readinessRetry=com.gmail.manhle240406.project.community.SocialSurface.quiet(this,getString(R.string.wiring_retry),()->{((AniloveApplication)getApplication()).auth().refreshReadiness();profileGate.load();});readiness.addView(readinessRetry);readinessRetry.setVisibility(View.GONE);
         ((android.widget.FrameLayout)findViewById(R.id.main_fragment_container)).addView(readiness,new android.widget.FrameLayout.LayoutParams(-1,-1));
         bottomNav.setVisibility(View.GONE);
         profileGate=new androidx.lifecycle.ViewModelProvider(this).get(com.gmail.manhle240406.project.profile.ProfileSetupViewModel.class);

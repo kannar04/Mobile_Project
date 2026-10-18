@@ -100,7 +100,7 @@ public final class ProfileViewModel extends AndroidViewModel {
         busy=true;long g=generation;changed();String submitting=publicationOp;Runnable timeout=()->{if(current(g)&&busy&&Objects.equals(submitting,publicationOp)){code=ProfileRepository.Code.UNKNOWN;changed();}};main.postDelayed(timeout,15000);
         repository.publish(ticket,publicationOp,publicationDraft,publicationControl,publicationVersion,publicationModeration,publicationCandidate).addOnSuccessListener(r->{
             main.removeCallbacks(timeout);if(!current(g))return;busy=false;code=r.code;
-            if(r.code==ProfileRepository.Code.OK){saved.remove("profile_op");publicationOp=null;publicationCandidate=null;load(false);}
+            if(r.code==ProfileRepository.Code.OK){com.gmail.manhle240406.project.community.SessionAliases.clear();saved.remove("profile_op");publicationOp=null;publicationCandidate=null;load(false);}
             else if(r.code!=ProfileRepository.Code.UNKNOWN){saved.remove("profile_op");publicationOp=null;publicationCandidate=null;if(r.code==ProfileRepository.Code.CONFLICT){busy=true;repository.load(ticket).addOnSuccessListener(fresh->{if(!current(g))return;busy=false;if(fresh.code==ProfileRepository.Code.OK){conflict=fresh.value;conflictReady=true;conflictRevision++;}changed();});}}
             changed();
         });
@@ -131,7 +131,7 @@ public final class ProfileViewModel extends AndroidViewModel {
                 Map<String,Object> moderation=snapshot.moderation;snapshot=new ProfileRepository.Snapshot(d,c,v,snapshot.published,snapshot.issue);snapshot.moderation=moderation;
                 if(command.operationId.equals(consentedSave)||command.kind==ProfileCommand.Kind.DRAFT&&moderation==null){load(false);return;}
                 submitted=command.kind==ProfileCommand.Kind.SUBMIT;
-                committed=true;
+                com.gmail.manhle240406.project.community.SessionAliases.clear();committed=true;
             } else if(r.code==ProfileRepository.Code.CONFLICT) {
                 // Retain original/base and current inputs while obtaining the conflicting version.
                 consentedSave=null;consentedCandidate=null;retry=null;conflictedCommand=command;busy=true;

@@ -10,7 +10,6 @@ import java.util.*;
 
 /** Four visual tiles, full manifest retained for the viewer. No disk image cache. */
 public final class MediaGrid extends LinearLayout {
-    private static final java.util.concurrent.ExecutorService DECODE=java.util.concurrent.Executors.newFixedThreadPool(2);
     private List<String> ids=Collections.emptyList();
     public MediaGrid(Context context){super(context);setOrientation(VERTICAL);setSaveEnabled(false);setSaveFromParentEnabled(false);}
     public static List<String> ids(Object value){if(!(value instanceof List))return Collections.emptyList();List<String> ids=new ArrayList<>();for(Object id:(List<?>)value){if(!(id instanceof String))return Collections.emptyList();try{MediaContract.id((String)id);}catch(IllegalArgumentException bad){return Collections.emptyList();}if(ids.contains(id))return Collections.emptyList();ids.add((String)id);}return ids.size()<=10?ids:Collections.emptyList();}
@@ -28,5 +27,18 @@ public final class MediaGrid extends LinearLayout {
     }
     private void open(int index){getContext().startActivity(new Intent(getContext(),MediaViewerActivity.class).putStringArrayListExtra("assets",new ArrayList<>(ids)).putExtra("index",index));}
     public static void load(ImageView image,String id,String variant){load(image,id,variant,ok->{});}
-    private static void load(ImageView image,String id,String variant,java.util.function.Consumer<Boolean> complete){Object binding=new Object();image.setTag(binding);String uid=com.google.firebase.auth.FirebaseAuth.getInstance().getUid();ManagedMediaClient.image(id,variant).continueWith(DECODE,task->{byte[] bytes=task.getResult();return BitmapFactory.decodeByteArray(bytes,0,bytes.length);}).addOnCompleteListener(result->{if(image.getTag()!=binding||!Objects.equals(uid,com.google.firebase.auth.FirebaseAuth.getInstance().getUid()))return;boolean ok=result.isSuccessful()&&result.getResult()!=null;if(ok){if("thumbnail".equals(variant))image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setImageBitmap(result.getResult());}else image.setContentDescription(image.getContentDescription()+". "+image.getContext().getString(R.string.media_image_retry));complete.accept(ok);});}
+    private static final class ImageBinding {final java.util.function.Consumer<Boolean> complete;ImageBinding(java.util.function.Consumer<Boolean> c){complete=c;}}
+    private static void load(ImageView image,String id,String variant,java.util.function.Consumer<Boolean> complete){
+        ImageBinding binding=new ImageBinding(complete);image.setTag(binding);
+        java.lang.ref.WeakReference<ImageView> target=new java.lang.ref.WeakReference<>(image);
+        java.lang.ref.WeakReference<ImageBinding> bindingRef=new java.lang.ref.WeakReference<>(binding);
+        String uid=com.google.firebase.auth.FirebaseAuth.getInstance().getUid();long epoch=SessionImageCache.epoch();
+        SessionImageCache.get(uid,id,variant).addOnCompleteListener(result->{ImageView view=target.get();if(view==null||bindingRef.get()==null||view.getTag()!=bindingRef.get()||!Objects.equals(uid,com.google.firebase.auth.FirebaseAuth.getInstance().getUid()))return;
+            if(epoch!=SessionImageCache.epoch()){((ImageBinding)view.getTag()).complete.accept(false);return;}
+            boolean ok=result.isSuccessful()&&result.getResult()!=null;
+            if(ok){if("thumbnail".equals(variant))view.setScaleType(ImageView.ScaleType.CENTER_CROP);view.setImageBitmap(result.getResult());}
+            else view.setContentDescription(view.getContext().getString(R.string.media_image_retry));
+            ((ImageBinding)view.getTag()).complete.accept(ok);
+        });
+    }
 }

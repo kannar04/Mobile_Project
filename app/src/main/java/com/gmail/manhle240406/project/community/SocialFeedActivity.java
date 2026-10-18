@@ -50,7 +50,7 @@ public class SocialFeedActivity extends AppCompatActivity {
         pendingPreview=new LinearLayout(this);pendingPreview.setOrientation(LinearLayout.VERTICAL);root.addView(pendingPreview);
         ((AniloveApplication)getApplication()).communityOutbox().entries().observe(this,queued->{Set<String> completed=reactionTracker.completedPosts(queued);if(!completed.isEmpty()){reactionGeneration++;for(String id:completed){likes.remove(id);counts.remove(id);}rowReads.clear();}checkpoint();pendingPreview.removeAllViews();int shown=0;for(CommunityOutbox.Entry e:queued)if("publish".equals(e.command.command)&&shown++<2){TextView draft=text(this,(String)e.command.input.get("body"),false);draft.setMaxLines(2);draft.setEllipsize(android.text.TextUtils.TruncateAt.END);pendingPreview.addView(draft);}if(!queued.isEmpty())pendingPreview.addView(button(this,getString(R.string.community_pending_actions)+" ("+queued.size()+")",()->startActivity(new Intent(this,PendingCommunityActivity.class))));if(adapter!=null)adapter.notifyDataSetChanged();});
         list=new RecyclerView(this);manager=new LinearLayoutManager(this);list.setLayoutManager(manager);list.setItemAnimator(null);list.setSaveEnabled(false);
-        adapter=new Adapter();list.setAdapter(adapter);refresh=new androidx.swiperefreshlayout.widget.SwipeRefreshLayout(this);refresh.addView(list);refresh.setOnRefreshListener(()->{counts.clear();likes.clear();if(authors!=null)authors.clear();model.refresh();});root.addView(refresh,new LinearLayout.LayoutParams(-1,0,1));
+        adapter=new Adapter();list.setAdapter(adapter);refresh=new androidx.swiperefreshlayout.widget.SwipeRefreshLayout(this);refresh.addView(list);refresh.setOnRefreshListener(()->{com.gmail.manhle240406.project.media.SessionImageCache.clear();counts.clear();likes.clear();if(authors!=null)authors.clear();model.refresh();});root.addView(refresh,new LinearLayout.LayoutParams(-1,0,1));
         model=new ViewModelProvider(this).get(FeedViewModel.class);
         actions=new ViewModelProvider(this).get(DailyViewModel.class);
         if(!model.lost)authors=new AuthorLookup(actions.sessions);
@@ -121,7 +121,7 @@ public class SocialFeedActivity extends AppCompatActivity {
             });}return true;
         });menu.show();
     }
-    @Override protected void onStart(){super.onStart();counts.clear();likes.clear();if(authors!=null)authors.clear();if(model!=null)model.start();}
+    @Override protected void onStart(){super.onStart();if(model!=null)model.start();}
     @Override protected void onStop(){checkpoint();model.stop();super.onStop();}
     @Override protected void onDestroy(){if(dialog!=null)dialog.dismiss();if(authors!=null)authors.close();super.onDestroy();}
 
@@ -133,6 +133,8 @@ public class SocialFeedActivity extends AppCompatActivity {
         public int getItemCount(){return rows.size()+1;}
         public Holder onCreateViewHolder(ViewGroup parent,int type){LinearLayout col=column(parent.getContext());col.setLayoutParams(new RecyclerView.LayoutParams(-1,-2));return new Holder(col);}
         public void onBindViewHolder(Holder h,int p){
+            Object key=p==rows.size()?null:java.util.Arrays.asList(rows.get(p).getId(),rows.get(p).getData(),authors==null?null:authors.identityGeneration(),likes.get(rows.get(p).getId()),counts.get(rows.get(p).getId()),actions.busy,actions.pending,((AniloveApplication)getApplication()).communityOutbox().pendingLike(rows.get(p).getId()));
+            if(key!=null&&key.equals(h.cardKey))return;h.cardKey=key;
             h.binding++;h.col.removeAllViews();
             if(p==rows.size()){
                 h.col.addView(text(SocialFeedActivity.this,getString(model.busy?R.string.social_loading:model.failed?R.string.social_retry:model.end?R.string.social_end:R.string.social_loading),false));
@@ -158,7 +160,7 @@ public class SocialFeedActivity extends AppCompatActivity {
             if(media!=null){ImageView image=new ImageView(SocialFeedActivity.this);image.setImageResource(media.equals("cat")?R.drawable.profile_avatar_cat:media.equals("dog")?R.drawable.profile_avatar_dog:R.drawable.profile_avatar_default);image.setContentDescription(getString(R.string.social_illustration));h.col.addView(image,new LinearLayout.LayoutParams(-1,dp(SocialFeedActivity.this,160)));}
             LinearLayout actionRow=new LinearLayout(SocialFeedActivity.this);com.google.android.material.button.MaterialButton reaction=button(SocialFeedActivity.this,getString(R.string.social_like_action),()->like(d));Map<String,Object> ownLike=likes.get(d.getId());reaction.setText(ownLike!=null&&Boolean.TRUE.equals(ownLike.get("active"))?R.string.social_unlike:R.string.social_like_action);reaction.setEnabled(likes.containsKey(d.getId())&&!actions.busy&&actions.pending==null&&!actions.restored);actionRow.addView(reaction,new LinearLayout.LayoutParams(0,-2,1));actionRow.addView(button(SocialFeedActivity.this,getString(R.string.social_open),()->{checkpoint();startActivity(new Intent(SocialFeedActivity.this,SocialDetailActivity.class).putExtra("post",d.getId()));}),new LinearLayout.LayoutParams(0,-2,1));TextView counter=text(SocialFeedActivity.this,counts.containsKey(d.getId())?getString(R.string.social_likes,counts.get(d.getId())):getString(R.string.social_count_loading),false);CommunityOutbox.Entry pendingLike=((AniloveApplication)getApplication()).communityOutbox().pendingLike(d.getId());if(pendingLike!=null){reaction.setText(Boolean.TRUE.equals(pendingLike.command.input.get("active"))?R.string.social_unlike:R.string.social_like_action);reaction.setIconResource(R.drawable.ic_social_pending);reaction.setContentDescription(reaction.getText()+" - "+getString(R.string.community_pending));reaction.setEnabled(!actions.busy&&pendingLike.replaceable());}h.col.addView(counter);h.col.addView(actionRow);if(!likes.containsKey(d.getId())||!counts.containsKey(d.getId()))readReaction(d,h,counter,reaction,bind);
         }
-        public void onViewRecycled(Holder h){h.binding++;h.col.removeAllViews();}
+        public void onViewRecycled(Holder h){/* RecyclerView owns bounded holder reuse; no Activity-wide view cache. */}
     }
-    private static final class Holder extends RecyclerView.ViewHolder {final LinearLayout col;long binding;Holder(LinearLayout v){super(v);col=v;}}
+    private static final class Holder extends RecyclerView.ViewHolder {final LinearLayout col;long binding;Object cardKey;Holder(LinearLayout v){super(v);col=v;}}
 }
