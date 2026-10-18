@@ -270,6 +270,10 @@ service cloud.firestore {
         && r.baseIdentityVersion == a.identityVersion && r.baseClaimVersion == a.claimVersion
         && r.input == {} && r.result == {'identityVersion':a.identityVersion,'claimVersion':a.claimVersion,'authorityVersion':next.authorityVersion};
     }
+    function noIntegratedOffer(pet) {
+      let slot=get(/databases/$(database)/documents/petListingSlots/$(pet)).data;
+      return slot.activeListingId==null || get(/databases/$(database)/documents/listings/$(slot.activeListingId)).data.schemaVersion!=2;
+    }
     function challengeCreate(uid,id) {
       let c=getAfter(/databases/$(database)/documents/users/$(uid)/petChallenges/$(id)).data;
       let r=getAfter(/databases/$(database)/documents/users/$(uid)/petReceipts/$(id)).data;
@@ -677,14 +681,26 @@ service cloud.firestore {
         && d.labels.keys().hasOnly(['vi','en']) && bounded(d.labels.vi,1,80,320) && bounded(d.labels.en,1,80,320)
         && bounded(d.normalizedLabel,1,80,320) && bounded(d.sortKey,1,100,400) && d.version is int && d.version>=1 && d.updatedAt is timestamp;
     }
-    function discoveryReady() {let p=get(/databases/$(database)/documents/listingDiscoveryPolicy/current).data;return p.schemaVersion==1 && p.enabled==true && p.writerSetVersion==1;}
-    function discoveryShape(d,id) {
+    function careRead(id) { return request.auth!=null && get(/databases/$(database)/documents/pets/$(id)).data.editorUid==request.auth.uid; }
+    function discoveryReady() {let p=get(/databases/$(database)/documents/listingDiscoveryPolicy/current).data;return p.schemaVersion==1 && p.enabled==true && p.writerSetVersion in [1,2];}
+    function discoveryShape1(d,id) {
       return d.keys().size()==24 && d.keys().hasOnly(['schemaVersion','listingId','petId','ownerUid','contentVersion','publicationVersion','audience','state','firstPublishedAt','updatedAt','title','petName','nameKey','speciesId','breedId','regionId','regionLabel','sex','ageBand','offerType','availability','careCues','bundledIllustrationKey','mediaDescriptors'])
         && d.schemaVersion==1 && d.listingId==id && validId(id) && validId(d.petId) && d.ownerUid is string && d.contentVersion is int && d.contentVersion>=1 && d.publicationVersion is int && d.publicationVersion>=1
         && d.audience=='signed_in' && d.state=='visible' && d.firstPublishedAt is timestamp && d.updatedAt is timestamp && bounded(d.title,1,120,480) && bounded(d.petName,0,80,320)
         && d.nameKey is string && d.nameKey.size()<=80 && d.nameKey.matches('[a-z0-9 ]*') && (d.speciesId==null || d.speciesId is string) && (d.breedId==null || d.breedId is string) && (d.regionId==null || d.regionId is string)
         && bounded(d.regionLabel,0,80,320) && d.sex in ['unknown','male','female'] && d.ageBand in ['unknown','baby','young','adult','senior'] && d.offerType=='adoption' && d.availability in ['available','reserved']
         && d.careCues.keys().size()==2 && d.careCues.keys().hasOnly(['source','healthState']) && d.careCues.source=='owner_report' && d.careCues.healthState in ['unknown','no_concerns_reported','concerns_reported']
+        && (d.bundledIllustrationKey==null || d.bundledIllustrationKey in ['default','cat','dog']) && d.mediaDescriptors is list && d.mediaDescriptors.size()==0;
+    }
+    function discoveryShape(d,id) {
+      return d.schemaVersion==1?discoveryShape1(d,id):d.schemaVersion==2 && d.keys().size()==26
+        && d.keys().hasOnly(['schemaVersion','sourceSchemaVersion','careDigest','listingId','petId','ownerUid','contentVersion','publicationVersion','audience','state','firstPublishedAt','updatedAt','title','petName','nameKey','speciesId','breedId','regionId','regionLabel','sex','ageBand','offerType','availability','careCues','bundledIllustrationKey','mediaDescriptors'])
+        && d.sourceSchemaVersion==2 && d.careDigest is string && d.careDigest.matches('[0-9a-f]{64}') && d.listingId==id && validId(id) && validId(d.petId) && d.ownerUid is string
+        && d.contentVersion is int && d.contentVersion>=1 && d.publicationVersion is int && d.publicationVersion>=1 && d.audience=='signed_in' && d.state=='visible'
+        && d.firstPublishedAt is timestamp && d.updatedAt is timestamp && bounded(d.title,1,120,480) && bounded(d.petName,0,80,320) && bounded(d.regionLabel,0,80,320)
+        && d.nameKey is string && d.nameKey.matches('[a-z0-9 ]{0,80}') && (d.speciesId==null || d.speciesId is string) && (d.breedId==null || d.breedId is string) && (d.regionId==null || d.regionId is string)
+        && d.sex in ['unknown','male','female'] && d.ageBand in ['unknown','baby','young','adult','senior'] && d.offerType=='adoption' && d.availability in ['available','reserved']
+        && d.careCues.keys().hasOnly(['source','healthState']) && d.careCues.keys().size()==2 && d.careCues.source=='owner_report' && d.careCues.healthState in ['unknown','no_concerns_reported','concerns_reported']
         && (d.bundledIllustrationKey==null || d.bundledIllustrationKey in ['default','cat','dog']) && d.mediaDescriptors is list && d.mediaDescriptors.size()==0;
     }
     function discoveryCurrent(d) {
@@ -694,12 +710,14 @@ service cloud.firestore {
       let a=get(/databases/$(database)/documents/petOfferAuthorities/$(d.petId)).data;
       let g=get(/databases/$(database)/documents/petActivityGates/$(d.petId)).data;
       let s=get(/databases/$(database)/documents/petListingSlots/$(d.petId)).data;
-      return l.ownerUid==d.ownerUid && l.petId==d.petId && l.contentVersion==d.contentVersion && l.lifecycle=='open' && l.visibility=='visible'
-        && p.schemaVersion==1 && p.state=='eligible' && p.approvedContentVersion==d.contentVersion && p.publicationVersion==d.publicationVersion
+      return l.ownerUid==d.ownerUid && l.petId==d.petId && l.contentVersion==d.contentVersion && l.lifecycle=='open' && (d.schemaVersion==2?l.schemaVersion==2 && l.visibility=='shown':l.visibility=='visible')
+        && p.schemaVersion==d.schemaVersion && p.state=='eligible' && p.approvedContentVersion==d.contentVersion && p.publicationVersion==d.publicationVersion
         && pet.schemaVersion==1 && pet.petId==d.petId && pet.lifecycle=='active' && pet.editorUid==d.ownerUid && a.schemaVersion==1 && a.petId==d.petId && a.status=='enabled' && a.hold=='clear' && a.offerUid==d.ownerUid && a.identityVersion==pet.identityVersion && a.custodyVersion==pet.custodyVersion && a.decisionId!=null
         && g.schemaVersion==1 && g.petId==d.petId && g.custodyVersion==pet.custodyVersion && (d.availability=='available'?g.state=='none' && g.activeReservationId==null && g.activePlacementId==null:g.state=='reserved' && g.activeReservationId!=null && g.activePlacementId==null)
-        && s.schemaVersion==1 && s.petId==d.petId && s.activeListingId==d.listingId;
+        && s.schemaVersion==1 && s.petId==d.petId && s.activeListingId==d.listingId
+        && (d.schemaVersion==1 || discoveryCare2(d,l));
     }
+    function discoveryCare2(d,l) {let r=get(/databases/$(database)/documents/listings/$(d.listingId)/revisions/$(l.activeRevisionId)).data;let c=get(/databases/$(database)/documents/petCare/$(d.petId)).data;let subject=get(/databases/$(database)/documents/securitySubjects/$(d.ownerUid)).data;return r.schemaVersion==2 && r.careDigest==d.careDigest && r.careVersion==c.currentCareVersion && subject.status=='active';}
     function favoriteShape(d,uid,id) {return d.keys().size()==6 && d.keys().hasOnly(['schemaVersion','uid','listingId','savedAt','favoriteVersion','lastOperationId']) && d.schemaVersion==1 && d.uid==uid && d.listingId==id && validId(id) && d.savedAt is timestamp && d.favoriteVersion is int && d.favoriteVersion>=1 && validId(d.lastOperationId);}
     function favoriteMeta(d,uid) {return d.keys().size()==6 && d.keys().hasOnly(['schemaVersion','uid','activeCount','metaVersion','lastOperationId','updatedAt']) && d.schemaVersion==1 && d.uid==uid && d.activeCount is int && d.activeCount>=0 && d.activeCount<=200 && d.metaVersion is int && d.metaVersion>=1 && validId(d.lastOperationId) && d.updatedAt is timestamp;}
     function favoriteOperation(uid,op) {
@@ -839,7 +857,7 @@ service cloud.firestore {
       allow get: if request.auth != null && ((!exists(/databases/$(database)/documents/pets/$(id)) && memberReady(request.auth.uid)) || resource.data.editorUid == request.auth.uid);
       allow list: if request.auth != null && resource.data.editorUid == request.auth.uid && request.query.limit != null && request.query.limit > 0 && request.query.limit <= 20;
       allow create: if request.auth != null && petHeader(request.resource.data,id) && registrationLinks(id,request.auth.uid);
-      allow update: if request.auth != null && petHeader(request.resource.data,id) && identityChange(id,request.auth.uid);
+      allow update: if request.auth != null && petHeader(request.resource.data,id) && noIntegratedOffer(id) && identityChange(id,request.auth.uid);
       allow delete: if false;
     }
     match /pets/{id}/identityRevisions/{revisionId} {
@@ -856,7 +874,7 @@ service cloud.firestore {
     match /pets/{id}/claims/{uid} {
       allow get: if self(uid);
       allow create: if self(uid) && claimShape(request.resource.data,id,uid) && petRegistration(id,uid);
-      allow update: if self(uid) && claimChange(id,uid);
+      allow update: if self(uid) && noIntegratedOffer(id) && claimChange(id,uid);
       allow list, delete: if false;
       match /revisions/{revisionId} {
         allow get: if self(uid);
@@ -873,7 +891,7 @@ service cloud.firestore {
     match /petOfferAuthorities/{id} {
       allow get: if request.auth != null && (resource.data.offerUid == request.auth.uid || petEditor(id) || activeListingOwner(id));
       allow create: if request.auth != null && authorityShape(request.resource.data,id) && petRegistration(id,request.auth.uid);
-      allow update: if request.auth != null && authorityShape(request.resource.data,id) && (ownSuspend(id,request.auth.uid) || claimAuthorityLink(id,request.auth.uid));
+      allow update: if request.auth != null && authorityShape(request.resource.data,id) && noIntegratedOffer(id) && (ownSuspend(id,request.auth.uid) || claimAuthorityLink(id,request.auth.uid));
       allow list, delete: if false;
     }
     match /petListingSlots/{id} {
@@ -1102,6 +1120,17 @@ service cloud.firestore {
       allow write: if false;
       match /revisions/{version} {allow get: if request.auth!=null;allow list: if request.auth!=null && request.query.limit!=null && request.query.limit<=50;allow write: if false;}
     }
+    match /petCare/{id} {
+      allow get: if careRead(id);allow list,delete: if false;
+      allow create,update: if false;
+      match /revisions/{version} {
+        allow get: if careRead(id);allow list: if careRead(id) && page20();
+        allow create: if false;
+        allow update,delete: if false;
+      }
+      match /operations/{op} {allow get: if careRead(id) && (!exists(/databases/$(database)/documents/petCare/$(id)/operations/$(op)) || resource.data.actorUid==request.auth.uid);allow create: if false;allow list,update,delete: if false;}
+    }
+    match /petCarePrivate/{id}/revisions/{version} {allow get: if careRead(id) && resource.data.actorUid==request.auth.uid;allow create: if false;allow list,update,delete: if false;}
     match /listingDiscovery/{id} {
       allow get: if request.auth!=null && discoveryReady() && discoveryShape(resource.data,id) && discoveryCurrent(resource.data);
       // Full field schemas cannot be proved by a query. Trusted source writers must
@@ -1109,6 +1138,9 @@ service cloud.firestore {
       allow list: if request.auth!=null && discoveryReady() && resource.data.audience=='signed_in' && resource.data.state=='visible' && resource.data.availability in ['available','reserved'] && page20();
       allow write: if false;
     }
+    match /listingReviewRequests/{id}/versions/{v} {allow get: if request.auth!=null && resource.data.ownerUid==request.auth.uid;allow list: if request.auth!=null && resource.data.ownerUid==request.auth.uid && page20();allow write: if false;}
+    match /listingReviews/{id}/versions/{v}/decisions/{decision} {allow get: if listingOwner(id);allow list: if listingOwner(id) && page20();allow write: if false;}
+    match /listingPublication/{id} {allow get: if request.auth!=null && resource.data.ownerUid==request.auth.uid;allow list,write: if false;}
     match /users/{uid}/favorites/{id} {
       allow get: if self(uid);allow list: if self(uid) && page20();
       allow create: if self(uid) && favoriteShape(request.resource.data,uid,id) && request.resource.data.savedAt==request.time && request.resource.data.favoriteVersion==1
@@ -1122,6 +1154,8 @@ service cloud.firestore {
       allow create: if self(uid) && (request.resource.data.delta==0?favoriteOperation(uid,op):favoriteLink(uid,op,request.resource.data.listingId,request.resource.data.desiredState));
       allow update,delete: if false;
     }
+    match /questionnaireTemplates/{id}/revisions/{v} {allow get: if request.auth!=null && profileOwner(request.auth.uid);allow list,write: if false;}
+    match /listingQuestionnaireBindings/{id}/versions/{v} {allow get: if request.auth!=null && profileOwner(request.auth.uid) && discoveryReady() && discoveryShape(get(/databases/$(database)/documents/listingDiscovery/$(id)).data,id);allow list,write: if false;}
     match /reservationCommunication/{id} {allow get: if communicationPair(id);allow list,write: if false;}
     match /conversationBlocks/{id}/members/{uid} {
       allow get: if communicationPair(id);allow list: if false;

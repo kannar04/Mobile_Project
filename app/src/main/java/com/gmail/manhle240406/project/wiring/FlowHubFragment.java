@@ -19,6 +19,13 @@ public final class FlowHubFragment extends MainPageFragment {
         setContentView(root);
         SocialSurface.header(requireActivity(),root,group<0?R.string.flow_explore:FlowRoutes.GROUPS[group],this::finish);
         LinearLayout content=SocialSurface.content(requireActivity(),root);
+        if(group==5){android.view.View review=SocialViews.button(requireContext(),getString(R.string.ad_review),()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.adoption.ListingReviewActivity.class)));review.setTag("adoption_admin_review");content.addView(review);}
+        if(group==2){
+            content.addView(SocialViews.primaryButton(requireContext(),getString(R.string.ad_find),()->((com.gmail.manhle240406.project.MainActivity)requireActivity()).discovery("",false)));
+            content.addView(SocialSurface.quiet(requireContext(),getString(R.string.ad_new),()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.listing.ListingActivity.class))));
+            content.addView(SocialSurface.quiet(requireContext(),getString(R.string.ad_my_applications),()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.adoption.MyApplicationsActivity.class))));
+            content.addView(SocialSurface.quiet(requireContext(),getString(R.string.ad_owner_title),()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.listing.ListingActivity.class))));return;
+        }
         if(group<0){for(int i=0;i<FlowRoutes.GROUPS.length;i++){
             final int selected=i;
             android.view.View row=SocialViews.button(requireActivity(),getString(FlowRoutes.GROUPS[i]),()->((com.gmail.manhle240406.project.MainActivity)requireActivity()).navigate("tools:"+selected));

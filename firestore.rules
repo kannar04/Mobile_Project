@@ -376,11 +376,16 @@ service cloud.firestore {
         && r.baseIdentityVersion == a.identityVersion && r.baseClaimVersion == a.claimVersion
         && r.input == {} && r.result == {'identityVersion':a.identityVersion,'claimVersion':a.claimVersion,'authorityVersion':next.authorityVersion};
     }
+    // Integrated source2 mutations must use the managed atomic source writer.
+    function noIntegratedOffer(pet) {
+      let slot=get(/databases/$(database)/documents/petListingSlots/$(pet)).data;
+      return slot.activeListingId==null || get(/databases/$(database)/documents/listings/$(slot.activeListingId)).data.schemaVersion!=2;
+    }
     match /pets/{id} {
       allow get: if request.auth != null && ((!exists(/databases/$(database)/documents/pets/$(id)) && memberReady(request.auth.uid)) || resource.data.editorUid == request.auth.uid);
       allow list: if request.auth != null && resource.data.editorUid == request.auth.uid && request.query.limit != null && request.query.limit > 0 && request.query.limit <= 20;
       allow create: if request.auth != null && petHeader(request.resource.data,id) && registrationLinks(id,request.auth.uid);
-      allow update: if request.auth != null && petHeader(request.resource.data,id) && identityChange(id,request.auth.uid);
+      allow update: if request.auth != null && petHeader(request.resource.data,id) && noIntegratedOffer(id) && identityChange(id,request.auth.uid);
       allow delete: if false;
     }
     match /pets/{id}/identityRevisions/{revisionId} {
@@ -397,7 +402,7 @@ service cloud.firestore {
     match /pets/{id}/claims/{uid} {
       allow get: if self(uid);
       allow create: if self(uid) && claimShape(request.resource.data,id,uid) && petRegistration(id,uid);
-      allow update: if self(uid) && claimChange(id,uid);
+      allow update: if self(uid) && noIntegratedOffer(id) && claimChange(id,uid);
       allow list, delete: if false;
       match /revisions/{revisionId} {
         allow get: if self(uid);
@@ -414,7 +419,7 @@ service cloud.firestore {
     match /petOfferAuthorities/{id} {
       allow get: if request.auth != null && (resource.data.offerUid == request.auth.uid || petEditor(id) || activeListingOwner(id));
       allow create: if request.auth != null && authorityShape(request.resource.data,id) && petRegistration(id,request.auth.uid);
-      allow update: if request.auth != null && authorityShape(request.resource.data,id) && (ownSuspend(id,request.auth.uid) || claimAuthorityLink(id,request.auth.uid));
+      allow update: if request.auth != null && authorityShape(request.resource.data,id) && noIntegratedOffer(id) && (ownSuspend(id,request.auth.uid) || claimAuthorityLink(id,request.auth.uid));
       allow list, delete: if false;
     }
     match /petListingSlots/{id} {
@@ -1169,14 +1174,25 @@ service cloud.firestore {
     match /petCarePrivate/{id}/revisions/{version} {allow get: if careRead(id) && resource.data.actorUid==request.auth.uid;allow create: if false;allow list,update,delete: if false;}
 
     // F12/F13: no activation until every compatible atomic source writer is verified.
-    function discoveryReady() {let p=get(/databases/$(database)/documents/listingDiscoveryPolicy/current).data;return p.schemaVersion==1 && p.enabled==true && p.writerSetVersion==1;}
-    function discoveryShape(d,id) {
+    function discoveryReady() {let p=get(/databases/$(database)/documents/listingDiscoveryPolicy/current).data;return p.schemaVersion==1 && p.enabled==true && p.writerSetVersion in [1,2];}
+    function discoveryShape1(d,id) {
       return d.keys().size()==24 && d.keys().hasOnly(['schemaVersion','listingId','petId','ownerUid','contentVersion','publicationVersion','audience','state','firstPublishedAt','updatedAt','title','petName','nameKey','speciesId','breedId','regionId','regionLabel','sex','ageBand','offerType','availability','careCues','bundledIllustrationKey','mediaDescriptors'])
         && d.schemaVersion==1 && d.listingId==id && validId(id) && validId(d.petId) && d.ownerUid is string && d.contentVersion is int && d.contentVersion>=1 && d.publicationVersion is int && d.publicationVersion>=1
         && d.audience=='signed_in' && d.state=='visible' && d.firstPublishedAt is timestamp && d.updatedAt is timestamp && bounded(d.title,1,120,480) && bounded(d.petName,0,80,320)
         && d.nameKey is string && d.nameKey.size()<=80 && d.nameKey.matches('[a-z0-9 ]*') && (d.speciesId==null || d.speciesId is string) && (d.breedId==null || d.breedId is string) && (d.regionId==null || d.regionId is string)
         && bounded(d.regionLabel,0,80,320) && d.sex in ['unknown','male','female'] && d.ageBand in ['unknown','baby','young','adult','senior'] && d.offerType=='adoption' && d.availability in ['available','reserved']
         && d.careCues.keys().size()==2 && d.careCues.keys().hasOnly(['source','healthState']) && d.careCues.source=='owner_report' && d.careCues.healthState in ['unknown','no_concerns_reported','concerns_reported']
+        && (d.bundledIllustrationKey==null || d.bundledIllustrationKey in ['default','cat','dog']) && d.mediaDescriptors is list && d.mediaDescriptors.size()==0;
+    }
+    function discoveryShape(d,id) {
+      return d.schemaVersion==1?discoveryShape1(d,id):d.schemaVersion==2 && d.keys().size()==26
+        && d.keys().hasOnly(['schemaVersion','sourceSchemaVersion','careDigest','listingId','petId','ownerUid','contentVersion','publicationVersion','audience','state','firstPublishedAt','updatedAt','title','petName','nameKey','speciesId','breedId','regionId','regionLabel','sex','ageBand','offerType','availability','careCues','bundledIllustrationKey','mediaDescriptors'])
+        && d.sourceSchemaVersion==2 && d.careDigest is string && d.careDigest.matches('[0-9a-f]{64}') && d.listingId==id && validId(id) && validId(d.petId) && d.ownerUid is string
+        && d.contentVersion is int && d.contentVersion>=1 && d.publicationVersion is int && d.publicationVersion>=1 && d.audience=='signed_in' && d.state=='visible'
+        && d.firstPublishedAt is timestamp && d.updatedAt is timestamp && bounded(d.title,1,120,480) && bounded(d.petName,0,80,320) && bounded(d.regionLabel,0,80,320)
+        && d.nameKey is string && d.nameKey.matches('[a-z0-9 ]{0,80}') && (d.speciesId==null || d.speciesId is string) && (d.breedId==null || d.breedId is string) && (d.regionId==null || d.regionId is string)
+        && d.sex in ['unknown','male','female'] && d.ageBand in ['unknown','baby','young','adult','senior'] && d.offerType=='adoption' && d.availability in ['available','reserved']
+        && d.careCues.keys().hasOnly(['source','healthState']) && d.careCues.keys().size()==2 && d.careCues.source=='owner_report' && d.careCues.healthState in ['unknown','no_concerns_reported','concerns_reported']
         && (d.bundledIllustrationKey==null || d.bundledIllustrationKey in ['default','cat','dog']) && d.mediaDescriptors is list && d.mediaDescriptors.size()==0;
     }
     function discoveryCurrent(d) {
@@ -1186,12 +1202,14 @@ service cloud.firestore {
       let a=get(/databases/$(database)/documents/petOfferAuthorities/$(d.petId)).data;
       let g=get(/databases/$(database)/documents/petActivityGates/$(d.petId)).data;
       let s=get(/databases/$(database)/documents/petListingSlots/$(d.petId)).data;
-      return l.ownerUid==d.ownerUid && l.petId==d.petId && l.contentVersion==d.contentVersion && l.lifecycle=='open' && l.visibility=='visible'
-        && p.schemaVersion==1 && p.state=='eligible' && p.approvedContentVersion==d.contentVersion && p.publicationVersion==d.publicationVersion
+      return l.ownerUid==d.ownerUid && l.petId==d.petId && l.contentVersion==d.contentVersion && l.lifecycle=='open' && (d.schemaVersion==2?l.schemaVersion==2 && l.visibility=='shown':l.visibility=='visible')
+        && p.schemaVersion==d.schemaVersion && p.state=='eligible' && p.approvedContentVersion==d.contentVersion && p.publicationVersion==d.publicationVersion
         && pet.schemaVersion==1 && pet.petId==d.petId && pet.lifecycle=='active' && pet.editorUid==d.ownerUid && a.schemaVersion==1 && a.petId==d.petId && a.status=='enabled' && a.hold=='clear' && a.offerUid==d.ownerUid && a.identityVersion==pet.identityVersion && a.custodyVersion==pet.custodyVersion && a.decisionId!=null
         && g.schemaVersion==1 && g.petId==d.petId && g.custodyVersion==pet.custodyVersion && (d.availability=='available'?g.state=='none' && g.activeReservationId==null && g.activePlacementId==null:g.state=='reserved' && g.activeReservationId!=null && g.activePlacementId==null)
-        && s.schemaVersion==1 && s.petId==d.petId && s.activeListingId==d.listingId;
+        && s.schemaVersion==1 && s.petId==d.petId && s.activeListingId==d.listingId
+        && (d.schemaVersion==1 || discoveryCare2(d,l));
     }
+    function discoveryCare2(d,l) {let r=get(/databases/$(database)/documents/listings/$(d.listingId)/revisions/$(l.activeRevisionId)).data;let c=get(/databases/$(database)/documents/petCare/$(d.petId)).data;let subject=get(/databases/$(database)/documents/securitySubjects/$(d.ownerUid)).data;return r.schemaVersion==2 && r.careDigest==d.careDigest && r.careVersion==c.currentCareVersion && subject.status=='active';}
     match /listingDiscovery/{id} {
       allow get: if request.auth!=null && discoveryReady() && discoveryShape(resource.data,id) && discoveryCurrent(resource.data);
       // Full field schemas cannot be proved by a query. Trusted source writers must
