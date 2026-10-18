@@ -21,6 +21,8 @@ import com.google.android.material.textfield.*;
 import java.util.*;
 
 public final class ProfileFragment extends com.gmail.manhle240406.project.wiring.MainPageFragment {
+    private com.gmail.manhle240406.project.media.AvatarControl avatarControl;
+    private final androidx.activity.result.ActivityResultLauncher<androidx.activity.result.PickVisualMediaRequest> avatarPicker=registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia(),uri->{if(uri!=null&&avatarControl!=null)avatarControl.model.choose(uri);});
     private ProfileViewModel model;
     private TextInputEditText name,bio,phone;
     private Spinner avatar,region;
@@ -40,6 +42,10 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
         ((android.view.ViewGroup)findViewById(R.id.profile_summary).getParent()).addView(verification);
         avatar=findViewById(R.id.profile_avatar);region=findViewById(R.id.profile_region);
         model=new ViewModelProvider(this).get(ProfileViewModel.class);
+        LinearLayout photoControls=new LinearLayout(requireContext());photoControls.setOrientation(LinearLayout.VERTICAL);
+        android.view.ViewGroup identity=(android.view.ViewGroup)findViewById(R.id.profile_summary).getParent();identity.addView(photoControls,identity.indexOfChild(findViewById(R.id.profile_summary))+1);
+        avatarControl=new com.gmail.manhle240406.project.media.AvatarControl((AppCompatActivity)requireActivity(),this,photoControls,findViewById(R.id.profile_avatar_image),()->model.load(false),avatarPicker);
+
         TextWatcher watcher=new TextWatcher(){public void beforeTextChanged(CharSequence s,int start,int count,int after){}public void onTextChanged(CharSequence s,int start,int before,int count){capture();}public void afterTextChanged(Editable e){}};
         name.addTextChangedListener(watcher);bio.addTextChangedListener(watcher);phone.addTextChangedListener(watcher);
         AdapterView.OnItemSelectedListener selection=new AdapterView.OnItemSelectedListener(){public void onItemSelected(AdapterView<?> p,View v,int position,long id){capture();updateAvatar();}public void onNothingSelected(AdapterView<?> p){}};
@@ -60,10 +66,10 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
         button(R.id.profile_notifications).setOnClickListener(v -> startActivity(new Intent(requireActivity(), com.gmail.manhle240406.project.notifications.NotificationSettingsActivity.class)));
         button(R.id.profile_catalogs).setOnClickListener(v -> startActivity(new Intent(requireActivity(), com.gmail.manhle240406.project.adoption.CatalogActivity.class)));
         button(R.id.profile_review).setOnClickListener(v -> startActivity(new Intent(requireActivity(), com.gmail.manhle240406.project.adoption.ListingReviewActivity.class)));
-        button(R.id.profile_discovery).setOnClickListener(v -> startActivity(new Intent(requireActivity(), com.gmail.manhle240406.project.adoption.DiscoveryActivity.class)));
+        button(R.id.profile_discovery).setOnClickListener(v -> ((com.gmail.manhle240406.project.MainActivity)requireActivity()).discovery("",false));
         button(R.id.profile_pet_care).setOnClickListener(v -> startActivity(new Intent(requireActivity(), com.gmail.manhle240406.project.adoption.PetCareActivity.class)));
         button(R.id.profile_listings).setOnClickListener(v -> startActivity(new Intent(requireActivity(), com.gmail.manhle240406.project.listing.ListingActivity.class)));
-        button(R.id.profile_tools).setOnClickListener(v -> startActivity(new Intent(requireActivity(), com.gmail.manhle240406.project.wiring.FlowHubActivity.class)));
+        button(R.id.profile_tools).setOnClickListener(v -> ((com.gmail.manhle240406.project.MainActivity)requireActivity()).navigate("tools"));
         button(R.id.profile_settings).setOnClickListener(v -> startActivity(new Intent(requireActivity(), EnhancedSettingsActivity.class)));
         button(R.id.profile_logout).setOnClickListener(v -> new MaterialAlertDialogBuilder(requireActivity())
             .setMessage(R.string.listing_logout)
@@ -85,7 +91,7 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
     private TextInputLayout field(int id){return findViewById(id);}
     private String value(TextInputEditText v){return v.getText()==null?"":v.getText().toString();}
     private void capture(){if(rendering || model==null)return;model.name=value(name);model.bio=value(bio);model.phone=value(phone);model.avatar=Math.max(0,avatar.getSelectedItemPosition());model.region=Math.max(0,region.getSelectedItemPosition());}
-    private void updateAvatar(){((ImageView)findViewById(R.id.profile_avatar_image)).setImageResource(model.avatar==1?R.drawable.profile_avatar_cat:model.avatar==2?R.drawable.profile_avatar_dog:R.drawable.profile_avatar_default);}
+    private void updateAvatar(){if(avatarControl!=null&&avatarControl.model.assetId!=null){com.gmail.manhle240406.project.media.MediaGrid.load(findViewById(R.id.profile_avatar_image),avatarControl.model.assetId,"thumbnail");return;}((ImageView)findViewById(R.id.profile_avatar_image)).setImageResource(model.avatar==1?R.drawable.profile_avatar_cat:model.avatar==2?R.drawable.profile_avatar_dog:R.drawable.profile_avatar_default);}
     private boolean validateContent(){
         field(R.id.profile_name_layout).setError(null);field(R.id.profile_bio_layout).setError(null);
         int length=ProfileSchema.length(model.name.trim());

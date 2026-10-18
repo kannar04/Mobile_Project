@@ -36,7 +36,7 @@ android {
             buildConfigField("boolean", "FIREBASE_EMULATORS", "false")
             buildConfigField("boolean", "COURSE_PROJECT_VERIFIED", projectId.isNotEmpty().toString())
             buildConfigField("String", "EXPECTED_FIREBASE_PROJECT", "\"$projectId\"")
-            buildConfigField("boolean", "MEDIA_UPLOADS_ENABLED", "false")
+            buildConfigField("boolean", "MEDIA_UPLOADS_ENABLED", "true")
             // 2026-10-17 read-only project inspection: password provider, enumeration protection,
             // authorized Firebase-hosted domain and default HTTPS action handler verified.
             buildConfigField("boolean", "PASSWORD_RESET_CONFIGURATION_VERIFIED", (projectId == "aniloveproject").toString())
@@ -71,7 +71,9 @@ dependencies {
     implementation(libs.appcompat)
     implementation(libs.constraintlayout)
     implementation(libs.material)
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
 }

@@ -42,7 +42,7 @@ public final class ProfileViewModel extends AndroidViewModel {
         ticket=sessions==null?null:sessions.capture();
         if(sessions!=null) sessions.onInvalidated(invalidation);
         AuthState state=((AniloveApplication)app).auth().state().getValue();
-        if(repository==null || ticket.uid==null || state==null || !ticket.uid.equals(state.uid) || !state.setupReady || state.pending) invalidate();
+        if(repository==null || ticket.uid==null || state==null || !ticket.uid.equals(state.uid) ) invalidate();
         else {String owner=saved.get("profile_owner");if(owner!=null&&!owner.equals(ticket.uid)){saved.remove("profile_op");saved.remove("profile_owner");}coldPending=saved.contains("profile_op");load(true);if(coldPending)reconcilePublication();}
     }
     private void changed() {changes.setValue(++event);}

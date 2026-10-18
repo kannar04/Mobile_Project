@@ -17,38 +17,50 @@ import java.util.*;
 
 /** Existing home layout bound to authorized listings and the retained real community feed. */
 public final class HomeFragment extends Fragment {
+ private androidx.swiperefreshlayout.widget.SwipeRefreshLayout refresh;
+ private RecyclerView stream;private LinearLayoutManager streamLayout;private View header;private AuthorLookup authors;
+ private final androidx.activity.result.ActivityResultLauncher<Intent> composer=registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),r->{if(r.getResultCode()==android.app.Activity.RESULT_OK&&this.model!=null)refresh();});
  private String actionNotice=""; private DailyViewModel actions; private final Map<String,Map<String,Object>> likes=new HashMap<>(); private final Set<String> reactionReads=new HashSet<>(),reactionFailures=new HashSet<>();
  private final PendingReactionTracker reactionTracker=new PendingReactionTracker();private long reactionGeneration;private FeedViewModel model; private Rows posts,pets; private ListingDiscoveryRepository discovery; private FavoritesRepository favorites; private boolean savingFavorite;
  private SessionGateway sessions; private SessionEpoch.Ticket ticket; private boolean alive; private Runnable invalidation;
- @Override public View onCreateView(@NonNull LayoutInflater i,ViewGroup c,Bundle s){return i.inflate(R.layout.fragment_home,c,false);}
+ @Override public View onCreateView(@NonNull LayoutInflater i,ViewGroup c,Bundle s){
+  androidx.core.widget.NestedScrollView old=(androidx.core.widget.NestedScrollView)i.inflate(R.layout.fragment_home,c,false);
+  header=old.getChildAt(0);old.removeView(header);View oldFeed=header.findViewById(R.id.home_posts_recycler);((ViewGroup)oldFeed.getParent()).removeView(oldFeed);
+  refresh=new androidx.swiperefreshlayout.widget.SwipeRefreshLayout(requireContext());refresh.setId(R.id.home_refresh);refresh.setBackgroundResource(R.color.anilove_bg);
+  stream=new RecyclerView(requireContext());stream.setId(R.id.home_posts_recycler);stream.setClipToPadding(false);stream.setPadding(SocialViews.dp(requireContext(),16),0,SocialViews.dp(requireContext(),16),SocialViews.dp(requireContext(),16));
+  header.setPadding(0,SocialViews.dp(requireContext(),16),0,0);refresh.addView(stream,new ViewGroup.LayoutParams(-1,-1));return refresh;
+ }
  @Override public void onViewCreated(@NonNull View view,Bundle state){
   alive=true;actions=new ViewModelProvider(this).get(DailyViewModel.class);
   ((AniloveApplication)requireActivity().getApplication()).communityOutbox().entries().observe(getViewLifecycleOwner(),pending->{java.util.Set<String> completed=reactionTracker.completedPosts(pending);if(!completed.isEmpty()){reactionGeneration++;for(String id:completed){likes.remove(id);reactionFailures.remove(id);}reactionReads.clear();}if(posts!=null)posts.notifyDataSetChanged();});
   actions.changes.observe(getViewLifecycleOwner(),ignored->{if(posts==null)return;if(actions.committed){likes.clear();reactionFailures.clear();}posts.notifyDataSetChanged();
    if(!actions.busy&&(actions.pending!=null||"local_failed".equals(actions.notice))&&!actions.notice.equals(actionNotice)&&getView()!=null){actionNotice=actions.notice;com.google.android.material.snackbar.Snackbar.make(requireView(),DailyCopy.notice(requireContext(),actions.notice),com.google.android.material.snackbar.Snackbar.LENGTH_LONG).setAction(R.string.social_retry,v->actions.retry()).show();}
   });
-  View.OnClickListener compose=v->startActivity(new Intent(requireContext(),SocialComposerActivity.class));
-  view.findViewById(R.id.home_create_post_card).setOnClickListener(compose);
-  view.findViewById(R.id.home_post_status_btn).setOnClickListener(compose);
-  view.findViewById(R.id.home_post_photo_btn).setOnClickListener(v->startActivity(new Intent(requireContext(),com.gmail.manhle240406.project.media.PhotoGalleryActivity.class)));
-  view.findViewById(R.id.home_post_photo_btn).setMinimumHeight(SocialViews.dp(requireContext(),48));
-  view.findViewById(R.id.home_post_status_btn).setMinimumHeight(SocialViews.dp(requireContext(),48));
-  view.findViewById(R.id.home_notifications_btn).setContentDescription(getString(R.string.flow_inbox));
-  view.findViewById(R.id.home_filter_btn).setContentDescription(getString(R.string.flow_explore));
-  view.findViewById(R.id.home_filter_btn).setOnClickListener(v->startActivity(new Intent(requireContext(),com.gmail.manhle240406.project.wiring.FlowHubActivity.class)));
-  view.findViewById(R.id.home_notifications_btn).setOnClickListener(v->((com.gmail.manhle240406.project.MainActivity)requireActivity()).navigate("notifications"));
-  View input=view.findViewById(R.id.home_search_input);
+  View.OnClickListener compose=v->composer.launch(new Intent(requireContext(),SocialComposerActivity.class));
+  header.findViewById(R.id.home_create_post_card).setOnClickListener(compose);
+  header.findViewById(R.id.home_post_status_btn).setOnClickListener(compose);
+  header.findViewById(R.id.home_post_photo_btn).setOnClickListener(v->composer.launch(new Intent(requireContext(),SocialComposerActivity.class).putExtra("select_photos",true)));
+  header.findViewById(R.id.home_post_photo_btn).setMinimumHeight(SocialViews.dp(requireContext(),48));
+  header.findViewById(R.id.home_post_status_btn).setMinimumHeight(SocialViews.dp(requireContext(),48));
+  header.findViewById(R.id.home_notifications_btn).setContentDescription(getString(R.string.flow_inbox));
+  header.findViewById(R.id.home_filter_btn).setContentDescription(getString(R.string.flow_explore));
+  header.findViewById(R.id.home_filter_btn).setOnClickListener(v->((MainActivity)requireActivity()).navigate("tools"));
+  header.findViewById(R.id.home_notifications_btn).setOnClickListener(v->((com.gmail.manhle240406.project.MainActivity)requireActivity()).navigate("notifications"));
+  View input=header.findViewById(R.id.home_search_input);
   if(input instanceof EditText)((EditText)input).setOnEditorActionListener((v,action,event)->{browse();return true;});
-  RecyclerView feed=view.findViewById(R.id.home_posts_recycler);feed.setLayoutManager(new LinearLayoutManager(requireContext()));
-  posts=new Rows(false);feed.setAdapter(posts);feed.setNestedScrollingEnabled(false);
-  RecyclerView grid=view.findViewById(R.id.home_pet_recycler);GridLayoutManager petLayout=new GridLayoutManager(requireContext(),2);petLayout.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup(){public int getSpanSize(int position){return pets.getItemViewType(position)==1?2:1;}});grid.setLayoutManager(petLayout);
+  RecyclerView feed=stream;streamLayout=new LinearLayoutManager(requireContext());feed.setLayoutManager(streamLayout);feed.setItemAnimator(null);
+  posts=new Rows(false);feed.setAdapter(new ConcatAdapter(new Header(),posts));
+  refresh.setOnRefreshListener(this::refresh);
+  androidx.core.view.MenuHost menus=(androidx.core.view.MenuHost)requireActivity();menus.addMenuProvider(new androidx.core.view.MenuProvider(){public void onCreateMenu(Menu menu,MenuInflater inflater){menu.add(R.string.social_refresh).setOnMenuItemClickListener(item->{refresh();return true;});}public boolean onMenuItemSelected(MenuItem item){return false;}},getViewLifecycleOwner(),androidx.lifecycle.Lifecycle.State.RESUMED);
+  feed.addOnScrollListener(new RecyclerView.OnScrollListener(){public void onScrolled(RecyclerView v,int dx,int dy){checkpoint();if(dy>=0&&streamLayout.findLastVisibleItemPosition()>=posts.rows.size()-3&&!model.failed)model.load(false);else if(dy<0&&streamLayout.findFirstVisibleItemPosition()<=4)model.previous();}});
+  RecyclerView grid=header.findViewById(R.id.home_pet_recycler);GridLayoutManager petLayout=new GridLayoutManager(requireContext(),2);petLayout.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup(){public int getSpanSize(int position){return pets.getItemViewType(position)==1?2:1;}});grid.setLayoutManager(petLayout);
   pets=new Rows(true);grid.setAdapter(pets);grid.setNestedScrollingEnabled(false);
   model=new ViewModelProvider(this).get(FeedViewModel.class);
-  model.changes.observe(getViewLifecycleOwner(),n->{posts.replace(model.window.rows());posts.message=model.failed?R.string.wiring_failed:model.busy?R.string.wiring_loading:R.string.wiring_empty;posts.notifyDataSetChanged();});
+  model.changes.observe(getViewLifecycleOwner(),n->{if(!alive)return;posts.message=model.failed?R.string.wiring_failed:model.busy?R.string.wiring_loading:R.string.wiring_empty;posts.replace(model.window.rows());refresh.setRefreshing(model.refreshing);int position=model.window.position(model.anchor);if(position>=0)streamLayout.scrollToPositionWithOffset(position+1,model.offset);else if(!model.busy&&model.refreshed){stream.scrollToPosition(0);model.refreshed=false;}});
   // Continue reading in the existing feed, with its bounded pagination and saved anchor.
-  feed.setOnClickListener(v->openFeed());
+
   FirebaseEnvironment env=((AniloveApplication)requireActivity().getApplication()).foundation();sessions=env.sessions;
-  ticket=sessions==null?null:sessions.capture();
+  ticket=sessions==null?null:sessions.capture();if(ticket!=null&&ticket.uid!=null)authors=new AuthorLookup(sessions);
   if(ticket!=null&&ticket.uid!=null){
    invalidation=()->{if(alive){posts.replace(Collections.emptyList());pets.replace(Collections.emptyList());}};sessions.onInvalidated(invalidation);
    discovery=new ListingDiscoveryRepository(FirebaseFirestore.getInstance(),sessions);favorites=new FavoritesRepository(FirebaseFirestore.getInstance(),sessions);
@@ -59,12 +71,14 @@ public final class HomeFragment extends Fragment {
    });
   }
  }
- private void browse(){Intent intent=new Intent(requireContext(),DiscoveryActivity.class);View input=requireView().findViewById(R.id.home_search_input);if(input instanceof EditText)intent.putExtra("search",((EditText)input).getText().toString());startActivity(intent);}
- private void openFeed(){startActivity(new Intent(requireContext(),SocialFeedActivity.class));}
+ private void browse(){View input=header.findViewById(R.id.home_search_input);((MainActivity)requireActivity()).discovery(input instanceof EditText?((EditText)input).getText().toString():"",false);}
+ private void refresh(){if(model==null||model.busy){if(refresh!=null)refresh.setRefreshing(false);return;}reactionGeneration++;reactionReads.clear();reactionFailures.clear();likes.clear();if(authors!=null)authors.clear();model.refresh();loadPets();}
+ private void loadPets(){if(discovery==null||!alive||!sessions.current(ticket))return;discovery.page(ticket,new DiscoveryQuery("","available",Collections.emptyMap()),null).addOnCompleteListener(done->{if(!alive||!sessions.current(ticket))return;pets.message=done.isSuccessful()?R.string.wiring_empty:R.string.home_listing_unavailable;pets.replace(done.isSuccessful()?done.getResult().getDocuments():Collections.emptyList());});}
+ private void checkpoint(){if(streamLayout==null||posts==null||model==null)return;int p=streamLayout.findFirstVisibleItemPosition()-1;View child=streamLayout.findViewByPosition(p+1);if(p>=0&&p<posts.rows.size()&&child!=null)model.checkpoint(posts.rows.get(p).getId(),child.getTop());}
  @Override public void onStart(){super.onStart();if(model!=null&&!isHidden())model.start();}
- @Override public void onStop(){if(model!=null)model.stop();super.onStop();}
- @Override public void onHiddenChanged(boolean hidden){super.onHiddenChanged(hidden);if(model!=null){if(hidden)model.stop();else if(getLifecycle().getCurrentState().isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED))model.start();}}
- @Override public void onDestroyView(){alive=false;reactionGeneration++;if(sessions!=null&&invalidation!=null)sessions.removeInvalidation(invalidation);if(discovery!=null)discovery.close();if(favorites!=null)favorites.close();likes.clear();reactionReads.clear();reactionFailures.clear();posts=null;pets=null;super.onDestroyView();}
+ @Override public void onStop(){checkpoint();if(model!=null)model.stop();super.onStop();}
+ @Override public void onHiddenChanged(boolean hidden){super.onHiddenChanged(hidden);if(model!=null){if(hidden){checkpoint();model.stop();}else if(getLifecycle().getCurrentState().isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED))model.start();}}
+ @Override public void onDestroyView(){alive=false;reactionGeneration++;if(sessions!=null&&invalidation!=null)sessions.removeInvalidation(invalidation);if(authors!=null)authors.close();if(discovery!=null)discovery.close();if(favorites!=null)favorites.close();likes.clear();reactionReads.clear();reactionFailures.clear();posts=null;pets=null;stream=null;header=null;refresh=null;super.onDestroyView();}
  private void bindReaction(DocumentSnapshot row,TextView heart){
   String id=row.getId();heart.setTag(id);CommunityOutbox.Entry pending=((AniloveApplication)requireActivity().getApplication()).communityOutbox().pendingLike(id);Map<String,Object> previous=likes.get(id);boolean active=pending!=null?Boolean.TRUE.equals(pending.command.input.get("active")):previous!=null&&Boolean.TRUE.equals(previous.get("active"));
   heart.setText(active?R.string.social_unlike:R.string.social_like_action);heart.setContentDescription(heart.getText()+(pending==null?"":" - "+getString(R.string.community_pending)));heart.setSelected(active);
@@ -88,22 +102,22 @@ public final class HomeFragment extends Fragment {
  private final class Rows extends RecyclerView.Adapter<Holder>{
   final boolean listing; final List<DocumentSnapshot> rows=new ArrayList<>();int message=R.string.wiring_loading;
   Rows(boolean listing){this.listing=listing;}
-  void replace(List<DocumentSnapshot> values){rows.clear();rows.addAll(values.subList(0,Math.min(listing?4:20,values.size())));notifyDataSetChanged();}
+  void replace(List<DocumentSnapshot> values){rows.clear();rows.addAll(values.subList(0,Math.min(listing?4:100,values.size())));notifyDataSetChanged();}
   public int getItemCount(){return rows.isEmpty()?1:rows.size()+(listing?0:1);}
   public int getItemViewType(int p){return rows.isEmpty()||p==rows.size()?1:0;}
   @NonNull public Holder onCreateViewHolder(@NonNull ViewGroup parent,int type){
-   if(type==1){com.google.android.material.button.MaterialButton b=SocialViews.button(parent.getContext(),"",()->{});b.setLayoutParams(new RecyclerView.LayoutParams(-1,-2));return new Holder(b);}
+   if(type==1){TextView b=SocialViews.text(parent.getContext(),"",false);b.setGravity(Gravity.CENTER);b.setMinHeight(SocialViews.dp(parent.getContext(),48));b.setLayoutParams(new RecyclerView.LayoutParams(-1,-2));return new Holder(b);}
    return new Holder(LayoutInflater.from(parent.getContext()).inflate(listing?R.layout.item_pet_discovery:R.layout.item_post,parent,false));
   }
   public void onBindViewHolder(@NonNull Holder h,int p){
-   if(rows.isEmpty()||p==rows.size()){((TextView)h.itemView).setText(rows.isEmpty()?message:R.string.wiring_more);h.itemView.setOnClickListener(v->{if(listing)browse();else openFeed();});return;}
+   if(rows.isEmpty()||p==rows.size()){((TextView)h.itemView).setText(rows.isEmpty()?message:model.failed?R.string.social_retry:model.busy?R.string.social_loading:model.end?R.string.social_end:R.string.social_reading);h.itemView.setEnabled(listing||model.failed);h.itemView.setOnClickListener(v->{if(listing)browse();else model.load(false);});return;}
    DocumentSnapshot row=rows.get(p);
    if(listing){
     ((TextView)h.itemView.findViewById(R.id.pet_name)).setText(row.getString("petName"));
     ((TextView)h.itemView.findViewById(R.id.pet_breed_age)).setText(row.getString("title"));
     ((TextView)h.itemView.findViewById(R.id.pet_region)).setText(row.getString("regionLabel"));
     ((ImageView)h.itemView.findViewById(R.id.pet_image)).setImageResource("cat".equals(row.getString("bundledIllustrationKey"))?R.drawable.profile_avatar_cat:R.drawable.profile_avatar_dog);
-    View.OnClickListener open=v->startActivity(new Intent(requireContext(),DiscoveryActivity.class).putExtra("listing",row.getId()));
+    View.OnClickListener open=v->startActivity(new Intent(requireContext(),ListingDetailActivity.class).putExtra("listing",row.getId()));
     h.itemView.setOnClickListener(open);View favorite=h.itemView.findViewById(R.id.pet_favorite_btn);favorite.setTag(row.getId());favorite.setContentDescription(getString(R.string.wiring_save));favorite.setEnabled(!savingFavorite);favorite.setOnClickListener(v->{
      if(savingFavorite||favorites==null||!sessions.current(ticket))return;savingFavorite=true;v.setEnabled(false);
      com.gmail.manhle240406.project.wiring.FavoriteActions.set(FirebaseFirestore.getInstance(),sessions,ticket,favorites,row.getId(),true).addOnCompleteListener(done->{
@@ -112,11 +126,17 @@ public final class HomeFragment extends Fragment {
      });
     });
    }else{
-    ((TextView)h.itemView.findViewById(R.id.post_author_name)).setText(R.string.social_member);
+    AuthorIdentity.bind(authors,row.getString("authorUid"),h.itemView.findViewById(R.id.post_author_name),h.itemView.findViewById(R.id.post_author_avatar));
     ((TextView)h.itemView.findViewById(R.id.post_time)).setText(row.getTimestamp("firstPublishedAt")==null?"":java.text.DateFormat.getDateTimeInstance().format(row.getTimestamp("firstPublishedAt").toDate()));
     ((TextView)h.itemView.findViewById(R.id.post_body)).setText(row.getString("body"));
     ((ImageView)h.itemView.findViewById(R.id.post_image)).setImageResource("cat".equals(row.getString("bundledIllustrationKey"))?R.drawable.profile_avatar_cat:R.drawable.profile_avatar_dog);
     h.itemView.findViewById(R.id.post_image).setVisibility(row.getString("bundledIllustrationKey")==null?View.GONE:View.VISIBLE);
+    android.view.ViewGroup imageParent=(android.view.ViewGroup)h.itemView.findViewById(R.id.post_image).getParent();
+    com.gmail.manhle240406.project.media.MediaGrid gallery=imageParent.findViewWithTag("post_media_gallery");
+    if(gallery==null){gallery=new com.gmail.manhle240406.project.media.MediaGrid(requireContext());gallery.setTag("post_media_gallery");imageParent.addView(gallery,imageParent.indexOfChild(h.itemView.findViewById(R.id.post_image))+1,new android.view.ViewGroup.LayoutParams(-1,-2));}
+    gallery.bind(row.get("mediaAssetIds"));
+    AdoptionPostCard adoption=imageParent.findViewWithTag("adoption_post_card");if(adoption==null){adoption=new AdoptionPostCard(requireContext());adoption.setTag("adoption_post_card");imageParent.addView(adoption);}adoption.bind(row.getData());
+
     TextView heart=h.itemView.findViewById(R.id.post_like_btn);heart.setText(R.string.social_like_action);bindReaction(row,heart);h.itemView.findViewById(R.id.post_like_btn).setMinimumHeight(SocialViews.dp(requireContext(),48));h.itemView.findViewById(R.id.post_comment_btn).setMinimumHeight(SocialViews.dp(requireContext(),48));
     ((TextView)h.itemView.findViewById(R.id.post_comment_btn)).setText(R.string.social_open);
     View.OnClickListener open=v->startActivity(new Intent(requireContext(),SocialDetailActivity.class).putExtra("post",row.getId()));
@@ -125,5 +145,6 @@ public final class HomeFragment extends Fragment {
    }
   }
  }
+ private final class Header extends RecyclerView.Adapter<Holder>{public int getItemCount(){return 1;}public Holder onCreateViewHolder(ViewGroup p,int type){return new Holder(header);}public void onBindViewHolder(Holder h,int p){}}
  private static final class Holder extends RecyclerView.ViewHolder{Holder(View v){super(v);}}
 }

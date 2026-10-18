@@ -22,6 +22,7 @@ public class SocialFeedActivity extends AppCompatActivity {
     private final PendingReactionTracker reactionTracker=new PendingReactionTracker();private long reactionGeneration;private AuthorLookup authors;
     private FeedViewModel model;
     private DailyViewModel actions;
+    private androidx.swiperefreshlayout.widget.SwipeRefreshLayout refresh;
     private RecyclerView list;
     private LinearLayout root;
     private TextView service; private LinearLayout pendingPreview;
@@ -49,7 +50,7 @@ public class SocialFeedActivity extends AppCompatActivity {
         pendingPreview=new LinearLayout(this);pendingPreview.setOrientation(LinearLayout.VERTICAL);root.addView(pendingPreview);
         ((AniloveApplication)getApplication()).communityOutbox().entries().observe(this,queued->{Set<String> completed=reactionTracker.completedPosts(queued);if(!completed.isEmpty()){reactionGeneration++;for(String id:completed){likes.remove(id);counts.remove(id);}rowReads.clear();}checkpoint();pendingPreview.removeAllViews();int shown=0;for(CommunityOutbox.Entry e:queued)if("publish".equals(e.command.command)&&shown++<2){TextView draft=text(this,(String)e.command.input.get("body"),false);draft.setMaxLines(2);draft.setEllipsize(android.text.TextUtils.TruncateAt.END);pendingPreview.addView(draft);}if(!queued.isEmpty())pendingPreview.addView(button(this,getString(R.string.community_pending_actions)+" ("+queued.size()+")",()->startActivity(new Intent(this,PendingCommunityActivity.class))));if(adapter!=null)adapter.notifyDataSetChanged();});
         list=new RecyclerView(this);manager=new LinearLayoutManager(this);list.setLayoutManager(manager);list.setItemAnimator(null);list.setSaveEnabled(false);
-        adapter=new Adapter();list.setAdapter(adapter);root.addView(list,new LinearLayout.LayoutParams(-1,0,1));
+        adapter=new Adapter();list.setAdapter(adapter);refresh=new androidx.swiperefreshlayout.widget.SwipeRefreshLayout(this);refresh.addView(list);refresh.setOnRefreshListener(()->{counts.clear();likes.clear();if(authors!=null)authors.clear();model.refresh();});root.addView(refresh,new LinearLayout.LayoutParams(-1,0,1));
         model=new ViewModelProvider(this).get(FeedViewModel.class);
         actions=new ViewModelProvider(this).get(DailyViewModel.class);
         if(!model.lost)authors=new AuthorLookup(actions.sessions);
@@ -80,7 +81,7 @@ public class SocialFeedActivity extends AppCompatActivity {
         menu.setOnMenuItemClickListener(item->{
             if(item.getItemId()==7){startActivity(new Intent(this,ModerationNoticesActivity.class));}
             else if(item.getItemId()==6){startActivity(new Intent(this,PendingCommunityActivity.class));}
-            else if(item.getItemId()==1){counts.clear();likes.clear();checkpoint();model.load(true);}
+            else if(item.getItemId()==1){counts.clear();likes.clear();model.refresh();}
             else if(item.getItemId()==2)startActivity(new Intent(this,SocialComposerActivity.class).putExtra("own",true));
             else if(item.getItemId()==3)startActivity(new Intent(this,MyReportsActivity.class));else if(item.getItemId()==4)actions.retry();else actions.reconcile();return true;
         });menu.show();
@@ -91,7 +92,7 @@ public class SocialFeedActivity extends AppCompatActivity {
     }
     private void render(){
         if(model.lost){adapter.submit(Collections.emptyList());service.setText(R.string.social_signin);return;}
-        adapter.submit(model.window.rows());int p=model.window.position(model.anchor);
+        refresh.setRefreshing(model.refreshing);adapter.submit(model.window.rows());if(model.refreshed){list.scrollToPosition(0);model.refreshed=false;}int p=model.window.position(model.anchor);
         if(p>=0)manager.scrollToPositionWithOffset(p,model.offset);
         service.setText(model.boundaryLost?R.string.social_boundary:model.newPosts?R.string.social_new_posts:R.string.social_reading);SocialSurface.hideEmpty(service);
     }
@@ -146,11 +147,13 @@ public class SocialFeedActivity extends AppCompatActivity {
             String uid=d.getString("authorUid");long bind=h.binding;
             if(uid!=null&&authors!=null&&!model.lost)authors.get(uid).addOnSuccessListener(profile->{
                 if(h.binding!=bind||model.lost||profile==null)return;author.setText((String)profile.get("displayName"));
-                avatar.setImageResource("cat".equals(profile.get("avatarKey"))?R.drawable.profile_avatar_cat:"dog".equals(profile.get("avatarKey"))?R.drawable.profile_avatar_dog:R.drawable.profile_avatar_default);
+                avatar.setImageResource("cat".equals(profile.get("avatarKey"))?R.drawable.profile_avatar_cat:"dog".equals(profile.get("avatarKey"))?R.drawable.profile_avatar_dog:R.drawable.profile_avatar_default);if(profile.get("avatarAssetId") instanceof String){avatar.setImageTintList(null);com.gmail.manhle240406.project.media.MediaGrid.load(avatar,(String)profile.get("avatarAssetId"),"thumbnail");}
             });
             String time=d.getTimestamp("firstPublishedAt")==null?"":java.text.DateFormat.getDateTimeInstance().format(d.getTimestamp("firstPublishedAt").toDate());
-            h.col.addView(text(SocialFeedActivity.this,time+" · "+getString(Long.valueOf(4).equals(d.get("schemaVersion"))?R.string.community_everyone:R.string.social_audience)+(d.get("editedAt")!=null?" · "+getString(R.string.social_edited):""),false));
+            h.col.addView(text(SocialFeedActivity.this,time+" · "+getString("everyone".equals(d.get("audience"))?R.string.community_everyone:R.string.social_audience)+(d.get("editedAt")!=null?" · "+getString(R.string.social_edited):""),false));
             h.col.addView(text(SocialFeedActivity.this,d.getString("body"),false));
+            com.gmail.manhle240406.project.media.MediaGrid gallery=new com.gmail.manhle240406.project.media.MediaGrid(SocialFeedActivity.this);gallery.bind(d.get("mediaAssetIds"));h.col.addView(gallery);
+            AdoptionPostCard adoption=new AdoptionPostCard(SocialFeedActivity.this);adoption.bind(d.getData());h.col.addView(adoption);
             String media=d.getString("bundledIllustrationKey");
             if(media!=null){ImageView image=new ImageView(SocialFeedActivity.this);image.setImageResource(media.equals("cat")?R.drawable.profile_avatar_cat:media.equals("dog")?R.drawable.profile_avatar_dog:R.drawable.profile_avatar_default);image.setContentDescription(getString(R.string.social_illustration));h.col.addView(image,new LinearLayout.LayoutParams(-1,dp(SocialFeedActivity.this,160)));}
             LinearLayout actionRow=new LinearLayout(SocialFeedActivity.this);com.google.android.material.button.MaterialButton reaction=button(SocialFeedActivity.this,getString(R.string.social_like_action),()->like(d));Map<String,Object> ownLike=likes.get(d.getId());reaction.setText(ownLike!=null&&Boolean.TRUE.equals(ownLike.get("active"))?R.string.social_unlike:R.string.social_like_action);reaction.setEnabled(likes.containsKey(d.getId())&&!actions.busy&&actions.pending==null&&!actions.restored);actionRow.addView(reaction,new LinearLayout.LayoutParams(0,-2,1));actionRow.addView(button(SocialFeedActivity.this,getString(R.string.social_open),()->{checkpoint();startActivity(new Intent(SocialFeedActivity.this,SocialDetailActivity.class).putExtra("post",d.getId()));}),new LinearLayout.LayoutParams(0,-2,1));TextView counter=text(SocialFeedActivity.this,counts.containsKey(d.getId())?getString(R.string.social_likes,counts.get(d.getId())):getString(R.string.social_count_loading),false);CommunityOutbox.Entry pendingLike=((AniloveApplication)getApplication()).communityOutbox().pendingLike(d.getId());if(pendingLike!=null){reaction.setText(Boolean.TRUE.equals(pendingLike.command.input.get("active"))?R.string.social_unlike:R.string.social_like_action);reaction.setIconResource(R.drawable.ic_social_pending);reaction.setContentDescription(reaction.getText()+" - "+getString(R.string.community_pending));reaction.setEnabled(!actions.busy&&pendingLike.replaceable());}h.col.addView(counter);h.col.addView(actionRow);if(!likes.containsKey(d.getId())||!counts.containsKey(d.getId()))readReaction(d,h,counter,reaction,bind);

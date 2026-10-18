@@ -13,9 +13,9 @@ public final class SocialRepository {
     public SocialRepository(FirebaseFirestore db,SessionGateway sessions){this.db=db;this.sessions=sessions;}
     public static Map<String,Object> map(Object...pairs){Map<String,Object> m=new HashMap<>();for(int i=0;i<pairs.length;i+=2)m.put((String)pairs[i],pairs[i+1]);return m;}
     public static long number(Map<String,Object> m,String key){Object n=m==null?null:m.get(key);if(n==null)return 0;if(!(n instanceof Long))throw new IllegalStateException("schema");return (Long)n;}
-    public Task<QuerySnapshot> feed(DocumentSnapshot cursor){Query q=db.collection("communityFeed").whereIn("schemaVersion",Arrays.asList(2L,3L,4L)).whereIn("audience",Arrays.asList("community","everyone")).whereEqualTo("state","visible").orderBy("firstPublishedAt",Query.Direction.DESCENDING).orderBy(FieldPath.documentId(),Query.Direction.DESCENDING).limit(20);if(cursor!=null)q=q.startAfter(cursor);return bounded(q.get(Source.SERVER));}
-    public Task<QuerySnapshot> around(Timestamp time,String id){return bounded(db.collection("communityFeed").whereIn("schemaVersion",Arrays.asList(2L,3L,4L)).whereIn("audience",Arrays.asList("community","everyone")).whereEqualTo("state","visible").orderBy("firstPublishedAt",Query.Direction.DESCENDING).orderBy(FieldPath.documentId(),Query.Direction.DESCENDING).startAt(time,id).limit(20).get(Source.SERVER));}
-    public ListenerRegistration head(com.google.firebase.firestore.EventListener<QuerySnapshot> listener){return db.collection("communityFeed").whereIn("schemaVersion",Arrays.asList(2L,3L,4L)).whereIn("audience",Arrays.asList("community","everyone")).whereEqualTo("state","visible").orderBy("firstPublishedAt",Query.Direction.DESCENDING).orderBy(FieldPath.documentId(),Query.Direction.DESCENDING).limit(20).addSnapshotListener(listener);}
+    public Task<QuerySnapshot> feed(DocumentSnapshot cursor){Query q=db.collection("communityFeed").whereIn("schemaVersion",Arrays.asList(2L,3L,4L,5L,6L)).whereIn("audience",Arrays.asList("community","everyone")).whereEqualTo("state","visible").orderBy("firstPublishedAt",Query.Direction.DESCENDING).orderBy(FieldPath.documentId(),Query.Direction.DESCENDING).limit(20);if(cursor!=null)q=q.startAfter(cursor);return bounded(q.get(Source.SERVER));}
+    public Task<QuerySnapshot> around(Timestamp time,String id){return bounded(db.collection("communityFeed").whereIn("schemaVersion",Arrays.asList(2L,3L,4L,5L,6L)).whereIn("audience",Arrays.asList("community","everyone")).whereEqualTo("state","visible").orderBy("firstPublishedAt",Query.Direction.DESCENDING).orderBy(FieldPath.documentId(),Query.Direction.DESCENDING).startAt(time,id).limit(20).get(Source.SERVER));}
+    public ListenerRegistration head(com.google.firebase.firestore.EventListener<QuerySnapshot> listener){return db.collection("communityFeed").whereIn("schemaVersion",Arrays.asList(2L,3L,4L,5L,6L)).whereIn("audience",Arrays.asList("community","everyone")).whereEqualTo("state","visible").orderBy("firstPublishedAt",Query.Direction.DESCENDING).orderBy(FieldPath.documentId(),Query.Direction.DESCENDING).limit(20).addSnapshotListener(listener);}
     public Task<QuerySnapshot> comments(String id,DocumentSnapshot cursor){Query q=db.collection("communityCommentFeed/"+id+"/comments").whereEqualTo("schemaVersion",2L).whereEqualTo("state","visible").orderBy("createdAt").orderBy(FieldPath.documentId()).limit(20);if(cursor!=null)q=q.startAfter(cursor);return bounded(q.get(Source.SERVER));}
     public ListenerRegistration commentPage(String id,DocumentSnapshot start,com.google.firebase.firestore.EventListener<QuerySnapshot> listener){Query q=db.collection("communityCommentFeed/"+id+"/comments").whereEqualTo("schemaVersion",2L).whereEqualTo("state","visible").orderBy("createdAt").orderBy(FieldPath.documentId()).limit(20);if(start!=null)q=q.startAfter(start);return q.addSnapshotListener(listener);}
     public Task<QuerySnapshot> revisions(String id,DocumentSnapshot start){Query q=db.collection("communityPosts/"+id+"/revisions").orderBy("contentVersion",Query.Direction.DESCENDING).orderBy(FieldPath.documentId(),Query.Direction.DESCENDING).limit(20);if(start!=null)q=q.startAfter(start);return bounded(q.get(Source.SERVER));}
@@ -24,6 +24,25 @@ public final class SocialRepository {
     private <T> Task<T> bounded(Task<T> t){return Tasks.withTimeout(t,15,TimeUnit.SECONDS);}
     private DocumentReference ref(String p){return db.document(p);}
     public Task<Map<String,Object>> execute(SessionEpoch.Ticket ticket,SocialCommand c){
+        if(!Arrays.asList("set_like","add_comment","edit_comment","withdraw_comment").contains(c.command)) {
+            if((c.input.containsKey("mediaAssetIds")||"adoption".equals(c.input.get("type"))))return mediaExecute(ticket,c);
+            return read("communityPosts/"+c.postId).continueWithTask(root->{
+                if(!sessions.current(ticket))return Tasks.forException(new IllegalStateException("session_changed"));
+                if(root.isSuccessful()&&(Long.valueOf(5).equals(root.getResult().get("schemaVersion"))||Long.valueOf(6).equals(root.getResult().get("schemaVersion"))))return mediaExecute(ticket,c);
+                return legacyExecute(ticket,c);
+            });
+        }
+        return legacyExecute(ticket,c);
+    }
+    private Task<Map<String,Object>> mediaExecute(SessionEpoch.Ticket ticket,SocialCommand c) {
+        if(ticket.uid==null||!sessions.current(ticket))return Tasks.forException(new IllegalStateException("session_changed"));
+        Map<String,Object> payload=map("command",c.command,"postId",c.postId,"targetId",c.targetId,"operationId",c.operationId,"base",c.base(),"input",c.input);
+        return com.gmail.manhle240406.project.media.ManagedMediaClient.call("post",payload).continueWithTask(done->{done.getResult();return read("users/"+ticket.uid+"/communityOperations/"+c.operationId);}).continueWith(done->{
+            if(!sessions.current(ticket))throw new IllegalStateException("session_changed");
+            Map<String,Object> receipt=done.getResult().getData();if(!c.matches(receipt))throw new IllegalStateException("conflict");return receipt;
+        });
+    }
+    private Task<Map<String,Object>> legacyExecute(SessionEpoch.Ticket ticket,SocialCommand c){
         Task<Map<String,Object>> attempt=db.runTransaction(new TransactionOptions.Builder().setMaxAttempts(3).build(),tx->{
             if(ticket.uid==null||!sessions.current(ticket))throw new IllegalStateException("session_changed");
             String uid=ticket.uid,p="communityPosts/"+c.postId;Object now=FieldValue.serverTimestamp();
@@ -44,6 +63,7 @@ public final class SocialRepository {
                 if(delta!=0){
                     if(count==null)throw new IllegalStateException("schema");
                     tx.set(ref(p+"/likes/"+uid),map("schemaVersion",2L,"uid",uid,"postId",c.postId,"active",desired,"likeVersion",lv,"sourceContentVersion",feed==null?number(oldLike,"sourceContentVersion"):number(feed,"contentVersion"),"updatedAt",now,"lastOperationId",c.operationId));
+                    if(desired)tx.set(ref("users/"+uid+"/likedPosts/"+c.postId),map("schemaVersion",1L,"uid",uid,"postId",c.postId,"likeVersion",lv,"sourceContentVersion",number(feed,"contentVersion"),"likedAt",now,"lastOperationId",c.operationId));else tx.delete(ref("users/"+uid+"/likedPosts/"+c.postId));
                     Map<String,Object> next=new HashMap<>(count);next.put("likeCount",number(count,"likeCount")+delta);next.put("countVersion",number(count,"countVersion")+1);next.put("updatedAt",now);next.put("lastOperationId",c.operationId);tx.set(ref("communityCounts/"+c.postId),next);
                 }
                 result=map("targetVersion",lv);

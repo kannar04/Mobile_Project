@@ -39,6 +39,11 @@ public final class ProfileSchema {
     public static boolean positive(Object n) { return n instanceof Long && (Long)n>0; }
     public static long version(Map<String,Object> record) { return record==null?0:(Long)record.get("version"); }
     public static boolean validRecord(Map<String,Object> m, Set<String> shape, String uid) {
+        if(m!=null&&Long.valueOf(2).equals(m.get("schemaVersion"))&&(shape==DRAFT||shape==PUBLIC)) {
+            if(!m.containsKey("avatarAssetId")||!m.containsKey("avatarChoiceVersion")||!(m.get("avatarChoiceVersion") instanceof Long)||(Long)m.get("avatarChoiceVersion")<0)return false;
+            Object id=m.get("avatarAssetId");if(id!=null&&(!(id instanceof String)||!validOperationId((String)id)))return false;
+            Map<String,Object> old=new HashMap<>(m);old.remove("avatarAssetId");old.remove("avatarChoiceVersion");old.put("schemaVersion",1L);return validRecord(old,shape,uid);
+        }
         if (m==null || !m.keySet().equals(shape) || !uid.equals(m.get("ownerUid")) || !Long.valueOf(1).equals(m.get("schemaVersion"))) return false;
         if (shape==PUBLIC) return positive(m.get("publicationVersion")) && positive(m.get("sourceDraftVersion")) && validContent(m);
         if (!positive(m.get("version")) || !(m.get("lastOperationId") instanceof String) || !UUID.matcher((String)m.get("lastOperationId")).matches()) return false;

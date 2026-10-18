@@ -1,0 +1,5 @@
+{
+  "functions": [{"source": "functions", "codebase": "media", "runtime": "nodejs22"}],
+  "storage": {"rules": "storage.media.rules"},
+  "firestore": {"rules": "firestore.spark.rules", "indexes": "firestore.spark.indexes.json"}
+}

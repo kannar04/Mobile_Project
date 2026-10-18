@@ -11,7 +11,7 @@ const projection=(id,schema=3)=>({schemaVersion:schema,postId:id,authorUid:'A',t
  ...(schema===3?{controlVersion:1}:{}),body:'Fictional pet story',bundledIllustrationKey:'cat',audience:'community',state:'visible',firstPublishedAt:now,editedAt:null});
 const seed=async(path,data)=>env.withSecurityRulesDisabled(c=>setDoc(doc(c.firestore(),path),data));
 before(async()=>{
- env=await initializeTestEnvironment({projectId,firestore:{host:'127.0.0.1',port:8280,rules:readFileSync(new URL(process.env.ANILOVE_RULES_FILE??'../firestore.rules',import.meta.url),'utf8')}});
+ env=await initializeTestEnvironment({projectId,firestore:{host:'127.0.0.1',port:Number(process.env.ANILOVE_ACCOUNT_EMULATOR_PORT??8280),rules:readFileSync(new URL(process.env.ANILOVE_RULES_FILE??'../firestore.rules',import.meta.url),'utf8')}});
  await env.clearFirestore(); // This dedicated demo project contains only this suite's synthetic fixtures.
  A=env.authenticatedContext('A',{email_verified:true}).firestore(); B=env.authenticatedContext('B',{email_verified:true}).firestore();guest=env.unauthenticatedContext().firestore();
  await seed('users/A',{uid:'A',schemaVersion:1,createdAt:now});

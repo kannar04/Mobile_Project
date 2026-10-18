@@ -27,7 +27,7 @@ public final class EnhancedSettingsActivity extends AppCompatActivity {
   android.view.ViewGroup parent=(android.view.ViewGroup)security.getParent();
   com.google.android.material.button.MaterialButton deletion=SocialViews.button(this,getString(R.string.flow_delete_account),()->startActivity(new Intent(this,AccountDeletionActivity.class)));
   deletion.setTag("account_deletion");parent.addView(deletion);
-  parent.addView(SocialViews.button(this,getString(R.string.flow_explore),()->startActivity(new Intent(this,com.gmail.manhle240406.project.wiring.FlowHubActivity.class))));
+  parent.addView(SocialViews.button(this,getString(R.string.flow_explore),()->com.gmail.manhle240406.project.MainActivity.open(this,"tools")));
 
  }
  private void save(AppearanceRepository.Language language,AppearanceRepository.Theme theme){saving=true;services.appearance.set(language,theme).whenComplete((value,error)->runOnUiThread(()->{saving=false;if(isDestroyed()||isFinishing())return;if(error!=null){Snackbar.make(findViewById(R.id.enhanced_settings_root),R.string.wiring_preference_failed,Snackbar.LENGTH_LONG).show();return;}selection=value;services.applyAppearance(value);}));}

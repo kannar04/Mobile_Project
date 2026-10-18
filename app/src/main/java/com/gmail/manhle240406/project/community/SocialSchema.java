@@ -8,8 +8,19 @@ public final class SocialSchema {
     private static boolean keys(Map<String,Object> m,String...names){return m!=null&&m.keySet().equals(new HashSet<>(Arrays.asList(names)));}
     private static boolean positive(Object n){return n instanceof Long&&(Long)n>=1;}
     public static boolean feed(Map<String,Object> m,String id){
+        if(m!=null&&Long.valueOf(6).equals(m.get("schemaVersion"))){
+            if(!"adoption".equals(m.get("type"))||!"community".equals(m.get("audience"))||!com.gmail.manhle240406.project.pet.PetSchema.id(m.get("listingId"))||!positive(m.get("listingContentVersion"))||!positive(m.get("listingPublicationVersion")))return false;
+            Map<String,Object> old=new HashMap<>(m);old.remove("listingId");old.remove("listingContentVersion");old.remove("listingPublicationVersion");old.put("schemaVersion",5L);old.put("type","community");return feed(old,id);
+        }
+
         if(m==null) return false;
         Object ver=m.get("schemaVersion");
+        if(Long.valueOf(5).equals(ver)) {
+            if(!m.containsKey("mediaAssetIds")||!m.containsKey("manifestVersion")||!m.get("contentVersion").equals(m.get("manifestVersion")))return false;
+            java.util.List<String> ids=com.gmail.manhle240406.project.media.MediaGrid.ids(m.get("mediaAssetIds"));
+            if(!(m.get("mediaAssetIds") instanceof java.util.List)||ids.size()!=((java.util.List<?>)m.get("mediaAssetIds")).size())return false;
+            Map<String,Object> old=new HashMap<>(m);old.remove("mediaAssetIds");old.remove("manifestVersion");old.put("schemaVersion","everyone".equals(m.get("audience"))?4L:3L);return feed(old,id);
+        }
         if(Long.valueOf(2).equals(ver)) {
             return keys(m,"schemaVersion","postId","authorUid","type","contentVersion","body","bundledIllustrationKey","audience","state","firstPublishedAt","editedAt")&&id.equals(m.get("postId"))&&PetSchema.id(id)&&m.get("authorUid") instanceof String&&"community".equals(m.get("type"))&&positive(m.get("contentVersion"))&&m.get("body") instanceof String&&(m.get("bundledIllustrationKey")==null||m.get("bundledIllustrationKey") instanceof String)&&CommunitySchema.fields(CommunitySchema.fields((String)m.get("body"),(String)m.get("bundledIllustrationKey")))&&"community".equals(m.get("audience"))&&"visible".equals(m.get("state"))&&m.get("firstPublishedAt") instanceof Timestamp&&(m.get("editedAt")==null||m.get("editedAt") instanceof Timestamp);
         } else if(Long.valueOf(3).equals(ver)||Long.valueOf(4).equals(ver)) {

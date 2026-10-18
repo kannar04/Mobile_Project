@@ -21,6 +21,8 @@ public final class ProfileSetupActivity extends AppCompatActivity {
     @Override protected void onCreate(Bundle saved){super.onCreate(saved);EdgeToEdge.enable(this);
         LinearLayout root=SocialSurface.page(this);SocialSurface.header(this,root,R.string.setup_profile_title,this::leaveApp);
         LinearLayout body=SocialSurface.content(this,root);body.addView(SocialViews.text(this,getString(R.string.setup_profile_body),false));
+        ImageView avatarPreview=new ImageView(this);avatarPreview.setScaleType(ImageView.ScaleType.CENTER_CROP);avatarPreview.setImageResource(R.drawable.profile_avatar_default);avatarPreview.setContentDescription(getString(R.string.media_change_avatar));body.addView(avatarPreview,new LinearLayout.LayoutParams(SocialViews.dp(this,88),SocialViews.dp(this,88)));
+        new com.gmail.manhle240406.project.media.AvatarControl(this,body,avatarPreview,()->{});
         field=(TextInputLayout)getLayoutInflater().inflate(R.layout.pet_field,body,false);field.setHint(R.string.profile_name);name=(TextInputEditText)field.getEditText();name.setId(R.id.setup_display_name);name.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS);name.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);body.addView(field);
         status=SocialSurface.muted(this,"");status.setId(R.id.setup_status);body.addView(status);
         next=SocialViews.primaryButton(this,getString(R.string.setup_continue),this::save);next.setId(R.id.setup_continue);body.addView(next);

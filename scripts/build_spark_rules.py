@@ -28,14 +28,14 @@ for match in re.finditer(r'^    (function|match)\s+[^\n]+',source,re.M):
         pos+=1
     blocks.append((kind,source[start:pos]))
 
-roots={'communityMemberships','profileModeration','publicProfileControls','publicProfiles','securitySubjects',
+roots={'mediaAssets','mediaCommands','communityMemberships','profileModeration','publicProfileControls','publicProfiles','securitySubjects',
        'pets','petOfferAuthorities','petListingSlots','petActivityGates','foundationChecks','listings',
        'communityPosts','communityFeed','communityPublicFeed','communityCounts','communityCommentFeed','reports','reportRateControls',
        'catalogSpecies','catalogBreeds','catalogRegions','listingDiscovery','discoveryPolicy','system',
        'reservationCommunication','conversationBlocks','conversations'}
 user_parts={'profileDraft','private','profileOperations','profileReviews','petPrivate','petChallenges','petReceipts',
             'listingDrafts','communityOperations','reportStatus','reportLinks','reportOperations','notificationInbox',
-            'notificationPreferences','favorites','favoriteMeta','favoriteOperations','closureViews','conversationIndex','moderationNotices'}
+            'notificationPreferences','likedPosts','favorites','favoriteMeta','favoriteOperations','closureViews','conversationIndex','moderationNotices'}
 selected=[]
 for kind,text in blocks:
     if kind!='match':continue

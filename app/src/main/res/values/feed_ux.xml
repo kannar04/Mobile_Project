@@ -1,0 +1,19 @@
+<resources>
+    <string name="feed_liked_posts">Bài viết đã thích</string>
+    <string name="feed_saved_pets">Thú cưng đã lưu</string>
+    <string name="feed_no_liked_posts">Bạn chưa thích bài viết nào.</string>
+    <string name="feed_post_type">Loại bài viết</string>
+    <string name="feed_story">Chia sẻ</string>
+    <string name="feed_adoption">Tìm người nhận nuôi</string>
+    <string name="feed_choose_listing">Chọn tin nhận nuôi của bạn</string>
+    <string name="feed_listing_unavailable">Tin nhận nuôi hiện không khả dụng.</string>
+    <string name="feed_no_eligible_listing">Bạn chưa có tin nhận nuôi đang hiển thị. Hãy hoàn tất tin nhận nuôi trước.</string>
+    <string name="feed_open_listing">Xem tin nhận nuôi</string>
+    <string name="feed_listing_selected">Tin nhận nuôi: %1$s</string>
+    <string name="feed_listing_required">Chọn tin nhận nuôi đang hiển thị để tiếp tục.</string>
+    <string name="feed_adoption_audience">Bài nhận nuôi được chia sẻ với thành viên cộng đồng.</string>
+    <item name="favorite_library" type="id"/>
+    <item name="liked_posts_list" type="id"/>
+    <item name="post_type_picker" type="id"/>
+    <item name="adoption_listing_action" type="id"/>
+</resources>

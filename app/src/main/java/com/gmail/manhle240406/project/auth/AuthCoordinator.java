@@ -17,6 +17,9 @@ import java.util.function.Consumer;
 
 /** App-owned coordinator; it reuses SessionGateway's only Auth observer. */
 public final class AuthCoordinator {
+
+    private String newGoogleUid;
+    public boolean consumeNewGoogleRegistration(String uid){boolean fresh=uid!=null&&uid.equals(newGoogleUid);if(fresh)newGoogleUid=null;return fresh;}
     private final FirebaseEnvironment environment;
     private final FirebaseAuth auth;
     private final AccountBootstrapRepository accounts;
@@ -147,6 +150,7 @@ public final class AuthCoordinator {
             if (returned == null || (linking && !target.getUid().equals(returned.getUid()))) {
                 logout(); notice = AuthState.Notice.CONFLICT; publish(); return;
             }
+            if(!linking&&result.getResult().getAdditionalUserInfo()!=null&&result.getResult().getAdditionalUserInfo().isNewUser())newGoogleUid=returned.getUid();
             refreshVerification();
         });
     }
@@ -174,6 +178,7 @@ public final class AuthCoordinator {
     }
     public FirebaseUser linkingTarget() { return user(); }
     public void logout() {
+        newGoogleUid=null;
         gate.logout(); readinessGeneration++; readinessUid = null;
         readinessLoading = false; keepCurrentAccount = false; operationUid = null;
         setupReady = false; membership=MembershipRepository.State.UNKNOWN; authority = AuthState.Authority.UNKNOWN; verificationSending = false;

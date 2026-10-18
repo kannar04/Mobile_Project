@@ -85,6 +85,9 @@ public final class ProfileRepository {
     }
     public Task<Result<Map<String,Object>>> execute(SessionEpoch.Ticket ticket,ProfileCommand command) {
         if(!sessions.current(ticket) || ticket.uid==null) return Tasks.forResult(new Result<>(Code.SESSION_CHANGED,null));
+        if(command.kind==ProfileCommand.Kind.DRAFT&&com.gmail.manhle240406.project.BuildConfig.MEDIA_UPLOADS_ENABLED) {
+            return com.gmail.manhle240406.project.media.ManagedMediaClient.call("saveProfile",com.gmail.manhle240406.project.media.ManagedMediaClient.map("operationId",command.operationId,"baseVersion",command.baseVersion,"payload",command.payload)).continueWithTask(done->{done.getResult();return ownDraft(ticket);}).continueWith(done->{if(done.isSuccessful())return done.getResult();return new Result<>(done.getException()!=null&&String.valueOf(done.getException()).contains("conflict")?Code.CONFLICT:Code.UNKNOWN,null);});
+        }
         final String uid=ticket.uid;
         Task<Map<String,Object>> write=db.runTransaction(new TransactionOptions.Builder().setMaxAttempts(3).build(),tx->{
             if(!sessions.current(ticket)) throw new IllegalStateException("session_changed");
@@ -134,6 +137,11 @@ public final class ProfileRepository {
     }
     public Task<Result<Map<String,Object>>> publish(SessionEpoch.Ticket ticket,String op,long draftVersion,long controlVersion,long publicationVersion,long moderationVersion,Map<String,Object> candidate) {
         if(!sessions.current(ticket))return Tasks.forResult(new Result<>(Code.SESSION_CHANGED,null));
+        if(com.gmail.manhle240406.project.BuildConfig.MEDIA_UPLOADS_ENABLED) {
+            Map<String,Object> bases=com.gmail.manhle240406.project.media.ManagedMediaClient.map("draft",draftVersion,"control",controlVersion,"publication",publicationVersion,"moderation",moderationVersion);
+            Task<Map<String,Object>> call=com.gmail.manhle240406.project.media.ManagedMediaClient.call("publishProfile",com.gmail.manhle240406.project.media.ManagedMediaClient.map("operationId",op,"base",bases,"candidate",candidate));
+            return wrap(call.continueWithTask(done->{done.getResult();return db.document("users/"+ticket.uid+"/profileOperations/"+op).get(Source.SERVER).continueWith(read->read.getResult().getData());}),ticket,true);
+        }
         String uid=ticket.uid;
         Map<String,Object> base=new HashMap<>();base.put("draft",draftVersion);base.put("control",controlVersion);base.put("publication",publicationVersion);base.put("moderation",moderationVersion);
         Map<String,Object> frozen=Collections.unmodifiableMap(new HashMap<>(candidate));
