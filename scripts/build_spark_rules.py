@@ -32,7 +32,7 @@ roots={'mediaAssets','mediaCommands','communityMemberships','profileModeration',
        'pets','petOfferAuthorities','petListingSlots','petActivityGates','foundationChecks','listings',
        'communityPosts','communityFeed','communityPublicFeed','communityCounts','communityCommentFeed','reports','reportRateControls',
        'catalogSpecies','catalogBreeds','catalogRegions','listingDiscovery','discoveryPolicy','system',
-       'adoptionReviewerCapabilities','petCare','petCarePrivate','listingReviewRequests','listingReviews','listingPublication','listingQuestionnaireBindings','questionnaireTemplates','reservationCommunication','conversationBlocks','conversations'}
+       'adoptionSelfReviewDemoPolicy','adoptionReviewAudit','adoptionReviewerCapabilities','petCare','petCarePrivate','listingReviewRequests','listingReviews','listingPublication','listingQuestionnaireBindings','questionnaireTemplates','reservationCommunication','conversationBlocks','conversations'}
 user_parts={'profileDraft','private','profileOperations','profileReviews','petPrivate','petChallenges','petReceipts',
             'listingDrafts','communityOperations','reportStatus','reportLinks','reportOperations','notificationInbox',
             'notificationPreferences','likedPosts','favorites','favoriteMeta','favoriteOperations','closureViews','conversationIndex','moderationNotices'}
