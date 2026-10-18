@@ -1,6 +1,6 @@
 ﻿// F01 r2: bounded Firebase-managed Google setup for this Spark signing certificate. No secrets logged.
 const fs=require('node:fs'),crypto=require('node:crypto'),assert=require('node:assert/strict');const {getGlobalDefaultAccount}=require('firebase-tools/lib/auth'),{requireAuth}=require('firebase-tools/lib/requireAuth'),{Client}=require('firebase-tools/lib/apiv2');
-(async()=>{const project='aniloveproject',pkg='com.gmail.manhle240406.project',apply=process.argv.includes('--apply'),planning='C:/Users/Minht/Desktop/New folder';assert.ok(process.argv.slice(2).every(x=>x==='--apply'));
+(async()=>{const project='aniloveproject',pkg='com.gmail.manhle240406.project',apply=process.argv.includes('--apply'),planning='C:/Users/phong/Downloads/New folder';assert.ok(process.argv.slice(2).every(x=>x==='--apply'));
  for(const [f,r]of [['F01',2],['F42',2]]){const receipt=JSON.parse(fs.readFileSync(`${planning}/approval_review/${f}.r${r}.approved.json`));assert.equal(crypto.createHash('sha256').update(fs.readFileSync(`${planning}/${receipt.analysis_path}`)).digest('hex'),receipt.approved_artifact_sha256);}
  const local=JSON.parse(fs.readFileSync('../app/google-services.json','utf8'));assert.equal(local.project_info.project_id,project);const lc=local.client.find(c=>c.client_info.android_client_info.package_name===pkg);assert.ok(lc);
  const fingerprints=JSON.parse(fs.readFileSync('../build/google-signing-fingerprints.json'));assert.match(fingerprints.SHA_1,/^[A-F0-9]{40}$/);assert.match(fingerprints.SHA_256,/^[A-F0-9]{64}$/);
