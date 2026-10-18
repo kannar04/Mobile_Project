@@ -19,12 +19,12 @@ final class FavoriteRows extends RecyclerView.Adapter<FavoriteRows.Holder> {
  public Holder onCreateViewHolder(ViewGroup parent,int type){
   LinearLayout col=SocialViews.column(context);col.setLayoutParams(new RecyclerView.LayoutParams(-1,-2));
   if(type==1){col.addView(SocialViews.button(context,context.getString(R.string.wiring_more),more));return new Holder(col);}
-  col.addView(SocialViews.text(context,"",true));col.addView(SocialViews.button(context,context.getString(R.string.wiring_open),()->{}));col.addView(SocialViews.button(context,context.getString(R.string.wiring_remove_saved),()->{}));return new Holder(col);
+  col.addView(SocialViews.text(context,"",true));LinearLayout actions=new LinearLayout(context);col.addView(actions);actions.addView(SocialViews.button(context,context.getString(R.string.wiring_open),()->{}),new LinearLayout.LayoutParams(0,-2,1));com.google.android.material.button.MaterialButton remove=SocialViews.button(context,context.getString(R.string.wiring_remove_saved),()->{});int red=com.google.android.material.color.MaterialColors.getColor(remove,androidx.appcompat.R.attr.colorError);remove.setTextColor(red);remove.setStrokeColor(android.content.res.ColorStateList.valueOf(red));remove.setStrokeWidth(SocialViews.dp(context,1));remove.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.TRANSPARENT));actions.addView(remove,new LinearLayout.LayoutParams(0,-2,1));return new Holder(col);
  }
  public void onBindViewHolder(Holder h,int p){LinearLayout col=(LinearLayout)h.itemView;
   if(p==rows.size()){h.itemView.setVisibility(rows.isEmpty()&&(busy||end&&!failed)?View.GONE:View.VISIBLE);TextView button=(TextView)col.getChildAt(0);button.setText(busy?R.string.wiring_loading:failed?R.string.wiring_retry:rows.isEmpty()?R.string.wiring_empty:end?R.string.social_end:R.string.wiring_more);button.setEnabled(!busy&&!end||failed);return;}
   Row row=rows.get(p);((TextView)col.getChildAt(0)).setText(!row.resolved?context.getString(R.string.wiring_loading):row.source==null?context.getString(R.string.wiring_unavailable_item):row.source.getString("petName"));
-  View view=col.getChildAt(1);view.setEnabled(row.source!=null);view.setOnClickListener(v->open.accept(row));col.getChildAt(2).setEnabled(!mutation);col.getChildAt(2).setOnClickListener(v->remove.accept(row));
+  LinearLayout actions=(LinearLayout)col.getChildAt(1);View view=actions.getChildAt(0);view.setEnabled(row.source!=null);view.setOnClickListener(v->open.accept(row));actions.getChildAt(1).setEnabled(!mutation);actions.getChildAt(1).setOnClickListener(v->remove.accept(row));
  }
  static final class Holder extends RecyclerView.ViewHolder{Holder(View v){super(v);}}
 }

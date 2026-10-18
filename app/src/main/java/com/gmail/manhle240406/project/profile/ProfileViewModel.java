@@ -82,6 +82,15 @@ public final class ProfileViewModel extends AndroidViewModel {
         snapshot=conflict;conflict=null;conflictReady=false;retry=null;conflictedCommand=null;code=snapshot.issue;
         if(!keep)fill();changed();
     }
+    public void saveAll(Runnable success,Runnable failed){
+        if(busy||sessionLost||retry!=null||snapshot==null){failed.run();return;}
+        Map<String,Object> payload=new HashMap<>(content());payload.put("submission","draft");
+        ProfileCommand draft=new ProfileCommand(ProfileCommand.Kind.DRAFT,ProfileSchema.version(snapshot.draft),UUID.randomUUID().toString(),payload);
+        boolean contactChanged=!Objects.equals(ProfileSchema.phone(phone),snapshot.contact==null?null:snapshot.contact.get("phoneE164"));
+        ProfileCommand contact=new ProfileCommand(ProfileCommand.Kind.CONTACT,ProfileSchema.version(snapshot.contact),UUID.randomUUID().toString(),Collections.singletonMap("phoneE164",ProfileSchema.phone(phone)));
+        busy=true;long g=generation;changed();
+        repository.execute(ticket,draft).continueWithTask(t->{ProfileRepository.Result<Map<String,Object>> result=t.getResult();if(!current(g)||result.code!=ProfileRepository.Code.OK)return com.google.android.gms.tasks.Tasks.forException(new IllegalStateException(result.code.name()));return contactChanged?repository.execute(ticket,contact):com.google.android.gms.tasks.Tasks.forResult(result);}).addOnCompleteListener(t->{if(!current(g))return;busy=false;if(t.isSuccessful()&&t.getResult().code==ProfileRepository.Code.OK){com.gmail.manhle240406.project.community.SessionAliases.clear();load(true);success.run();}else{code=ProfileRepository.Code.UNKNOWN;load(false);failed.run();}changed();});
+    }
     public void saveDraft() {
         Map<String,Object> m=new HashMap<>(content());m.put("submission","draft");
         String op=UUID.randomUUID().toString();if(consentedCandidate!=null)consentedSave=op;send(new ProfileCommand(ProfileCommand.Kind.DRAFT,ProfileSchema.version(snapshot.draft),op,m));
@@ -129,7 +138,7 @@ public final class ProfileViewModel extends AndroidViewModel {
                 else if(command.kind==ProfileCommand.Kind.VISIBILITY)v=r.value;
                 else d=r.value;
                 Map<String,Object> moderation=snapshot.moderation;snapshot=new ProfileRepository.Snapshot(d,c,v,snapshot.published,snapshot.issue);snapshot.moderation=moderation;
-                if(command.operationId.equals(consentedSave)||command.kind==ProfileCommand.Kind.DRAFT&&moderation==null){load(false);return;}
+                if(command.kind==ProfileCommand.Kind.DRAFT){com.gmail.manhle240406.project.community.SessionAliases.clear();committed=true;load(false);return;}
                 submitted=command.kind==ProfileCommand.Kind.SUBMIT;
                 com.gmail.manhle240406.project.community.SessionAliases.clear();committed=true;
             } else if(r.code==ProfileRepository.Code.CONFLICT) {

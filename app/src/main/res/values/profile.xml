@@ -1,13 +1,13 @@
 <resources>
     <string name="profile_title">Hồ sơ của bạn</string>
-    <string name="profile_intro">Cho phép cộng đồng xem tên và ảnh khi bạn chọn Công khai. Liên hệ luôn riêng tư.</string>
+    <string name="profile_intro">Tên và ảnh của bạn hiển thị với cộng đồng. Bạn có thể chuyển hồ sơ sang Riêng tư trong Cài đặt.</string>
     <string name="profile_content">Nội dung dự định công khai</string>
     <string name="profile_name">Tên hiển thị · 2–40 ký tự</string>
     <string name="profile_avatar">Ảnh có sẵn</string>
     <string name="profile_region">Khu vực rộng · không bắt buộc</string>
     <string name="profile_bio">Giới thiệu · tối đa 500 ký tự</string>
     <string name="profile_bio_help">Không ghi điện thoại, email hay địa chỉ.</string>
-    <string name="profile_save">Lưu bản nháp riêng tư</string>
+    <string name="profile_save">Lưu</string>
     <string name="profile_preview">Xem trước và công khai</string>
     <string name="profile_contact">Liên hệ riêng tư</string>
     <string name="profile_contact_help">Chỉ bạn xem được. Chưa chia sẻ với người nhận nuôi. Số do bạn cung cấp, chưa xác minh.</string>

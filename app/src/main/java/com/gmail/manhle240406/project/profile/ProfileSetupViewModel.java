@@ -8,7 +8,7 @@ import com.gmail.manhle240406.project.foundation.*;
 import com.google.firebase.firestore.FirebaseFirestore;
 import java.util.*;
 
-/** Private name setup; UID-scoped in memory only, no public consent or provider-profile import. */
+/** Name setup; safe profile projection defaults public, with explicit privacy controls in Settings. */
 public final class ProfileSetupViewModel extends AndroidViewModel {
     public final MutableLiveData<Long> changes=new MutableLiveData<>(0L);
     public String name="";

@@ -12,7 +12,7 @@ import java.util.*;
 public final class MediaGrid extends LinearLayout {
     private List<String> ids=Collections.emptyList();
     public MediaGrid(Context context){super(context);setOrientation(VERTICAL);setSaveEnabled(false);setSaveFromParentEnabled(false);}
-    public static List<String> ids(Object value){if(!(value instanceof List))return Collections.emptyList();List<String> ids=new ArrayList<>();for(Object id:(List<?>)value){if(!(id instanceof String))return Collections.emptyList();try{MediaContract.id((String)id);}catch(IllegalArgumentException bad){return Collections.emptyList();}if(ids.contains(id))return Collections.emptyList();ids.add((String)id);}return ids.size()<=10?ids:Collections.emptyList();}
+    public static List<String> ids(Object value){if(!(value instanceof List))return Collections.emptyList();List<String> ids=new ArrayList<>();for(Object id:(List<?>)value){if(!(id instanceof String))return Collections.emptyList();try{MediaContract.id((String)id);}catch(IllegalArgumentException bad){return Collections.emptyList();}if(ids.contains(id))return Collections.emptyList();ids.add((String)id);}return ids.size()<=100?ids:Collections.emptyList();}
     public void bind(Object manifest){
         List<String> next=ids(manifest);if(next.equals(ids)&&getChildCount()>0)return;ids=new ArrayList<>(next);removeAllViews();setVisibility(ids.isEmpty()?GONE:VISIBLE);
         int count=MediaContract.visibleTiles(ids.size());

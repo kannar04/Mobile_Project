@@ -32,10 +32,10 @@ export class MediaService {
    await this.ready(tx,actor,{verified:['post_image','pet_photo'].includes(input.purpose),publication:input.purpose==='post_image'});await this.policy(tx);
    const [budget,asset,quota]=await Promise.all([this.read(tx,'mediaBudget/current'),this.read(tx,`mediaAssets/${input.assetId}`),this.read(tx,`mediaQuota/${uid}`)]);
    ensure(budget?.schemaVersion===1&&budget.limitBytes===LIMIT&&!asset,'budget_unavailable');
-   const grants=(quota?.grants??[]).filter(t=>stamp(t)&&ms(t)>now-86400000);ensure(grants.length<20,'daily_quota');
-   const existing=quota?.outstanding??[];ensure(existing.length<=10,'quota_corrupt');
+   const grants=(quota?.grants??[]).filter(t=>stamp(t)&&ms(t)>now-86400000);ensure(grants.length<200,'daily_quota');
+   const existing=quota?.outstanding??[];ensure(existing.length<=100,'quota_corrupt');
    const outstanding=[];for(const id of existing){const a=await this.read(tx,`mediaAssets/${id}`);if(a&&!['deleted','attached','cancelled','rejected'].includes(a.state))outstanding.push(id);}
-   ensure(outstanding.length<10,'outstanding_quota');const reserved=reserveCount(budget.reservedBytes);
+   ensure(outstanding.length<100,'outstanding_quota');const reserved=reserveCount(budget.reservedBytes);
    const result={assetId:input.assetId,state:'issued',expiresAt:now+3600000};
    tx.set(this.ref('mediaBudget/current'),{...budget,reservedBytes:reserved,version:budget.version+1,updatedAt:new Date(now)});
    tx.create(this.ref(`mediaAssets/${input.assetId}`),{schemaVersion:2,ownerUid:uid,assetId:input.assetId,purpose:input.purpose,inputHash:input.inputHash,state:'issued',version:1,createdAt:new Date(now),expiresAt:new Date(now+3600000),targetId:null,variants:{},leaseUntil:null,writerActive:false});
@@ -122,8 +122,9 @@ export class MediaService {
    if(type==='community')ensure(!['listingId','listingContentVersion','listingPublicationVersion'].some(k=>c.input[k]!=null));
    if(type==='adoption'&&material&&c.input.petId&&!old){ensure(c.command==='publish','consent_required');ensure(uuid(c.input.petId),'invalid_listing');const identityRoot=await adoptionRead(`pets/${c.input.petId}`),identity=identityRoot?await adoptionRead(`pets/${c.input.petId}/identityRevisions/${identityRoot.currentRevisionId}`):null;ensure(identityRoot?.editorUid===uid&&identity?.identity,'listing_unavailable');const bridge={get:adoptionRead,set:(p,d)=>adoptionWrites.set(p,d),delete:p=>adoptionWrites.set(p,null)};const result=await new AdoptionSourceService({transaction:fn=>fn(bridge)},{clock:this.clock}).execute({uid,emailVerified:actor.email_verified===true},'createFromPet',{operationId:c.operationId,petId:c.input.petId,listingId:c.postId,consent:c.input.consent===true,fields:{title:(identity.identity.displayName+' tìm mái nhà mới').slice(0,80),description:[...body].slice(0,2000).join('').trim(),regionCode:null,offerType:'adoption',mediaRefs:[]}});link={listingId:result.listingId,listingContentVersion:result.listingContentVersion,listingPublicationVersion:result.listingPublicationVersion};}
    if(type==='adoption'){ensure(audience==='community','invalid_listing');if(!safeExit)link=await adoptionSource(adoptionRead,uid,link);}
+   const linkedListing=type==='adoption'?await adoptionRead(`listings/${link.listingId}`):null;const petPhotos=linkedListing?(await adoptionRead(`petMedia/${linkedListing.petId}`))?.assetIds??[]:[];
    const all=[...new Set([...(old?.mediaAssetIds??[]),...ids])],assets={};for(const id of all)assets[id]=await this.read(tx,`mediaAssets/${id}`);
-   if(!safeExit)for(const id of ids){const a=assets[id];ensure(a?.ownerUid===uid&&a.purpose==='post_image'&&['ready','attached'].includes(a.state)&&(!a.targetId||a.targetId===`post:${c.postId}`),'invalid_asset');ensure(a.state==='attached'||ms(a.expiresAt)>this.clock(),'expired');}
+   if(!safeExit)for(const id of ids){const a=assets[id];ensure(a?.ownerUid===uid&&['ready','attached'].includes(a.state)&&(a.purpose==='post_image'&&(!a.targetId||a.targetId===`post:${c.postId}`)||a.purpose==='pet_photo'&&a.targetId===`pet:${linkedListing?.petId}`&&petPhotos.includes(id)),'invalid_asset');ensure(a.state==='attached'||ms(a.expiresAt)>this.clock(),'expired');}
    const cv=c.base.contentVersion+(material?1:0),ctl=c.base.controlVersion+1;ensure(cv>=1,'invalid');
    const first=old?.firstPublishedAt??(visible?now:null),edited=material&&old?.firstPublishedAt?now:old?.editedAt??null;
    const next={schemaVersion:5,postId:c.postId,authorUid:uid,type:'community',audience,lifecycle:c.command==='archive'?'archived':'active',moderatorHold:old?.moderatorHold??'clear',contentVersion:cv,currentRevisionId:`v${cv}`,controlVersion:ctl,visibility:visible?'visible':'hidden',firstPublishedAt:first,editedAt:edited,createdAt:old?.createdAt??now,updatedAt:now,lastOperationId:c.operationId,mediaAssetIds:ids,manifestVersion:cv};
@@ -136,7 +137,7 @@ export class MediaService {
    if(visible){tx.set(this.ref(`communityFeed/${c.postId}`),feed);if(!count)tx.create(this.ref(`communityCounts/${c.postId}`),{schemaVersion:2,postId:c.postId,likeCount:0,countVersion:0,updatedAt:now,lastOperationId:c.operationId});}else tx.delete(this.ref(`communityFeed/${c.postId}`));
    if(visible&&audience==='everyone'){const minimal={...feed};delete minimal.authorUid;delete minimal.type;delete minimal.controlVersion;tx.set(this.ref(`communityPublicFeed/${c.postId}`),minimal);}else tx.delete(this.ref(`communityPublicFeed/${c.postId}`));
    tx.set(this.ref(`mediaAccess/post:${c.postId}`),{schemaVersion:2,targetId:`post:${c.postId}`,sourceContentVersion:cv,controlVersion:ctl,assetIds:visible?ids:[],audience:visible?audience:'private'});
-   if(c.command!=='hide')for(const id of all){const a=assets[id];if(ids.includes(id))tx.set(this.ref(`mediaAssets/${id}`),{...a,targetId:`post:${c.postId}`,state:'attached',version:a.version+1});else if(a?.targetId===`post:${c.postId}`)tx.set(this.ref(`mediaAssets/${id}`),{...a,targetId:null,state:'ready',expiresAt:new Date(this.clock()+86400000),version:a.version+1});}
+   if(c.command!=='hide')for(const id of all){const a=assets[id];if(a?.purpose==='pet_photo')continue;if(ids.includes(id))tx.set(this.ref(`mediaAssets/${id}`),{...a,targetId:`post:${c.postId}`,state:'attached',version:a.version+1});else if(a?.targetId===`post:${c.postId}`)tx.set(this.ref(`mediaAssets/${id}`),{...a,targetId:null,state:'ready',expiresAt:new Date(this.clock()+86400000),version:a.version+1});}
    tx.create(this.ref(rp),result);return result;
   });
  }
@@ -145,13 +146,13 @@ export class MediaService {
   const uid=pathUid(actor?.uid),rp=`mediaCommands/${uid}/receipts/${input.operationId}`,hash=digest(input);
   return this.db.runTransaction(async tx=>{
    const receipt=await this.read(tx,rp);if(receipt){ensure(receipt.command==='avatar'&&receipt.inputHash===hash,'conflict');return receipt.result;}
-   await this.ready(tx,actor);const old=await this.read(tx,`users/${uid}/private/avatar`),draft=await this.read(tx,`users/${uid}/profileDraft/current`),published=await this.read(tx,`publicProfiles/${uid}`);ensure(number(old,'choiceVersion')===input.expectedVersion,'conflict');
+   await this.ready(tx,actor);const old=await this.read(tx,`users/${uid}/private/avatar`),draft=await this.read(tx,`users/${uid}/profileDraft/current`),published=await this.read(tx,`publicProfiles/${uid}`),control=await this.read(tx,`publicProfileControls/${uid}`),hold=await this.read(tx,`profileModeration/${uid}`);ensure(number(old,'choiceVersion')===input.expectedVersion,'conflict');
    const ids=[...new Set([old?.assetId,input.assetId].filter(Boolean))],assets={};for(const id of ids)assets[id]=await this.read(tx,`mediaAssets/${id}`);
    if(input.assetId){const a=assets[input.assetId];ensure(a?.ownerUid===uid&&['profile_avatar','google_avatar'].includes(a.purpose)&&['ready','attached'].includes(a.state)&&(!a.targetId||a.targetId===`profile:${uid}`),'invalid_asset');ensure(a.state==='attached'||ms(a.expiresAt)>this.clock(),'expired');}
    const result={schemaVersion:2,ownerUid:uid,assetId:input.assetId,choiceVersion:input.expectedVersion+1,googleHandled:true,updatedAt:new Date(this.clock())};
    tx.set(this.ref(`users/${uid}/private/avatar`),result);
-   if(draft)tx.set(this.ref(`users/${uid}/profileDraft/current`),{...draft,schemaVersion:2,avatarAssetId:input.assetId,avatarChoiceVersion:result.choiceVersion,version:draft.version+1,lastOperationId:input.operationId,updatedAt:new Date(this.clock())});
-   for(const id of ids){const a=assets[id];if(id===input.assetId)tx.set(this.ref(`mediaAssets/${id}`),{...a,state:'attached',targetId:`profile:${uid}`,version:a.version+1});else if(published?.avatarAssetId!==id)tx.set(this.ref(`mediaAssets/${id}`),{...a,state:'ready',targetId:null,expiresAt:new Date(this.clock()+86400000),version:a.version+1});}
+   if(draft){const next={...draft,schemaVersion:2,avatarAssetId:input.assetId,avatarChoiceVersion:result.choiceVersion,version:draft.version+1,lastOperationId:input.operationId,updatedAt:new Date(this.clock())};await this.autoProfile(tx,uid,next,control,published,hold,input.operationId);tx.set(this.ref(`users/${uid}/profileDraft/current`),next);}
+   for(const id of ids){const a=assets[id];if(id===input.assetId)tx.set(this.ref(`mediaAssets/${id}`),{...a,state:'attached',targetId:`profile:${uid}`,version:a.version+1});else if(control?.visibility!=='hidden'||published?.avatarAssetId!==id)tx.set(this.ref(`mediaAssets/${id}`),{...a,state:'ready',targetId:null,expiresAt:new Date(this.clock()+86400000),version:a.version+1});}
    tx.create(this.ref(rp),{command:'avatar',inputHash:hash,result,createdAt:new Date(this.clock())});return result;
   });
  }
@@ -163,7 +164,25 @@ export class MediaService {
   const path=`users/${uid}/private/personal`,rp=`mediaCommands/${uid}/receipts/${input.operationId}`,hash=digest(input);
   return this.db.runTransaction(async tx=>{const receipt=await this.read(tx,rp);if(receipt){ensure(receipt.command==='personal'&&receipt.inputHash===hash,'conflict');return receipt.result;}await this.ready(tx,actor);const old=await this.read(tx,path);ensure(number(old,'version')===input.expectedVersion,'conflict');const result={schemaVersion:1,ownerUid:uid,gender:input.gender,birthdate:date,version:input.expectedVersion+1,updatedAt:new Date(this.clock())};tx.set(this.ref(path),result);tx.create(this.ref(rp),{command:'personal',inputHash:hash,result,createdAt:new Date(this.clock())});return result;});
  }
+ async publicProfilePage(actor,input){
+  await this.db.runTransaction(tx=>this.ready(tx,actor));exact(input,['uid','after']);const uid=pathUid(input.uid);ensure(input.after===null||uuid(input.after));
+  const [control,profile,hold]=await Promise.all([this.ref(`publicProfileControls/${uid}`).get(),this.ref(`publicProfiles/${uid}`).get(),this.ref(`profileModeration/${uid}`).get()]);
+  ensure(control.data()?.visibility==='public'&&profile.exists&&hold.data()?.hold==='clear','denied');
+  let q=this.db.collection('communityFeed').where('authorUid','==',uid).orderBy('__name__').limit(20);if(input.after)q=q.startAfter(input.after);const page=await q.get(),posts=[];
+  for(const d of page.docs){const f=d.data(),root=await this.read({get:r=>r.get()},`communityPosts/${d.id}`);if(f.state==='visible'&&['community','everyone'].includes(f.audience)&&root?.visibility==='visible'&&root.lifecycle==='active'&&root.moderatorHold==='clear')posts.push({...f,postId:d.id});}
+  const p=profile.data();return {profile:Object.fromEntries(['ownerUid','displayName','avatarKey','regionCode','bio','avatarAssetId','avatarChoiceVersion','publicationVersion'].map(k=>[k,p[k]??null])),posts,next:page.size===20?page.docs.at(-1).id:null};
+ }
  async personalRead(actor,input){exact(input,[]);const uid=pathUid(actor?.uid);return this.db.runTransaction(async tx=>{await this.ready(tx,actor);return await this.read(tx,`users/${uid}/private/personal`)??{schemaVersion:1,ownerUid:uid,gender:null,birthdate:null,version:0};});}
+ async autoProfile(tx,uid,draft,control,published,hold,op){
+  if(control?.visibility==='hidden')return;
+  ensure(hold?.hold==='clear','held');
+  const candidate=Object.fromEntries(['displayName','avatarKey','regionCode','bio'].map(k=>[k,draft[k]]));
+  ensure(!/(\+?\d[\d .()\-]{5,}\d|[\w.+-]+@[\w.-]+\.[\p{L}]{2,}|(?:địa chỉ|dia chi|address|đường|duong|street|phường|phuong|số nhà|so nha)\s*[:\d\p{L}])/iu.test(candidate.displayName+'\n'+candidate.bio),'denied');
+  const now=new Date(this.clock());
+  tx.set(this.ref(`publicProfiles/${uid}`),{...candidate,ownerUid:uid,schemaVersion:2,publicationVersion:number(published,'publicationVersion')+1,sourceDraftVersion:draft.version,publishedAt:now,avatarAssetId:draft.avatarAssetId??null,avatarChoiceVersion:draft.avatarChoiceVersion??0});
+  if(!control)tx.set(this.ref(`publicProfileControls/${uid}`),{schemaVersion:1,ownerUid:uid,visibility:'public',version:1,lastOperationId:op,updatedAt:now});
+  tx.set(this.ref(`mediaAccess/profile:${uid}`),{schemaVersion:2,targetId:`profile:${uid}`,sourceContentVersion:draft.version,assetIds:draft.avatarAssetId?[draft.avatarAssetId]:[],audience:'signed_in_profile'});
+ }
  async saveProfile(actor,input){
   exact(input,['operationId','baseVersion','payload']);ensure(uuid(input.operationId));choice(input.baseVersion);
   const p=input.payload;exact(p,['displayName','avatarKey','regionCode','bio','submission']);
@@ -172,9 +191,10 @@ export class MediaService {
   return this.db.runTransaction(async tx=>{
    const prior=await this.read(tx,rp);if(prior){ensure(prior.command==='saveProfile'&&prior.inputHash===hash,'conflict');return prior.result;}
    const shell=await this.read(tx,`users/${uid}`);exact(shell,['uid','schemaVersion','createdAt']);ensure(shell.uid===uid&&shell.schemaVersion===1&&stamp(shell.createdAt),'not_ready');
-   const old=await this.read(tx,`users/${uid}/profileDraft/current`),avatar=await this.read(tx,`users/${uid}/private/avatar`),moderation=await this.read(tx,`profileModeration/${uid}`);
+   const old=await this.read(tx,`users/${uid}/profileDraft/current`),avatar=await this.read(tx,`users/${uid}/private/avatar`),moderation=await this.read(tx,`profileModeration/${uid}`),control=await this.read(tx,`publicProfileControls/${uid}`),published=await this.read(tx,`publicProfiles/${uid}`);
    ensure(number(old,'version')===input.baseVersion,'conflict');
    const next={...p,ownerUid:uid,schemaVersion:2,version:input.baseVersion+1,lastOperationId:input.operationId,updatedAt:new Date(this.clock()),avatarAssetId:avatar?.assetId??old?.avatarAssetId??null,avatarChoiceVersion:avatar?.choiceVersion??old?.avatarChoiceVersion??0};
+   await this.autoProfile(tx,uid,next,control,published,moderation??(!old?{hold:'clear'}:null),input.operationId);
    tx.set(this.ref(`users/${uid}/profileDraft/current`),next);
    if(!moderation&&!old)tx.create(this.ref(`profileModeration/${uid}`),{schemaVersion:1,ownerUid:uid,hold:'clear',moderationVersion:1,reasonCode:null,decisionId:null,updatedAt:new Date(this.clock())});
    tx.create(this.ref(rp),{command:'saveProfile',inputHash:hash,result:{version:next.version},createdAt:new Date(this.clock())});return {version:next.version};

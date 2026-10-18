@@ -23,7 +23,7 @@
  <string name="feedback_profile_visible">Hồ sơ đang hiển thị công khai.</string>
  <string name="feedback_profile_hidden">Hồ sơ đang được ẩn. Thông tin riêng tư luôn được bảo vệ.</string>
  <string name="feedback_photo_count">%1$d / %2$d ảnh</string>
- <string name="feedback_photo_hint">Thêm ảnh thú cưng\nChọn ảnh rõ nét, gần đây. Ảnh đầu tiên là ảnh bìa.</string>
+ <string name="feedback_photo_hint">Thêm ảnh cho bài viết\nẢnh đầu tiên là ảnh bìa. Bạn có thể sắp xếp hoặc bỏ ảnh trước khi đăng.</string>
  <string name="feedback_photo_actions">Tùy chọn ảnh %1$d</string>
  <string name="feedback_cover_photo">Ảnh bìa</string>
  <string name="feedback_register">Đăng ký</string>

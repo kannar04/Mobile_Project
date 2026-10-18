@@ -34,7 +34,7 @@ public final class AvatarControl {
    change.setEnabled(model.loaded&&!model.busy&&!model.lost&&!model.hasPending());retry.setVisibility(model.hasPending()&&!model.busy?View.VISIBLE:View.GONE);
    int copy=model.busy?R.string.media_uploading:!model.error.isEmpty()?model.error.contains("capacity_full")?R.string.media_capacity_full:R.string.media_upload_failed:0;status.setText(copy==0?"":a.getString(copy));status.setVisibility(copy==0?View.GONE:View.VISIBLE);
    if(!Objects.equals(renderedAsset[0],model.assetId)){renderedAsset[0]=model.assetId;image.setTag(new Object());if(model.assetId!=null){image.setImageTintList(null);MediaGrid.load(image,model.assetId,"thumbnail");}else image.setImageResource(R.drawable.profile_avatar_default);}
-   if(rendered[0]>=0&&rendered[0]!=model.version)saved.run();rendered[0]=model.version;
+   if(rendered[0]>=0&&rendered[0]!=model.version){SessionAliases.clear();saved.run();}rendered[0]=model.version;
   });
  }
 }

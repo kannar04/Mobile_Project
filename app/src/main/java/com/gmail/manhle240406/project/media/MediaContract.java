@@ -6,10 +6,10 @@ import java.util.*;
 public final class MediaContract {
     public static final long MAX_BYTES = 5L * 1024 * 1024;
     public static final long MAX_PIXELS = 20_000_000;
-    public static final int MAX_EDGE = 2048, MAX_OUTSTANDING = 10, DAILY_TICKETS = 20;
+    public static final int MAX_EDGE = 2048, MAX_OUTSTANDING = 100, DAILY_TICKETS = 200;
     public static final long TICKET_MS = 3_600_000, UNATTACHED_MS = 86_400_000;
     private MediaContract() {}
-    public static int visibleTiles(int total) { if(total<0||total>10)throw new IllegalArgumentException("selection_limit");return Math.min(4,total); }
+    public static int visibleTiles(int total) { if(total<0||total>100)throw new IllegalArgumentException("selection_limit");return Math.min(4,total); }
     public static int overflowCount(int total) { return total-visibleTiles(total); }
     public static String id(String value) {
         if (value == null || !value.matches("[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}"))

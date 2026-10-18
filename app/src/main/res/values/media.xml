@@ -19,7 +19,7 @@
     <string name="media_limit">Chọn tối đa 10 ảnh.</string>
     <string name="media_change_avatar">Đổi ảnh đại diện</string>
     <string name="media_pick_avatar">Chọn ảnh mới</string>
-    <string name="media_private_avatar">Ảnh đại diện riêng tư</string>
+    <string name="media_private_avatar">Ảnh đại diện</string>
     <string name="media_remove_avatar">Xóa ảnh đại diện riêng tư</string>
     <string name="media_google_avatar">Dùng ảnh Google</string>
     <string name="media_private_default">Ảnh đại diện riêng tư. Bạn có thể đổi hoặc xóa ảnh.</string>

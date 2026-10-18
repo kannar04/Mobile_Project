@@ -5,7 +5,7 @@
 <string name="social_loading">Đang tải câu chuyện…</string><string name="social_retry">Thử lại</string><string name="social_end">Bạn đã đọc hết những câu chuyện hiện có.</string>
 <string name="social_member">Thành viên AniLove</string><string name="social_audience">Cộng đồng · người dùng đăng nhập</string><string name="social_only_me">Bản nháp · Chỉ mình tôi</string>
 <string name="social_edited">Đã chỉnh sửa</string><string name="social_illustration">Minh họa có sẵn · không phải ảnh cá nhân</string><string name="social_open">Bình luận</string>
-<string name="social_close">Quay lại</string><string name="social_publish">Đăng bài</string><string name="social_save_private">Lưu riêng</string><string name="social_save_first">Lưu riêng trước, rồi xác nhận đăng bản đã lưu.</string>
+<string name="social_close">Quay lại</string><string name="social_publish">Đăng bài</string><string name="social_save_private">Lưu nháp</string><string name="social_save_first">Lưu riêng trước, rồi xác nhận đăng bản đã lưu.</string>
 <string name="social_no_contact">Không ghi điện thoại hoặc địa chỉ. Đây không phải xác minh danh tính hay quyền nhận nuôi.</string>
 <string name="social_reconcile">Kiểm tra kết quả</string><string name="social_restart">Bỏ yêu cầu chưa được lưu</string><string name="social_sending">Đang gửi…</string><string name="social_committed">Máy chủ đã xác nhận.</string>
 <string name="social_unknown">Chưa biết kết quả. Đang chờ yêu cầu kết thúc; không gửi thêm.</string><string name="social_conflict">Nội dung đã thay đổi. Tải lại và so sánh trước khi áp dụng bản sửa.</string>

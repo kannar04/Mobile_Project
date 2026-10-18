@@ -96,6 +96,7 @@
             android:theme="@style/Theme.Project.Auth"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+    <activity android:name=".profile.PublicProfileActivity" android:exported="false" />
     </application>
 
 </manifest>

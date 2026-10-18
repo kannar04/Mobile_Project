@@ -1,6 +1,6 @@
 <resources>
     <string name="setup_profile_title">Hoàn thiện hồ sơ</string>
-    <string name="setup_profile_body">Bạn muốn mọi người gọi mình là gì? Tên được lưu riêng tư; hồ sơ chỉ công khai khi bạn chọn chia sẻ.</string>
+    <string name="setup_profile_body">Chọn tên hiển thị để mọi người nhận ra bạn. Bạn có thể chỉnh sửa tên, ảnh và quyền hiển thị trong hồ sơ.</string>
     <string name="setup_continue">Tiếp tục</string>
     <string name="setup_load_failed">Chưa hoàn tất hồ sơ. Kiểm tra kết nối rồi thử lại.</string>
     <string name="home_listing_unavailable">Chưa thể hiển thị thú cưng lúc này. Xem mục Khám phá.</string>
