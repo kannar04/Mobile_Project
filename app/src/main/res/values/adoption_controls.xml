@@ -1,4 +1,13 @@
 <resources>
+    <string name="ad_demo_queue_note">Chế độ demo: tài khoản người duyệt được chỉ định có thể xét cả hồ sơ của mình. Mỗi quyết định vẫn cần mở hồ sơ và xác nhận.</string>
+    <string name="ad_demo_own_record">Hồ sơ của bạn · tự duyệt demo</string>
+    <string name="ad_demo_self_available">Chế độ demo: bạn có thể mở hàng chờ nhận nuôi để tự xét khai báo này.</string>
+    <string name="ad_claim_sent_self_feedback">Đã gửi khai báo chăm sóc. Bạn có thể tự xét trong hàng chờ nhận nuôi của bản demo; tin tìm nhà chưa được gửi duyệt.</string>
+    <string name="ad_demo_review_title">Tự xét hồ sơ của tôi · demo</string>
+    <string name="ad_demo_review_confirmation">Bạn đang xét hồ sơ do chính mình gửi. Quyết định được ghi nhận là tự duyệt demo, không xác minh quyền sở hữu hay sức khỏe. Chấp thuận không tự hiển thị tin.</string>
+    <string name="ad_confirm_demo_approve">Chấp thuận hồ sơ của tôi</string>
+    <string name="ad_confirm_demo_reject">Từ chối hồ sơ của tôi</string>
+    <string name="ad_demo_reader_notice">Hồ sơ này được người đăng tự xét trong bản demo. Thông tin chăm sóc do người đăng cung cấp, chưa được xác minh độc lập.</string>
     <string name="ad_claim_sent_feedback">Đã gửi khai báo chăm sóc. Một người duyệt khác sẽ xem xét; tin tìm nhà chưa được gửi duyệt.</string>
     <string name="ad_claim_waiting">Khai báo chăm sóc đang chờ duyệt. Bạn có thể chuẩn bị bản nháp; chỉ gửi tin tìm nhà sau khi khai báo được chấp thuận.</string>
     <string name="ad_claim_self_review">Bạn không thể tự duyệt khai báo của mình. Cần một tài khoản người duyệt khác.</string>

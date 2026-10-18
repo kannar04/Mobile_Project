@@ -1138,6 +1138,8 @@ service cloud.firestore {
       allow list: if request.auth!=null && discoveryReady() && resource.data.audience=='signed_in' && resource.data.state=='visible' && resource.data.availability in ['available','reserved'] && page20();
       allow write: if false;
     }
+    match /adoptionSelfReviewDemoPolicy/{id} {allow read,write: if false;}
+    match /adoptionReviewAudit/{id} {allow get: if request.auth!=null && (resource.data.ownerUid==request.auth.uid || resource.data.reviewerUid==request.auth.uid) && basicMemberReady(request.auth.uid);allow list,write: if false;}
     match /listingReviewRequests/{id}/versions/{v} {allow get: if request.auth!=null && resource.data.ownerUid==request.auth.uid;allow list: if request.auth!=null && resource.data.ownerUid==request.auth.uid && page20();allow write: if false;}
     match /listingReviews/{id}/versions/{v}/decisions/{decision} {allow get: if listingOwner(id);allow list: if listingOwner(id) && page20();allow write: if false;}
     match /listingPublication/{id} {allow get: if request.auth!=null && resource.data.ownerUid==request.auth.uid;allow list,write: if false;}
