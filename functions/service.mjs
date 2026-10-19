@@ -1,3 +1,7 @@
+import {recordParticipationConsent} from './domain/participation-consent.mjs';
+import {TERMS} from './domain/course-terms.mjs';
+import {participationPolicy,ordinaryMember} from './domain/participation.mjs';
+import {Work,capability} from './domain/safety-common.mjs';
 import {DirectChatService} from './direct-chat.mjs';
 import sharp from 'sharp';
 import {AdoptionSourceService} from './domain/adoption-source2.mjs';
@@ -85,7 +89,16 @@ export class MediaService {
  async sourceAllowed(tx,actor,a){
   if(a.ownerUid===actor?.uid)return true;
   if(!a.targetId)return false;
-  if(a.targetId.startsWith('flow:')&&actor?.uid){const d=await this.read(tx,'adoptions/'+a.targetId.slice(5));if(d?.schemaVersion!==2)return false;const member=await this.read(tx,'communityMemberships/'+actor.uid),subject=await this.read(tx,'securitySubjects/'+actor.uid);if(member?.status!=='active'||subject?.status!=='active')return false;if(d.participantUids.includes(actor.uid))return true;const cap=await this.read(tx,'operatorCapabilities/'+actor.uid),assignment=await this.read(tx,'adoptionFlowCases/'+d.adoptionId);return assignment?.assignedUid===actor.uid&&cap?.active===true&&cap.capabilities?.includes('adoption_lifecycle')&&!d.participantUids.includes(actor.uid);}
+  if(a.targetId.startsWith('flow:')&&actor?.uid){
+   const id=a.targetId.slice(5);if(!uuid(id))return false;const d=await this.read(tx,'adoptions/'+id);if(d?.schemaVersion!==2||!Array.isArray(d.participantUids))return false;
+   const w=new Work({get:p=>this.read(tx,p)}),course=await participationPolicy(w);
+   if(d.participantUids.includes(actor.uid)){
+    if(course){try{await ordinaryMember(w,{uid:actor.uid},{recovery:true});return true;}catch(e){if(['account_restricted','account_unavailable'].includes(e.message))return false;throw e;}}
+    const [m,s]=await Promise.all([w.get('communityMemberships/'+actor.uid),w.get('securitySubjects/'+actor.uid)]);return m?.status==='active'&&s?.status==='active';
+   }
+   try{await capability(w,{uid:actor.uid,emailVerified:actor.email_verified===true},'adoption_lifecycle',{conflicts:d.participantUids});}catch(e){if(['protected_account_ineligible','capability_or_conflict','scoped_restriction','account_unavailable'].includes(e.message))return false;throw e;}
+   const assignment=await w.get('adoptionFlowCases/'+id);return assignment?.assignedUid===actor.uid;
+  }
   if(a.targetId.startsWith('post:')){
    const id=a.targetId.slice(5),p=await this.read(tx,`communityPosts/${id}`),f=await this.read(tx,`communityFeed/${id}`);
    if(!p||p.lifecycle!=='active'||p.visibility!=='visible'||p.moderatorHold!=='clear'||!p.mediaAssetIds?.includes(a.assetId)||f?.contentVersion!==p.contentVersion)return false;
@@ -113,7 +126,7 @@ export class MediaService {
    const prior=old?await this.read(tx,`communityPosts/${c.postId}/revisions/${old.currentRevisionId}`):null;
    const count=await this.read(tx,`communityCounts/${c.postId}`);
    let ids=old?.mediaAssetIds??[],body=prior?.body,art=prior?.bundledIllustrationKey??null;
-   if(material){ensure(Object.keys(c.input).every(k=>['body','bundledIllustrationKey','mediaAssetIds','consent','audience','type','listingId','listingContentVersion','listingPublicationVersion','petId'].includes(k)));body=bodyText(c.input.body);art=c.input.bundledIllustrationKey??null;ensure([null,'default','cat','dog'].includes(art));ensure(Buffer.byteLength(body)+(art?.length??0)+100<=8192,'invalid_text');ids=selection(c.input.mediaAssetIds??[]);}
+   if(material){ensure(Object.keys(c.input).every(k=>['body','bundledIllustrationKey','mediaAssetIds','consent','audience','type','listingId','listingContentVersion','listingPublicationVersion','petId','listingRequirements','participationConsent'].includes(k)));body=bodyText(c.input.body);art=c.input.bundledIllustrationKey??null;ensure([null,'default','cat','dog'].includes(art));ensure(Buffer.byteLength(body)+(art?.length??0)+100<=8192,'invalid_text');ids=selection(c.input.mediaAssetIds??[]);}
    else exact(c.input,visible?['consent']:[]);
    if(c.command==='archive')ids=[];
    const audience=old?(old.audience??(old.schemaVersion===4?'everyone':'community')):(c.input.audience??'community');ensure(['everyone','community'].includes(audience));
@@ -122,9 +135,12 @@ export class MediaService {
    const adoptionWrites=new Map(),adoptionRead=async path=>adoptionWrites.has(path)?adoptionWrites.get(path):this.read(tx,path);
    let link=type==='adoption'?Object.fromEntries(['listingId','listingContentVersion','listingPublicationVersion'].map(k=>[k,material?c.input[k]:old?.[k]])):null;
    if(type==='community')ensure(!['listingId','listingContentVersion','listingPublicationVersion'].some(k=>c.input[k]!=null));
-   if(type==='adoption'&&material&&c.input.petId&&!old){ensure(c.command==='publish','consent_required');ensure(uuid(c.input.petId),'invalid_listing');const identityRoot=await adoptionRead(`pets/${c.input.petId}`),identity=identityRoot?await adoptionRead(`pets/${c.input.petId}/identityRevisions/${identityRoot.currentRevisionId}`):null;ensure(identityRoot?.editorUid===uid&&identity?.identity,'listing_unavailable');const bridge={get:adoptionRead,set:(p,d)=>adoptionWrites.set(p,d),delete:p=>adoptionWrites.set(p,null)};const result=await new AdoptionSourceService({transaction:fn=>fn(bridge)},{clock:this.clock}).execute({uid,emailVerified:actor.email_verified===true},'createFromPet',{operationId:c.operationId,petId:c.input.petId,listingId:c.postId,consent:c.input.consent===true,fields:{title:(identity.identity.displayName+' tìm mái nhà mới').slice(0,80),description:[...body].slice(0,2000).join('').trim(),regionCode:null,offerType:'adoption',mediaRefs:[]}});link={listingId:result.listingId,listingContentVersion:result.listingContentVersion,listingPublicationVersion:result.listingPublicationVersion};}
+   if(type==='adoption'&&material&&!old&&await participationPolicy({get:adoptionRead})){
+    const bridge={get:adoptionRead,set:(p,d)=>adoptionWrites.set(p,d)};if(c.input.participationConsent)await recordParticipationConsent(bridge,{uid,emailVerified:actor.email_verified===true},c.input.participationConsent,+now);const terms=await adoptionRead('adoptionTerms/'+uid);ensure(terms?.termsVersion===1&&terms.termsHash===digest(TERMS),'terms_required');
+   }
+   if(type==='adoption'&&material&&c.input.petId&&!old&&!c.input.listingId){ensure(c.command==='publish','consent_required');ensure(uuid(c.input.petId),'invalid_listing');const identityRoot=await adoptionRead(`pets/${c.input.petId}`),identity=identityRoot?await adoptionRead(`pets/${c.input.petId}/identityRevisions/${identityRoot.currentRevisionId}`):null;ensure(identityRoot?.editorUid===uid&&identity?.identity,'listing_unavailable');const bridge={get:adoptionRead,set:(p,d)=>adoptionWrites.set(p,d),delete:p=>adoptionWrites.set(p,null)};const simple=await participationPolicy(bridge);const result=await new AdoptionSourceService({transaction:fn=>fn(bridge)},{clock:this.clock}).execute({uid,emailVerified:actor.email_verified===true},simple?'publishCourse':'createFromPet',{...(simple?{expectedContentVersion:0,expectedControlVersion:0,requirements:c.input.listingRequirements,participationConsent:c.input.participationConsent??null}:{}),operationId:c.operationId,petId:c.input.petId,listingId:c.postId,consent:c.input.consent===true,fields:{title:(identity.identity.displayName+' tìm mái nhà mới').slice(0,80),description:[...body].slice(0,2000).join('').trim(),regionCode:null,offerType:'adoption',mediaRefs:[]}});link={listingId:result.listingId,listingContentVersion:result.listingContentVersion,listingPublicationVersion:result.listingPublicationVersion};}
    if(type==='adoption'){ensure(audience==='community','invalid_listing');if(!safeExit)link=await adoptionSource(adoptionRead,uid,link);}
-   const linkedListing=type==='adoption'?await adoptionRead(`listings/${link.listingId}`):null;const petPhotos=linkedListing?(await adoptionRead(`petMedia/${linkedListing.petId}`))?.assetIds??[]:[];
+   const linkedListing=type==='adoption'?await adoptionRead(`listings/${link.listingId}`):null;if(type==='adoption'&&c.input.petId)ensure(linkedListing?.petId===c.input.petId,'invalid_listing');const petPhotos=linkedListing?(await adoptionRead(`petMedia/${linkedListing.petId}`))?.assetIds??[]:[];
    const all=[...new Set([...(old?.mediaAssetIds??[]),...ids])],assets={};for(const id of all)assets[id]=await this.read(tx,`mediaAssets/${id}`);
    if(!safeExit)for(const id of ids){const a=assets[id];ensure(a?.ownerUid===uid&&['ready','attached'].includes(a.state)&&(a.purpose==='post_image'&&(!a.targetId||a.targetId===`post:${c.postId}`)||a.purpose==='pet_photo'&&a.targetId===`pet:${linkedListing?.petId}`&&petPhotos.includes(id)),'invalid_asset');ensure(a.state==='attached'||ms(a.expiresAt)>this.clock(),'expired');}
    const cv=c.base.contentVersion+(material?1:0),ctl=c.base.controlVersion+1;ensure(cv>=1,'invalid');

@@ -101,6 +101,8 @@
         <activity android:name=".adoption.LifecycleActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <meta-data android:name="firebase_messaging_auto_init_enabled" android:value="false" />
         <service android:name=".notifications.AdoptionPushService" android:exported="false"><intent-filter><action android:name="com.google.firebase.MESSAGING_EVENT" /></intent-filter></service>
+        <activity android:name=".adoption.CourseAdminActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+    <activity android:name=".adoption.CourseNoticesActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>

@@ -13,7 +13,7 @@ public final class DailyViewModel extends AndroidViewModel {
     public final MutableLiveData<Long> changes=new MutableLiveData<>(0L);
     public final SocialRepository social;public final ReportRepository reports;public final SessionGateway sessions;public final SessionEpoch.Ticket ticket;
     public final SavedStateHandle saved;
-    public boolean adoption;public Map<String,Object> selectedListing;
+    public boolean adoption;public Map<String,Object> selectedListing;public Map<String,Object> participation=new HashMap<>();public final Map<String,String> adoptionRequirements=new HashMap<>();
     public String body="",reportText="",postId,reportId,notice="";public int illustration,category;public boolean busy,lost,restored,dirty,committed;
     public String lastCommittedReport,lastCommittedSocial,lastCommittedCommand;
     private SocialCommand localRetry;public SocialCommand pending;public ReportCommand pendingReport;
@@ -38,6 +38,6 @@ public final class DailyViewModel extends AndroidViewModel {
     public void abandonCold(){if(!restored||busy||!notice.equals("not_committed"))return;restored=false;saved.remove("pending_op");saved.remove("pending_kind");notice="lost_text";changed();}
     public void clearKnownFailure(){if(busy||restored||!notice.equals("conflict")&&!notice.equals("not_committed"))return;pending=null;pendingReport=null;saved.remove("pending_op");saved.remove("pending_kind");notice="";changed();}
     public void retry(){if(localRetry!=null){send(localRetry);return;}if(pending!=null)send(pending);else if(pendingReport!=null)sendReport(pendingReport);else reconcile();}
-    private void invalidate(){generation++;main.removeCallbacksAndMessages(null);lastCommittedReport=null;lastCommittedSocial=null;body="";reportText="";root=null;projection=null;count=null;like=null;report=null;ownComments.clear();editingCommentId=null;commentEditText="";rows.clear();pending=null;localRetry=null;pendingReport=null;busy=false;lost=true;for(String k:new ArrayList<>(saved.keys()))saved.remove(k);changed();}
+    private void invalidate(){generation++;main.removeCallbacksAndMessages(null);lastCommittedReport=null;lastCommittedSocial=null;body="";reportText="";participation.clear();adoptionRequirements.clear();root=null;projection=null;count=null;like=null;report=null;ownComments.clear();editingCommentId=null;commentEditText="";rows.clear();pending=null;localRetry=null;pendingReport=null;busy=false;lost=true;for(String k:new ArrayList<>(saved.keys()))saved.remove(k);changed();}
     @Override protected void onCleared(){invalidate();if(sessions!=null)sessions.removeInvalidation(invalidation);}
 }

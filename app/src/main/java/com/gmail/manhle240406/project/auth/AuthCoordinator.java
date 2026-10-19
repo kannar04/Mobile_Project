@@ -200,7 +200,7 @@ public final class AuthCoordinator {
         if (!uid.equals(readinessUid)) { setupReady = false; authority = AuthState.Authority.UNKNOWN; lastVerification = -60000; }
         readinessUid = uid;
         long generation = ++readinessGeneration;
-        readinessLoading = true; readinessRemaining = 2;
+        readinessLoading = true; readinessRemaining = 1;
         accounts.ensureAccount().addOnCompleteListener(task -> {
             if (!environment.sessions.current(ticket) || generation != readinessGeneration || gate.visitor()) return;
             setupReady = task.isSuccessful() && Boolean.TRUE.equals(task.getResult());
@@ -212,17 +212,7 @@ public final class AuthCoordinator {
                 });
             } else completeReadinessPart();
         });
-        authority = AuthState.Authority.UNKNOWN;
-        environment.repository.readMyAuthority().addOnCompleteListener(task -> {
-            if (!environment.sessions.current(ticket) || generation != readinessGeneration || gate.visitor()) return;
-            if (task.isSuccessful()) {
-                FoundationResult<FoundationDocuments.Authority> result = task.getResult();
-                if (result.status == FoundationResult.Status.SERVER) authority = AuthState.Authority.ACTIVE;
-                else if (result.status == FoundationResult.Status.RESTRICTED) authority = AuthState.Authority.RESTRICTED;
-                else if (result.status == FoundationResult.Status.NOT_FOUND) authority = AuthState.Authority.MISSING;
-            }
-            completeReadinessPart();
-        });
+        // Ordinary membership checks explicit restrictions; privileged tools authorize on the server.
         publish();
     }
     public void refreshVerification() {

@@ -13,9 +13,9 @@ export class Work {
  flush(){for(const[p,d]of this.writes)d===null?this.tx.delete(p):this.tx.set(p,d);}
 }
 export async function shell(w,uid){if(typeof uid!=='string'||!uid||uid.length>128||uid.includes('/'))fail('unauthenticated');const s=await w.get(`users/${uid}`);if(!exact(s,['uid','schemaVersion','createdAt'])||s.uid!==uid||s.schemaVersion!==1||!Number.isFinite(ms(s.createdAt)))fail('account_unavailable');}
-export async function protectedMember(w,actor){await shell(w,actor?.uid);const s=await w.get(`securitySubjects/${actor.uid}`);if(actor.emailVerified!==true||actor.disabled===true||s?.status!=='active'||!s.roles?.includes('member'))fail('protected_account_ineligible');return s;}
+export async function protectedMember(w,actor){await shell(w,actor?.uid);const s=await w.get(`securitySubjects/${actor.uid}`);if(actor.emailVerified!==true||actor.disabled===true||s?.status!=='active'||!Array.isArray(s.roles)||!s.roles.includes('member'))fail('protected_account_ineligible');return s;}
 export async function capability(w,actor,name,{conflicts=[],reauth=false,now=Date.now()}={}){
- await protectedMember(w,actor);await scopedRestriction(w,actor.uid,'reviewer_access');const c=await w.get(`operatorCapabilities/${actor.uid}`);if(c?.schemaVersion!==1||c.active!==true||!integer(c.version,1)||!c.capabilities?.includes(name)||conflicts.includes(actor.uid))fail('capability_or_conflict');
+ await protectedMember(w,actor);await scopedRestriction(w,actor.uid,'reviewer_access');const c=await w.get(`operatorCapabilities/${actor.uid}`);if(c?.schemaVersion!==1||c.active!==true||!integer(c.version,1)||!Array.isArray(c.capabilities)||!c.capabilities.includes(name)||conflicts.includes(actor.uid))fail('capability_or_conflict');
  if(reauth){const policy=await w.get('operatorPolicy/current');if(!integer(policy?.reauthMaxAgeSeconds,1)||policy.reauthMaxAgeSeconds>3600||!integer(actor.authTimeMillis)||actor.authTimeMillis>now||now-actor.authTimeMillis>policy.reauthMaxAgeSeconds*1000)fail('reauthentication_required');}return c;
 }
 export function party(record,uid){if(!record||![record.hostUid,record.applicantUid,record.caregiverUid,record.receiverUid,record.requesterUid].includes(uid))fail('not_participant');}

@@ -25,6 +25,7 @@ public final class InboxFragment extends com.gmail.manhle240406.project.wiring.M
  private final Runnable invalidation=()->{generation++;rows.clear();if(adapter!=null)adapter.notifyDataSetChanged();if(switcher!=null)switcher.setDisplayedChild(1);};
  @Override protected void createPage(Bundle state){setContentView(R.layout.activity_inbox);SocialViews.privateView(findViewById(R.id.inbox_root));
   LinearLayout root=findViewById(R.id.inbox_root);loadStatus=SocialSurface.muted(requireContext(),getString(R.string.wiring_loading));loadStatus.setPadding(SocialViews.dp(requireContext(),20),SocialViews.dp(requireContext(),12),SocialViews.dp(requireContext(),20),0);root.addView(loadStatus,1);
+  android.view.View accountUpdates=SocialSurface.quiet(requireContext(),getString(R.string.permissions_own_updates),()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.adoption.CourseNoticesActivity.class)));root.addView(accountUpdates,1);
   retry=SocialSurface.quiet(requireContext(),getString(R.string.wiring_retry),this::load);retry.setVisibility(View.GONE);root.addView(retry,2);
   findViewById(R.id.inbox_back).setOnClickListener(v->finish());findViewById(R.id.inbox_push_banner).setVisibility(View.GONE);findViewById(R.id.inbox_toggle_empty).setVisibility(View.GONE);
   findViewById(R.id.inbox_settings_btn).setOnClickListener(v->startActivity(new Intent(requireActivity(),NotificationSettingsActivity.class)));

@@ -1,3 +1,4 @@
+import {courseBrowse} from './adoption-source3.mjs';
 import {source,listingReviewCurrent,reviewer,sha} from './adoption-source2.mjs';
 import {browseRelease} from './adoption-release-policy.mjs';
 import {fail,exact} from './safety-common.mjs';
@@ -6,6 +7,7 @@ const discoveryKeys='schemaVersion sourceSchemaVersion careDigest listingId petI
 const detailKeys='schemaVersion listingId petId ownerUid contentVersion publicationVersion firstPublishedAt updatedAt audience state title description regionCode identitySnapshot careVersion careDigest careSnapshot bundledIllustrationKey availability sourceFingerprint'.split(' ');
 export async function currentBrowseSource(w,id){
  const release=await browseRelease(w);const b=await source(w,id,{offering:false}),p=await w.get(`listingPublication/${id}`),d=await w.get(`listingDiscovery/${id}`),detail=await w.get(`publicListings/${id}`);
+ if(b.a?.schemaVersion===3)return {...await courseBrowse(w,b,p),applicationsEnabled:release.applicationsEnabled};
  const same=(a,c)=>sha(a)===sha(c);const available=b.g.state==='none'&&b.g.activeReservationId===null?'available':b.g.state==='reserved'&&b.g.activeReservationId?'reserved':null;
  const claimDecision=await w.get(`pets/${b.pet.petId}/events/${b.a.decisionId}`);await reviewer(w,{uid:claimDecision.reviewerUid,emailVerified:true},'pet_offer_review');
  if(!exact(b.r.identitySnapshot,['displayName','species','breed','sex','ageMonths','ageObservedAt','marks','marksUnknown','illustrationKey']))fail('offer_unavailable');validateCare(b.r.careSnapshot,'',Date.now());
