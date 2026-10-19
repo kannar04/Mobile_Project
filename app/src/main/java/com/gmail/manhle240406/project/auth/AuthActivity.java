@@ -81,7 +81,7 @@ public final class AuthActivity extends AppCompatActivity {
     }
     private void navigateToMain() {
         if(leavingForMain)return;leavingForMain=true;
-        startActivity(new android.content.Intent(this, com.gmail.manhle240406.project.MainActivity.class)
+        startActivity(new android.content.Intent(this, com.gmail.manhle240406.project.MainActivity.class).putExtra(com.gmail.manhle240406.project.MainActivity.PAGE,getIntent().getBooleanExtra("notificationInbox",false)?"notifications":"home")
             .addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP));
         finish();
     }

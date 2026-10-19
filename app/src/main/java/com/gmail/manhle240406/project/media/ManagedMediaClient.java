@@ -10,6 +10,9 @@ import java.util.concurrent.*;
 
 /** Firebase-managed, token-free byte transport; never a public Storage download URL. */
 public final class ManagedMediaClient {
+    /** Instrumentation-only seam. Release builds always use the managed Firebase transport. */
+    public interface DebugTransport { Task<byte[]> request(String operation,byte[] body,String assetId); }
+    public static DebugTransport debugTransport;
     private static final ExecutorService WORK=Executors.newFixedThreadPool(2);
     private static final String BASE="https://asia-east2-aniloveproject.cloudfunctions.net/mediaApi/";
     private static com.gmail.manhle240406.project.foundation.SessionGateway sessions;
@@ -22,6 +25,7 @@ public final class ManagedMediaClient {
     public static Task<Map<String,Object>> upload(String id,byte[] bytes){return request("receive",bytes,id).continueWith(WORK,t->object(new JSONObject(new String(t.getResult(),java.nio.charset.StandardCharsets.UTF_8))));}
     public static Task<byte[]> image(String id,String variant){return request("read",new JSONObject(map("assetId",id,"variant",variant)).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8),null);}
     private static Task<byte[]> request(String operation,byte[] body,String id){
+        if(com.gmail.manhle240406.project.BuildConfig.DEBUG&&debugTransport!=null)return debugTransport.request(operation,body,id);
         if(com.gmail.manhle240406.project.BuildConfig.FIREBASE_EMULATORS||!com.gmail.manhle240406.project.BuildConfig.MEDIA_UPLOADS_ENABLED)return Tasks.forException(new IllegalStateException("media_disabled"));
         if(!"aniloveproject".equals(com.google.firebase.FirebaseApp.getInstance().getOptions().getProjectId()))return Tasks.forException(new IllegalStateException("media_disabled"));
         com.gmail.manhle240406.project.foundation.SessionEpoch.Ticket epoch=sessions==null?null:sessions.capture();

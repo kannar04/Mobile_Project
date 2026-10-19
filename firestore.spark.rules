@@ -643,9 +643,9 @@ service cloud.firestore {
     }
     function inboxShape(d,uid) {
       return d.keys().size()==14 && d.keys().hasOnly(['schemaVersion','recipientUid','kind','routeType','targetId','sourceVersion','templateKey','createdAt','updatedAt','expiresAt','itemVersion','state','readAt','dismissedAt'])
-        && d.schemaVersion == 1 && d.recipientUid == uid && d.kind in ['comment','own_intake','summary','pet_review']
-        && d.routeType in ['post','own_report','inbox','pet'] && d.targetId is string && d.targetId.size()<=128
-        && d.templateKey in ['comments_on_post','report_received','daily_activity','pet_approved','pet_rejected']
+        && d.schemaVersion == 1 && d.recipientUid == uid && d.kind in ['comment','own_intake','summary','pet_review','like','message','adoption']
+        && d.routeType in ['post','own_report','inbox','pet','direct','adoption'] && d.targetId is string && d.targetId.size()<=128
+        && d.templateKey in ['comments_on_post','report_received','daily_activity','pet_approved','pet_rejected','likes_on_post','direct_message','adoption_update']
         && d.sourceVersion is int && d.sourceVersion>=1 && d.itemVersion is int && d.itemVersion>=1
         && d.createdAt is timestamp && d.updatedAt is timestamp && d.expiresAt is timestamp
         && d.state in ['active','unavailable','dismissed'] && (d.readAt==null || d.readAt is timestamp)

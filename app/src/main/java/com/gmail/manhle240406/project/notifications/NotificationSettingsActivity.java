@@ -11,6 +11,7 @@ public final class NotificationSettingsActivity extends AppCompatActivity {
  @Override public void onCreate(Bundle saved){super.onCreate(saved);EdgeToEdge.enable(this);LinearLayout root=SocialSurface.page(this);SocialSurface.header(this,root,R.string.notification_settings,this::finish);LinearLayout content=SocialSurface.content(this,root);
   content.addView(SocialViews.text(this,getString(R.string.feedback_inbox_settings),true));content.addView(SocialSurface.muted(this,getString(R.string.feedback_inbox_settings_help)));
   content.addView(SocialSurface.quiet(this,getString(R.string.feedback_open_inbox),()->MainActivity.open(this,"notifications")));
+  android.widget.TextView feedback=SocialSurface.muted(this,"");feedback.setAccessibilityLiveRegion(android.view.View.ACCESSIBILITY_LIVE_REGION_POLITE);content.addView(feedback);content.addView(SocialSurface.quiet(this,getString(R.string.oc4_enable_notifications),()->AdoptionPushService.enable(this,feedback)));
   content.addView(SocialSurface.quiet(this,getString(R.string.feedback_device_notifications),()->startActivity(new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE,getPackageName()))));
  }
 }
