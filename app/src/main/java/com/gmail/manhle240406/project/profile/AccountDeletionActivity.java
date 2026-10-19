@@ -15,7 +15,7 @@ public final class AccountDeletionActivity extends AppCompatActivity {
         LinearLayout content=SocialSurface.content(this,root);
         content.addView(SocialViews.text(this,getString(R.string.flow_delete_help),false));
         TextView status=SocialSurface.muted(this,"");status.setId(R.id.flow_status);status.setAccessibilityLiveRegion(android.view.View.ACCESSIBILITY_LIVE_REGION_POLITE);
-        android.view.View check=SocialViews.button(this,getString(R.string.flow_check_availability),()->status.setText(R.string.flow_delete_unavailable));check.setId(R.id.flow_submit);content.addView(check);content.addView(status);
+        android.view.View check=SocialViews.button(this,getString(R.string.flow_check_availability),()->com.gmail.manhle240406.project.adoption.AdoptionApi.call("flowRead",com.gmail.manhle240406.project.adoption.AdoptionFlowModel.map("kind","obligations")).addOnCompleteListener(t->{if(!isDestroyed())status.setText(t.isSuccessful()&&Boolean.TRUE.equals(t.getResult().get("blocked"))?R.string.lc_delete_blocked:R.string.flow_delete_unavailable);}));check.setId(R.id.flow_submit);content.addView(check);content.addView(status);
         content.addView(SocialViews.primaryButton(this,getString(R.string.flow_keep_account),this::finish));
     }
 }

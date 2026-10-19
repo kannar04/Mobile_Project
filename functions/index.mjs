@@ -1,4 +1,7 @@
 import {onCall,HttpsError,onRequest} from 'firebase-functions/v2/https';
+import {onSchedule} from 'firebase-functions/v2/scheduler';
+import {dispatchAdoptionPush} from './adoption-flow-push.mjs';
+import {adoptionFlowTick} from './adoption-flow-jobs.mjs';
 import {initializeApp} from 'firebase-admin/app';
 import {getAuth} from 'firebase-admin/auth';
 import {getFirestore} from 'firebase-admin/firestore';
@@ -6,6 +9,7 @@ import {getStorage} from 'firebase-admin/storage';
 import {MediaService} from './service.mjs';
 import {CANDIDATE,ensure,uuid} from './contract.mjs';
 initializeApp();
+export const adoptionFollowup=onSchedule({schedule:'every 15 minutes',region:'asia-east2',serviceAccount:'anilove-adoption-runtime@aniloveproject.iam.gserviceaccount.com',memory:'256MiB',timeoutSeconds:120,maxInstances:1},async()=>{await adoptionFlowTick(getFirestore());await dispatchAdoptionPush(getFirestore());});
 const service=new MediaService({db:getFirestore(),auth:getAuth(),bucket:getStorage().bucket('aniloveproject.firebasestorage.app')});
 export const mediaApi=onRequest({region:'asia-east2',serviceAccount:'anilove-media-runtime@aniloveproject.iam.gserviceaccount.com',memory:'512MiB',timeoutSeconds:60,minInstances:0,maxInstances:2,concurrency:1,cors:false,invoker:'public'},async(req,res)=>{
  res.set('Cache-Control','private, no-store');res.set('X-Content-Type-Options','nosniff');
@@ -23,7 +27,7 @@ export const mediaApi=onRequest({region:'asia-east2',serviceAccount:'anilove-med
 // Authenticated adoption gateway. Client never supplies actor/role or receives Admin credentials.
 import {AdoptionRuntime} from './adoption-runtime.mjs';
 const adoption=new AdoptionRuntime();
-const adoptionReads=new Set(['discovery','discoveryWindow','discoveryDetail','workspace','petWorkspace','receipt','pet','offer','reviewQueue','candidate','claimCandidate','publicDetail','offerSource','applications','application','reservation']);
+const adoptionReads=new Set(['flowRead','discovery','discoveryWindow','discoveryDetail','workspace','petWorkspace','receipt','pet','offer','reviewQueue','candidate','claimCandidate','publicDetail','offerSource','applications','application','reservation']);
 export const adoptionOperations=onCall({region:'asia-east2',serviceAccount:'anilove-adoption-runtime@aniloveproject.iam.gserviceaccount.com',memory:'512MiB',timeoutSeconds:30,minInstances:0,maxInstances:2,concurrency:4},async req=>{
  try{if(!req.auth?.uid)throw new HttpsError('unauthenticated','Sign in required');if(!req.data||Object.keys(req.data).sort().join('|')!=='input|operation'||typeof req.data.operation!=='string'||Buffer.byteLength(JSON.stringify(req.data))>32768)throw new HttpsError('invalid-argument','invalid_intent');
   const user=await getAuth().getUser(req.auth.uid);if(user.disabled)throw new HttpsError('permission-denied','account_unavailable');const actor={uid:user.uid,emailVerified:user.emailVerified,disabled:user.disabled};const {operation,input}=req.data;const result=adoptionReads.has(operation)?await adoption.read(actor,operation,input):await adoption.execute(actor,operation,input);return JSON.parse(JSON.stringify(result));

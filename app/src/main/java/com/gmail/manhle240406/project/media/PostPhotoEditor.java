@@ -21,7 +21,7 @@ public final class PostPhotoEditor {
  private final ActivityResultLauncher<PickVisualMediaRequest> picker;
  public PostPhotoEditor(AppCompatActivity activity,LinearLayout parent,Runnable changed){this(activity,parent,changed,100,"post_image");}
  public PostPhotoEditor(AppCompatActivity activity,LinearLayout parent,Runnable changed,int maximum,String purpose){
-  this.activity=activity;this.changed=changed;model=new ViewModelProvider(activity).get(MediaDraftViewModel.class);model.limit=100;model.purpose=purpose;
+  this.activity=activity;this.changed=changed;model=new ViewModelProvider(activity).get(MediaDraftViewModel.class);model.limit="adoption_private".equals(purpose)?maximum:100;model.purpose=purpose;
   picker=activity.registerForActivityResult(new ActivityResultContracts.PickMultipleVisualMedia(100),uris->{if(!uris.isEmpty())model.add(uris);});
   count=SocialSurface.muted(activity,"");parent.addView(count);
   add=SocialSurface.quiet(activity,activity.getString(R.string.media_add_photos),this::select);parent.addView(add);

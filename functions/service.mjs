@@ -85,6 +85,7 @@ export class MediaService {
  async sourceAllowed(tx,actor,a){
   if(a.ownerUid===actor?.uid)return true;
   if(!a.targetId)return false;
+  if(a.targetId.startsWith('flow:')&&actor?.uid){const d=await this.read(tx,'adoptions/'+a.targetId.slice(5));if(d?.schemaVersion!==2)return false;const member=await this.read(tx,'communityMemberships/'+actor.uid),subject=await this.read(tx,'securitySubjects/'+actor.uid);if(member?.status!=='active'||subject?.status!=='active')return false;if(d.participantUids.includes(actor.uid))return true;const cap=await this.read(tx,'operatorCapabilities/'+actor.uid),assignment=await this.read(tx,'adoptionFlowCases/'+d.adoptionId);return assignment?.assignedUid===actor.uid&&cap?.active===true&&cap.capabilities?.includes('adoption_lifecycle')&&!d.participantUids.includes(actor.uid);}
   if(a.targetId.startsWith('post:')){
    const id=a.targetId.slice(5),p=await this.read(tx,`communityPosts/${id}`),f=await this.read(tx,`communityFeed/${id}`);
    if(!p||p.lifecycle!=='active'||p.visibility!=='visible'||p.moderatorHold!=='clear'||!p.mediaAssetIds?.includes(a.assetId)||f?.contentVersion!==p.contentVersion)return false;

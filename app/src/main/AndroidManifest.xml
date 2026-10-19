@@ -4,6 +4,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".AniloveApplication"
@@ -97,6 +98,9 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
     <activity android:name=".profile.PublicProfileActivity" android:exported="false" />
+        <activity android:name=".adoption.LifecycleActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <meta-data android:name="firebase_messaging_auto_init_enabled" android:value="false" />
+        <service android:name=".notifications.AdoptionPushService" android:exported="false"><intent-filter><action android:name="com.google.firebase.MESSAGING_EVENT" /></intent-filter></service>
     </application>
 
 </manifest>

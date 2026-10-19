@@ -1,0 +1,12 @@
+import {FieldPath} from 'firebase-admin/firestore';
+import {ms} from './domain/safety-common.mjs';
+const DAY=86400000;
+/** One bounded, resumable page per invocation; never auto-finalizes or infers animal welfare. */
+export async function adoptionFlowTick(db,{clock=Date.now}={}){
+ const policy=(await db.doc('adoptionLifecyclePolicy/current').get()).data();if(policy?.enabled!==true||policy.jobsEnabled!==true)return {disabled:true};const checkpoint=db.doc('adoptionFlowWorkers/monitoring'),cursor=(await checkpoint.get()).get('after');let query=db.collection('adoptions').orderBy(FieldPath.documentId()).limit(20);if(cursor)query=query.startAfter(cursor);const page=await query.get();let visited=0;
+ for(const item of page.docs)await db.runTransaction(async tx=>{const ref=item.ref,d=(await tx.get(ref)).data();if(d?.schemaVersion!==2||!['MONITORING','EXTENDED_MONITORING'].includes(d.status))return;const now=clock(),refs=d.reportIds.map(id=>db.doc('monitoringCases/'+item.id+'/reports/'+id)),snapshots=await tx.getAll(...refs),caseRef=db.doc('adoptionFlowCases/'+item.id),old=(await tx.get(caseRef)).data(),events=[];let overdue=0;
+  for(const r of snapshots){const value=r.data();if(!['PENDING','OVERDUE'].includes(value.status))continue;if(now>ms(value.dueAt))overdue++;const stage=now>ms(value.dueAt)?'overdue':now>=ms(value.openAt)?'due':now>=ms(value.openAt)-DAY?'reminder':null;if(!stage)continue;const key=item.id+'_'+r.id+'_'+stage,eventRef=db.doc('adoptionFlowJobEvents/'+key),event=await tx.get(eventRef);if(!event.exists)events.push({key,eventRef,report:r,value,stage});}
+  for(const e of events){tx.set(e.eventRef,{schemaVersion:2,adoptionId:item.id,reportId:e.report.id,stage:e.stage,createdAt:new Date(now)});if(e.stage==='overdue'&&e.value.status==='PENDING')tx.update(e.report.ref,{status:'OVERDUE',version:e.value.version+1});for(const uid of d.participantUids){const notice={schemaVersion:2,eventId:e.key,type:e.stage,adoptionId:item.id,createdAt:new Date(now),read:false};tx.set(db.doc('users/'+uid+'/adoptionFlowNotices/'+e.key),notice);tx.set(db.doc('adoptionFlowOutbox/'+e.key+'_'+uid),{...notice,uid,state:'pending'});}}
+  if(overdue>=2&&(!old||overdue>(old.overdueCount??0)))tx.set(caseRef,{...old,schemaVersion:2,adoptionId:item.id,type:old?.type??'overdue_review',state:'OPEN',overdueCount:overdue,updatedAt:new Date(now)});visited++;
+ });await checkpoint.set({after:page.size===20?page.docs.at(-1).id:null,updatedAt:new Date(clock())});return {visited};
+}

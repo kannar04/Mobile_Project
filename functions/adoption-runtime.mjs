@@ -1,4 +1,5 @@
 import {browseFavorite} from './browse-favorite.mjs';
+import {AdoptionFlowRuntime} from './adoption-flow-runtime.mjs';
 import {browseRead} from './browse-runtime.mjs';
 import {getFirestore,FieldPath} from 'firebase-admin/firestore';
 import {AdoptionSourceService,reviewer,reviewAccess,selfReviewAllowed,listingReviewCurrent,source,TEMPLATE,sha} from './domain/adoption-source2.mjs';
@@ -15,7 +16,7 @@ export class AdoptionRuntime {
  async guard(actor){await this.store.transaction(async tx=>{await shell(new Work(tx),actor?.uid);});}
  async document(path){return (await this.db.doc(path).get()).data()??null;}
  async listingRows(uid,collection,field='ownerUid',after=null){let q=this.db.collection(collection).where(field,'==',uid).orderBy(FieldPath.documentId()).limit(20);if(after){assert(typeof after==='string'&&!after.includes('/'),'invalid_cursor');q=q.startAfter(after);}const r=await q.get();return {rows:r.docs.map(d=>({...d.data(),documentId:d.id})),next:r.size===20?r.docs.at(-1).id:null};}
- async read(actor,op,c){await this.guard(actor);const uid=actor.uid;
+ async read(actor,op,c){await this.guard(actor);const uid=actor.uid;if(op==='flowRead')return new AdoptionFlowRuntime(this.db,this.store).read(actor,c);
   if(['discovery','discoveryWindow','discoveryDetail','publicDetail'].includes(op))return browseRead(this,actor,op,c);
   if(op==='petWorkspace'){assert(Object.keys(c).sort().join('|')==='after|limit'&&[8,20].includes(c.limit)&&(c.after===null||uuid(c.after)),'invalid_intent');let query=this.db.collection('pets').where('editorUid','==',uid).orderBy(FieldPath.documentId()).limit(c.limit);if(c.after)query=query.startAfter(c.after);const docs=await query.get(),pets=[];for(const d of docs.docs){const p=d.data(),[revision,claim,media]=await Promise.all([this.document(`pets/${p.petId}/identityRevisions/${p.currentRevisionId}`),this.document(`pets/${p.petId}/claims/${uid}`),this.document(`petMedia/${p.petId}`)]);pets.push({...p,identity:revision?.identity??null,claim,photoAssetIds:media?.assetIds??[]});}const cap=await this.document(`adoptionReviewerCapabilities/${uid}`);return {pets,nextPets:docs.size===c.limit?docs.docs.at(-1).id:null,reviewer:cap?.enabled===true?cap.scopes:[]};}
   if(op==='workspace'){const [pets,offers,drafts,cap]=await Promise.all([this.listingRows(uid,'pets','editorUid',c.petsAfter),this.listingRows(uid,'listings','ownerUid',c.offersAfter),this.db.collection(`users/${uid}/listingDrafts`).limit(20).get(),this.document(`adoptionReviewerCapabilities/${uid}`)]);const named=[];for(const p of pets.rows){const r=await this.document(`pets/${p.petId}/identityRevisions/${p.currentRevisionId}`);named.push({...p,identity:r?.identity??null,claim:await this.document(`pets/${p.petId}/claims/${uid}`),photoAssetIds:(await this.document(`petMedia/${p.petId}`))?.assetIds??[]});}const enriched=[];for(const l of offers.rows){const [revision,review,publication]=await Promise.all([this.document(`listings/${l.listingId}/revisions/${l.activeRevisionId}`),this.document(`listingReviewRequests/${l.listingId}/versions/v${l.contentVersion}`),this.document(`listingPublication/${l.listingId}`)]);enriched.push({...l,revision,review,publication});}const selfAllowed=await this.store.transaction(async tx=>{const w=new Work(tx);for(const scope of ['pet_offer_review','listing_review'])if(cap?.scopes?.includes(scope)&&await selfReviewAllowed(w,actor,scope))return true;return false;});return {selfReviewAllowed:selfAllowed,pets:named,offers:enriched,drafts:drafts.docs.map(d=>({...d.data(),documentId:d.id})),nextPets:pets.next,nextOffers:offers.next,reviewer:cap?.enabled===true&&cap.uid===uid&&Array.isArray(cap.scopes)?cap.scopes:[]};}
@@ -33,6 +34,11 @@ export class AdoptionRuntime {
   fail('read_not_allowed');
  }
  async execute(actor,op,c){
+  if(op==='flow')return new AdoptionFlowRuntime(this.db,this.store).execute(actor,c);
+  if(op==='flowBinding')return new AdoptionFlowRuntime(this.db,this.store).binding(actor,c);
+  if(op==='flowSend')return new AdoptionFlowRuntime(this.db,this.store).send(actor,c);
+  if(op==='flowNoticeRead')return new AdoptionFlowRuntime(this.db,this.store).markRead(actor,c);
+  if(op==='placement'&&['submit','select'].includes(c.command)&&(await this.document('adoptionLifecyclePolicy/current'))?.enabled===true)fail('use_new_adoption_flow');
   assert(op!=='createFromPet','post_composer_required');
   if(op==='favorite')return browseFavorite(this,actor,c);
   if(op==='placement'){if(['submit','select'].includes(c.command)){const release=await this.document('adoptionBrowseRelease/current');assert(!release?.enabled||release.applicationsEnabled!==false,'applications_not_ready');}assert(!['finalize','close_application'].includes(c.command),'worker_only');const service=new CurrentPlacementService(this.store,{communicationCapabilities:{contactEnabled:true,textEnabled:true},authorizeWorker:async(_u,uid)=>uid===actor.uid});const result=await service.execute(actor,c);if(c.command==='confirm'){try{return {confirmation:result,completion:await service.execute(actor,{command:'finalize',operationId:derivedId(c.operationId),expectedVersion:c.expectedVersion,reservationId:c.reservationId})};}catch(e){if(!['confirmation_missing','handover_ineligible','not_ready'].includes(e.message))throw e;}}return result;}
