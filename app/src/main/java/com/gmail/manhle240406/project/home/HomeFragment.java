@@ -38,6 +38,7 @@ public final class HomeFragment extends Fragment {
   actions.changes.observe(getViewLifecycleOwner(),ignored->{if(posts==null)return;if(actions.committed&&!Objects.equals(lastReactionCommit,actions.lastCommittedSocial)){lastReactionCommit=actions.lastCommittedSocial;likes.remove(actions.postId);reactionFailures.remove(actions.postId);}posts.reactionsChanged();
    if(!actions.busy&&(actions.pending!=null||"local_failed".equals(actions.notice))&&!actions.notice.equals(actionNotice)&&getView()!=null){actionNotice=actions.notice;com.google.android.material.snackbar.Snackbar.make(requireView(),DailyCopy.notice(requireContext(),actions.notice),com.google.android.material.snackbar.Snackbar.LENGTH_LONG).setAction(R.string.social_retry,v->actions.retry()).show();}
   });
+  com.google.android.material.button.MaterialButton chat=SocialSurface.quiet(requireContext(),getString(R.string.nav_chat),()->((MainActivity)requireActivity()).navigate("chat"));chat.setIconResource(R.drawable.ic_nav_chat);((android.view.ViewGroup)header).addView(chat,1);
   View.OnClickListener compose=v->composer.launch(new Intent(requireContext(),SocialComposerActivity.class));
   header.findViewById(R.id.home_create_post_card).setOnClickListener(compose);
   header.findViewById(R.id.home_post_status_btn).setOnClickListener(compose);
@@ -140,16 +141,7 @@ public final class HomeFragment extends Fragment {
      });
     });
    }else{
-    AuthorIdentity.bind(authors,row.getString("authorUid"),h.itemView.findViewById(R.id.post_author_name),h.itemView.findViewById(R.id.post_author_avatar));
-    ((TextView)h.itemView.findViewById(R.id.post_time)).setText(row.getTimestamp("firstPublishedAt")==null?"":java.text.DateFormat.getDateTimeInstance().format(row.getTimestamp("firstPublishedAt").toDate()));
-    ((TextView)h.itemView.findViewById(R.id.post_body)).setText(row.getString("body"));
-    ((ImageView)h.itemView.findViewById(R.id.post_image)).setImageResource("cat".equals(row.getString("bundledIllustrationKey"))?R.drawable.profile_avatar_cat:R.drawable.profile_avatar_dog);
-    h.itemView.findViewById(R.id.post_image).setVisibility(row.getString("bundledIllustrationKey")==null?View.GONE:View.VISIBLE);
-    android.view.ViewGroup imageParent=(android.view.ViewGroup)h.itemView.findViewById(R.id.post_image).getParent();
-    com.gmail.manhle240406.project.media.MediaGrid gallery=imageParent.findViewWithTag("post_media_gallery");
-    if(gallery==null){gallery=new com.gmail.manhle240406.project.media.MediaGrid(requireContext());gallery.setTag("post_media_gallery");imageParent.addView(gallery,imageParent.indexOfChild(h.itemView.findViewById(R.id.post_image))+1,new android.view.ViewGroup.LayoutParams(-1,-2));}
-    gallery.bind(row.get("mediaAssetIds"));
-    AdoptionPostCard adoption=imageParent.findViewWithTag("adoption_post_card");if(adoption==null){adoption=new AdoptionPostCard(requireContext());adoption.setTag("adoption_post_card");imageParent.addView(adoption);}adoption.bind(row.getData());
+    SocialPostCard.content(requireContext(),h.itemView,row.getData(),row.id,authors,null);
 
     TextView heart=h.itemView.findViewById(R.id.post_like_btn);heart.setText(R.string.social_like_action);bindReaction(row.document,heart);h.itemView.findViewById(R.id.post_like_btn).setMinimumHeight(SocialViews.dp(requireContext(),48));h.itemView.findViewById(R.id.post_comment_btn).setMinimumHeight(SocialViews.dp(requireContext(),48));
     ((TextView)h.itemView.findViewById(R.id.post_comment_btn)).setText(R.string.social_open);

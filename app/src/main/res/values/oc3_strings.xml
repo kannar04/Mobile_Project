@@ -1,0 +1,19 @@
+<resources>
+ <string name="oc3_pet_form_help">Nhập tên thú cưng để đăng ký. Ảnh và các thông tin khác có thể bổ sung sau.</string>
+ <string name="oc3_pet_name_error">Nhập tên thú cưng, tối đa 80 ký tự.</string><string name="oc3_pet_age_error">Nhập tuổi từ 0 đến 1200 tháng, hoặc để trống.</string><string name="oc3_pet_claim_error">Cho biết bạn được phép chăm sóc hoặc cho nhận nuôi bé như thế nào.</string>
+ <string name="oc3_pet_photo_wait">Ảnh chưa tải xong. Nếu tải lỗi, mở tùy chọn ảnh để thử lại hoặc bỏ ảnh trước khi đăng ký.</string><string name="oc3_pet_photo_hint">Ảnh thú cưng · không bắt buộc</string>
+ <item name="oc3_chat_refresh" type="id"/>
+
+ <string name="oc3_you">Bạn</string>
+ <string name="oc3_adopting">Nhận nuôi</string><string name="oc3_rehoming">Cho nhận nuôi</string>
+ <string name="oc3_sent_requests">Yêu cầu tôi đã gửi</string><string name="oc3_received_requests">Yêu cầu nhận nuôi gửi đến tôi</string>
+ <string name="oc3_previous">Trang trước</string><string name="oc3_next">Trang sau</string><string name="oc3_page">Trang %1$d</string>
+ <string name="oc3_all_posts">Tất cả</string><string name="oc3_social_posts">Chia sẻ</string><string name="oc3_adoption_posts">Tìm người nhận nuôi</string>
+ <string name="oc3_new_message">Tin nhắn mới</string><string name="oc3_message">Nhắn tin</string><string name="oc3_direct_messages">Trò chuyện</string><string name="oc3_adoption_messages">Trò chuyện nhận nuôi</string>
+ <string name="oc3_chat_help">Chọn Tin nhắn mới hoặc mở hồ sơ công khai để bắt đầu trò chuyện. Không cần kết bạn hay ghép nhận nuôi.</string>
+ <string name="oc3_people_hint">Tìm theo tên hiển thị</string><string name="oc3_find">Tìm</string><string name="oc3_no_people">Chưa tìm thấy hồ sơ phù hợp.</string><string name="oc3_no_messages">Chưa có tin nhắn. Hãy gửi lời chào.</string>
+ <string name="oc3_block">Chặn người dùng</string><string name="oc3_unblock">Bỏ chặn</string><string name="oc3_blocked">Cuộc trò chuyện đang bị chặn. Bạn vẫn có thể đọc tin nhắn cũ.</string>
+ <string name="oc3_chat_failed">Chưa hoàn tất. Kiểm tra kết nối và thử lại; hồ sơ riêng tư hoặc cuộc trò chuyện bị chặn sẽ không nhận tin nhắn mới.</string>
+ <string name="oc3_chat_retry">Thử gửi lại</string><string name="oc3_draft">Bản nháp · Chỉ mình tôi</string>
+ <item name="oc3_chat_input" type="id"/><item name="oc3_chat_send" type="id"/><item name="oc3_chat_new" type="id"/><item name="oc3_post_filter" type="id"/>
+</resources>

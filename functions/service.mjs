@@ -1,3 +1,4 @@
+import {DirectChatService} from './direct-chat.mjs';
 import sharp from 'sharp';
 import {AdoptionSourceService} from './domain/adoption-source2.mjs';
 import {adoptionSource} from './adoption.mjs';
@@ -164,6 +165,12 @@ export class MediaService {
   const path=`users/${uid}/private/personal`,rp=`mediaCommands/${uid}/receipts/${input.operationId}`,hash=digest(input);
   return this.db.runTransaction(async tx=>{const receipt=await this.read(tx,rp);if(receipt){ensure(receipt.command==='personal'&&receipt.inputHash===hash,'conflict');return receipt.result;}await this.ready(tx,actor);const old=await this.read(tx,path);ensure(number(old,'version')===input.expectedVersion,'conflict');const result={schemaVersion:1,ownerUid:uid,gender:input.gender,birthdate:date,version:input.expectedVersion+1,updatedAt:new Date(this.clock())};tx.set(this.ref(path),result);tx.create(this.ref(rp),{command:'personal',inputHash:hash,result,createdAt:new Date(this.clock())});return result;});
  }
+ async directStart(actor,input){return new DirectChatService(this).start(actor,input);}
+ async directSend(actor,input){return new DirectChatService(this).send(actor,input);}
+ async directThread(actor,input){return new DirectChatService(this).thread(actor,input);}
+ async directInbox(actor,input){return new DirectChatService(this).inbox(actor,input);}
+ async directPeople(actor,input){return new DirectChatService(this).people(actor,input);}
+ async directBlock(actor,input){return new DirectChatService(this).block(actor,input);}
  async publicProfilePage(actor,input){
   await this.db.runTransaction(tx=>this.ready(tx,actor));exact(input,['uid','after']);const uid=pathUid(input.uid);ensure(input.after===null||uuid(input.after));
   const [control,profile,hold]=await Promise.all([this.ref(`publicProfileControls/${uid}`).get(),this.ref(`publicProfiles/${uid}`).get(),this.ref(`profileModeration/${uid}`).get()]);

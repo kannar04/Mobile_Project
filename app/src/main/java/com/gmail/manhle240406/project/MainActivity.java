@@ -32,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
     private android.widget.TextView readinessText;
     private com.google.android.material.button.MaterialButton readinessRetry;
     public static void open(Activity source,String page){
+        if(source instanceof MainActivity){((MainActivity)source).navigate(page);return;}
         source.startActivity(new Intent(source,MainActivity.class).putExtra(PAGE,page)
             .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));
     }
@@ -79,12 +80,13 @@ public class MainActivity extends AppCompatActivity {
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);requestedPage=intent.getStringExtra(PAGE)==null?"home":intent.getStringExtra(PAGE);if(profileReady)navigate(requestedPage);}
     @Override protected void onSaveInstanceState(Bundle out){out.putString("tools_origin",toolsOrigin);out.putString("discovery_origin",discoveryOrigin);out.putBundle("discovery_args",discoveryArgs);out.putString("conversation_id",conversationId);out.putString(PAGE,destination);out.putString("notification_origin",notificationOrigin);super.onSaveInstanceState(out);}
     public void home(){navigate("home");}
-    private String parentPage(){return destination.startsWith("tools:")?"tools":destination.equals("discovery")?discoveryOrigin:destination.equals("tools")?toolsOrigin:destination.startsWith("conversation:")?"chat":destination.equals("notifications")?notificationOrigin:"home";}
+    private String parentPage(){if(destination.startsWith("direct:"))return "chat";return destination.startsWith("tools:")?"tools":destination.equals("discovery")?discoveryOrigin:destination.equals("tools")?toolsOrigin:destination.startsWith("conversation:")?"chat":destination.equals("notifications")?notificationOrigin:"home";}
     public void up(){navigate(parentPage());}
     public void conversation(String id){if(profileReady&&com.gmail.manhle240406.project.profile.ProfileSchema.validOperationId(id)){conversationId=id;show("conversation:"+id);}}
     public void navigate(String requested){
         if(isFinishing()||isDestroyed())return;
         if(!profileReady){requestedPage=requested;return;}
+        if(requested!=null&&requested.matches("direct:[a-f0-9]{64}")){show(requested);return;}
         if(requested!=null&&requested.startsWith("conversation:")&&com.gmail.manhle240406.project.profile.ProfileSchema.validOperationId(requested.substring("conversation:".length())))conversationId=requested.substring("conversation:".length());
         if(requested!=null&&requested.startsWith("conversation:")&&com.gmail.manhle240406.project.profile.ProfileSchema.validOperationId(conversationId)){show("conversation:"+conversationId);return;}
         final String page=java.util.Arrays.asList("home","favorites","chat","profile","notifications","discovery","tools","tools:0","tools:1","tools:2","tools:3","tools:4","tools:5").contains(requested)?requested:"home";
@@ -101,11 +103,11 @@ public class MainActivity extends AppCompatActivity {
         Fragment next=fm.findFragmentByTag(page);
         FragmentTransaction tx=fm.beginTransaction().setReorderingAllowed(true);
         for(Fragment f:fm.getFragments())if(f.isAdded()){
-            if(f instanceof com.gmail.manhle240406.project.community.ConversationFragment && f!=next)tx.remove(f);
+            if((f instanceof com.gmail.manhle240406.project.community.ConversationFragment||f instanceof com.gmail.manhle240406.project.community.DirectConversationFragment) && f!=next)tx.remove(f);
             else tx.hide(f).setMaxLifecycle(f,androidx.lifecycle.Lifecycle.State.STARTED);
         }
         if(next==null){
-            next=page.equals("discovery")?new com.gmail.manhle240406.project.adoption.DiscoveryFragment():page.startsWith("tools")?new com.gmail.manhle240406.project.wiring.FlowHubFragment():page.startsWith("conversation:")?com.gmail.manhle240406.project.community.ConversationFragment.create(conversationId):page.equals("favorites")?new com.gmail.manhle240406.project.adoption.FavoritesLibraryFragment()
+            next=page.startsWith("direct:")?com.gmail.manhle240406.project.community.DirectConversationFragment.create(page.substring(7)):page.equals("discovery")?new com.gmail.manhle240406.project.adoption.DiscoveryFragment():page.startsWith("tools")?new com.gmail.manhle240406.project.wiring.FlowHubFragment():page.startsWith("conversation:")?com.gmail.manhle240406.project.community.ConversationFragment.create(conversationId):page.equals("favorites")?new com.gmail.manhle240406.project.adoption.FavoritesLibraryFragment()
                 :page.equals("profile")?new com.gmail.manhle240406.project.profile.ProfileFragment()
                 :page.equals("notifications")?new com.gmail.manhle240406.project.notifications.InboxFragment()
                 :page.equals("chat")?new com.gmail.manhle240406.project.community.ConversationsFragment():new HomeFragment();
@@ -116,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
         tx.setMaxLifecycle(next,androidx.lifecycle.Lifecycle.State.RESUMED).setPrimaryNavigationFragment(next).commitNow();
         destination=page;selecting=true;
         String selected=page.startsWith("tools")?toolsOrigin:page.equals("discovery")?(discoveryOrigin.startsWith("tools")?toolsOrigin:discoveryOrigin):page;
-        bottomNav.setSelectedItemId(selected.equals("favorites")?R.id.nav_favorites:(selected.equals("chat")||selected.startsWith("conversation:"))?R.id.nav_chat:selected.equals("profile")?R.id.nav_profile:R.id.nav_home);
+        bottomNav.setSelectedItemId(selected.equals("favorites")?R.id.nav_favorites:(selected.equals("chat")||selected.startsWith("conversation:")||selected.startsWith("direct:"))?R.id.nav_chat:selected.equals("profile")?R.id.nav_profile:R.id.nav_home);
         selecting=false;
     }
     public String destination(){return destination;}
