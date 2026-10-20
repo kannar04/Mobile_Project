@@ -1,0 +1,168 @@
+<resources>
+    <string name="pet_title">Thú cưng của bạn</string>
+    <string name="pet_disclosure">
+        Bản thử nghiệm. Thông tin tự khai; đăng ký hay xem xét không xác minh quyền sở hữu, không
+        trao quyền thu hồi hoặc đảm bảo an toàn. Dùng lại mã thú cưng đã có. Bản sửa chỉ giữ trong
+        bộ nhớ, có thể mất khi ứng dụng đóng.
+    </string>
+    <string name="pet_new">Đăng ký thú cưng mới</string>
+    <string name="pet_refresh">Tải hồ sơ của tôi từ máy chủ</string>
+    <string name="pet_next">Trang tiếp theo · tối đa 20</string>
+    <string name="pet_empty">
+        Chưa có hồ sơ trong trang này. Nếu đã đăng ký, kiểm tra biên nhận trước khi tạo hồ sơ khác.
+    </string>
+    <string name="pet_name">Tên · không bắt buộc · tối đa 80 ký tự</string>
+    <string name="pet_species">Loài · 1–40 ký tự</string>
+    <string name="pet_breed">Giống · không bắt buộc · tối đa 80 ký tự</string>
+    <string name="pet_sex">Giới tính</string>
+    <string name="pet_age">Tuổi ước tính · tháng · để trống nếu không rõ</string>
+    <string name="pet_observed">Ngày quan sát tuổi · YYYY-MM-DD</string>
+    <string name="pet_marks">Dấu nhận diện · tối đa 500 ký tự</string>
+    <string name="pet_marks_unknown">Không biết dấu nhận diện</string>
+    <string name="pet_basis">Cơ sở quyền · khai báo riêng tư</string>
+    <string name="pet_care">Tôi khai mình đang trực tiếp chăm sóc</string>
+    <string name="pet_explanation">Giải thích quyền · tối đa 1000 ký tự</string>
+    <string name="pet_claim_help">
+        Chỉ bạn và người xử lý xem. Nếu được ủy quyền hoặc có cơ sở khác, giải thích ai được cho
+        là đã cho phép. Không ghi số điện thoại, địa chỉ hay giấy tờ của người khác.
+    </string>
+    <string name="pet_register">Xác nhận đăng ký riêng tư</string>
+    <string name="pet_revise">Lưu phiên bản nhận diện mới</string>
+    <string name="pet_claim_save">Lưu sửa khai báo riêng tư</string>
+    <string name="pet_claim_submit">Gửi khai báo đã lưu để duyệt</string>
+    <string name="pet_withdraw">Rút khai báo</string>
+    <string name="pet_suspend">Tạm ngưng quyền đề nghị của tôi</string>
+    <string name="pet_suspend_known">Tạm ngưng quyền của tôi theo mã đã biết</string>
+    <string name="pet_chip">Chip riêng tư · chưa xác minh · tối đa 64 ký tự</string>
+    <string name="pet_chip_notes">Ghi chú chip riêng tư · tối đa 500 ký tự</string>
+    <string name="pet_chip_help">
+        Chỉ bạn xem. Để trống và lưu để xóa mã chip; không dò chip toàn cục, không chia sẻ cho
+        người đã từng chăm sóc.
+    </string>
+    <string name="pet_chip_save">Lưu chip riêng tư</string>
+    <string name="pet_history">Biên nhận và lịch sử của tôi</string>
+    <string name="pet_challenge_title">Nêu quan ngại riêng tư</string>
+    <string name="pet_challenge_help">
+        Chỉ bạn và người xử lý xem. Không tự đóng băng hồ sơ hay công khai cáo buộc. Có thể gửi khi
+        tài khoản bị hạn chế. Dùng dữ liệu mô phỏng; không cam kết phản hồi hay cứu hộ thực tế.
+    </string>
+    <string name="pet_target">Mã thú cưng đã biết</string>
+    <string name="pet_statement">Nội dung quan ngại · 1–1000 ký tự</string>
+    <string name="pet_challenge_submit">Xác nhận gửi quan ngại</string>
+    <string name="pet_challenges">Quan ngại và phản hồi của tôi</string>
+    <string name="pet_retry">Thử lại cùng yêu cầu chưa xác nhận</string>
+    <string name="pet_reconcile">Kiểm tra biên nhận của yêu cầu trước</string>
+    <string name="pet_restore">
+        Yêu cầu trước có thể đã hoàn tất. Kiểm tra biên nhận; không tự tạo thú cưng mới. Nội dung
+        riêng tư không được khôi phục sau khi ứng dụng đóng.
+    </string>
+    <string name="pet_release_restore">Tiếp tục sau khi kiểm tra hồ sơ của tôi</string>
+    <string name="pet_record_register">Đăng ký riêng tư</string>
+    <string name="pet_record_identity">Sửa nhận diện</string>
+    <string name="pet_record_claim">Thay đổi khai báo</string>
+    <string name="pet_record_submit">Gửi khai báo</string>
+    <string name="pet_record_withdraw">Rút khai báo</string>
+    <string name="pet_record_suspend">Tạm ngưng quyền</string>
+    <string name="pet_record_concern">Gửi quan ngại</string>
+    <string name="pet_record_review">Quyết định của người xử lý</string>
+    <string name="pet_received">Đã nhận</string>
+    <string name="pet_triaged">Đang xử lý</string>
+    <string name="pet_closed">Đã có phản hồi kết thúc</string>
+    <string name="pet_snapshot">
+        Tên: %1$s\nLoài: %2$s\nGiống: %3$s\nTuổi tại ngày quan sát: %4$s\nDấu nhận diện: %5$s\nGiải
+        thích quyền riêng tư: %6$s\nChip riêng tư: %7$s\nGhi chú chip: %8$s\nPhiên bản nhận
+        diện %9$d · khai báo %10$d · quyền %11$d
+    </string>
+    <string name="pet_estimated_age">%1$d tháng, quan sát ngày %2$s (UTC)</string>
+    <string name="pet_busy">Đang kiểm tra máy chủ…</string>
+    <string name="pet_unknown">
+        Chưa biết yêu cầu đã lưu hay chưa. Chờ yêu cầu trước kết thúc; không tạo hồ sơ hay yêu cầu
+        khác để thử lại.
+    </string>
+    <string name="pet_committed">
+        Máy chủ đã xác nhận yêu cầu. Không có thay đổi quyền sở hữu thực tế; đăng ký chưa cấp
+        quyền đăng tin.
+    </string>
+    <string name="pet_denied">
+        Chưa đủ quyền hoặc dữ liệu liên kết chưa hợp lệ. Tạo/sửa/gửi duyệt cần email đã xác minh
+        và quyền hoạt động. Quan ngại và tạm ngưng quyền của mình vẫn được bảo vệ riêng.
+    </string>
+    <string name="pet_network">
+        Không thể xác nhận từ máy chủ. Kiểm tra mạng và tải lại; bản sửa vẫn ở bộ nhớ.
+    </string>
+    <string name="pet_schema">
+        Không thể dùng dữ liệu thiếu cổng, sai phiên bản hay ngoài phạm vi. Quyền chưa xác định được
+        xem là bị chặn; cần người quản lý kiểm tra.
+    </string>
+    <string name="pet_conflict">
+        Có phiên bản mới hơn. So sánh rồi chọn tải lại hoặc giữ bản sửa để áp dụng thủ công. Không
+        tự ghi đè.
+    </string>
+    <string name="pet_diff">Bản gốc:\n%1$s\nMáy chủ hiện tại:\n%2$s\nÝ định đang sửa:\n%3$s</string>
+    <string name="pet_resolve">So sánh và chọn cách xử lý</string>
+    <string name="pet_discard">Bỏ bản sửa chưa lưu?</string>
+    <string name="pet_discard_help">
+        Bản đã ghi trên máy chủ vẫn được giữ. Rời màn hình không hủy một giao dịch đã gửi.
+    </string>
+    <string name="pet_invalid">
+        Kiểm tra trường này: đúng giới hạn ký tự, nội dung có nghĩa và lựa chọn được hỗ trợ.
+    </string>
+    <string name="pet_invalid_age">
+        Nhập 0–1200 tháng và ngày quan sát YYYY-MM-DD không ở tương lai, hoặc để trống cả hai nếu
+        không rõ.
+    </string>
+    <string name="pet_saved_claim">
+        Lưu thay đổi nhận diện và khai báo riêng trước khi gửi bản đã lưu để duyệt.
+    </string>
+    <string name="pet_detail">
+        Mã thú cưng: %1$s\nNhận diện phiên bản %2$d · khai báo phiên bản %3$d\nTrạng thái khai
+        báo: %4$s\nQuyền đề nghị (lần kiểm tra máy chủ): %5$s\nTuổi là ước tính tại ngày quan
+        sát, không tự tính tuổi chính xác hôm nay. Không có người duyệt thì tiếp tục chờ.
+    </string>
+    <string name="pet_permission_ready">
+        Có thể xét đề nghị trong bản thử nghiệm; thao tác đăng tin tương lai vẫn cần kiểm tra riêng.
+    </string>
+    <string name="pet_reason_not_ready">
+        Chưa đủ trạng thái email xác minh và quyền hoạt động.
+    </string>
+    <string name="pet_reason_unknown">
+        Dữ liệu bảo vệ thiếu hoặc sai phiên bản. Cần người quản lý kiểm tra.
+    </string>
+    <string name="pet_reason_actor">
+        Bạn chưa đồng thời là người chỉnh sửa và người được đề nghị hiện hành.
+    </string>
+    <string name="pet_reason_archive">Hồ sơ đã lưu trữ, không thể đưa ra đề nghị mới.</string>
+    <string name="pet_reason_stale">
+        Nhận diện, khai báo hoặc nguồn chăm sóc đã thay đổi. Cần duyệt lại phiên bản hiện hành.
+    </string>
+    <string name="pet_reason_hold">
+        Đề nghị đang được giữ để người xử lý xem xét. Đây không phải kết luận vi phạm.
+    </string>
+    <string name="pet_reason_blocked">Quyền chưa được cấp hoặc đã tạm ngưng.</string>
+    <string name="pet_reason_activity">
+        Đang có hoạt động liên quan hoặc trạng thái chưa rõ; chưa thể có đề nghị mới.
+    </string>
+    <string name="pet_illustration">
+        Thông tin này không kèm ảnh xác minh. Hình có sẵn nếu được dùng chỉ minh họa, không phải
+        bằng chứng về thú cưng.
+    </string>
+    <string name="pet_receipt">Mã thú cưng %1$s · %2$s · %3$s</string>
+    <string name="pet_challenge_row">Mã thú cưng %1$s · %2$s\nPhản hồi: %3$s</string>
+    <string name="pet_pending">Đã nhận, chờ người xử lý. Chưa có phản hồi.</string>
+    <string-array name="pet_sexes">
+        <item>Không rõ</item>
+        <item>Cái</item>
+        <item>Đực</item>
+    </string-array>
+    <string-array name="pet_bases">
+        <item>Chủ sở hữu tự khai</item>
+        <item>Người chăm sóc được cho là được ủy quyền</item>
+        <item>Cơ sở quyền khác</item>
+    </string-array>
+    <string name="pet_state_draft">Bản nháp riêng tư</string>
+    <string name="pet_state_submitted">Chờ duyệt</string>
+    <string name="pet_state_needs_information">Cần bổ sung</string>
+    <string name="pet_state_accepted_for_demo">Được xem xét cho bản thử nghiệm</string>
+    <string name="pet_state_rejected">Chưa được chấp nhận</string>
+    <string name="pet_state_withdrawn">Đã rút</string>
+</resources>
