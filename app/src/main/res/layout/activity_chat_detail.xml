@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/anilove_bg"
+>
+    <!-- Header -->
+    <LinearLayout
+        android:id="@+id/chat_header"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+    >
+        <ImageView
+            android:id="@+id/chat_back"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/anilove_chip_bg"
+            android:contentDescription="Back"
+            android:padding="8dp"
+            android:src="@drawable/ic_nav_home"
+            app:tint="@color/anilove_text_dark"
+        />
+
+        <ImageView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="12dp"
+            android:contentDescription="Avatar"
+            android:src="@drawable/profile_avatar_default"
+        />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Lan Anh (Cứu hộ)"
+            android:textColor="@color/anilove_text_dark"
+            android:textSize="16sp"
+            android:textStyle="bold"
+        />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toTopOf="@id/chat_input_bar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/chat_header"
+    >
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+        >
+            <!-- Incoming Message -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:background="@drawable/anilove_chip_bg"
+                android:padding="12dp"
+                android:text="Chào bạn! Bông vẫn chưa có ai nhận nuôi ạ."
+                android:textColor="@color/anilove_text_dark"
+                android:textSize="14sp"
+            />
+
+            <!-- Outgoing Message -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/anilove_chip_bg"
+                android:backgroundTint="@color/anilove_primary"
+                android:padding="12dp"
+                android:text="Em có thể tới gặp Bông chiều nay không ạ?"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+            />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Bottom Input Bar -->
+    <LinearLayout
+        android:id="@+id/chat_input_bar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+    >
+        <EditText
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:background="@drawable/anilove_search_bg"
+            android:hint="Nhập tin nhắn..."
+            android:paddingHorizontal="16dp"
+            android:textColor="@color/anilove_text_dark"
+            android:textColorHint="@color/anilove_text_muted"
+            android:textSize="14sp"
+        />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/AniLovePrimaryButton"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:layout_marginStart="8dp"
+            android:minWidth="0dp"
+            android:paddingHorizontal="16dp"
+            android:text="Gửi"
+        />
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

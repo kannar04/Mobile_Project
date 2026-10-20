@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="6dp"
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp"
+    app:strokeColor="@color/anilove_border"
+    app:strokeWidth="1dp"
+>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+    >
+        <FrameLayout android:layout_width="match_parent" android:layout_height="140dp">
+            <ImageView
+                android:id="@+id/pet_item_image"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/profile_avatar_dog"
+                android:contentDescription="Pet Image"
+            />
+
+            <ImageView
+                android:id="@+id/pet_item_favorite"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="top|end"
+                android:layout_margin="8dp"
+                android:background="@drawable/anilove_chip_bg"
+                android:padding="6dp"
+                android:src="@drawable/ic_nav_favorite"
+                app:tint="@color/anilove_primary"
+            />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp"
+        >
+            <TextView
+                android:id="@+id/pet_item_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Bông"
+                android:textColor="@color/anilove_text_dark"
+                android:textSize="16sp"
+                android:textStyle="bold"
+            />
+
+            <TextView
+                android:id="@+id/pet_item_breed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Chó Cỏ • 3 tháng"
+                android:textColor="@color/anilove_text_muted"
+                android:textSize="12sp"
+            />
+
+            <TextView
+                android:id="@+id/pet_item_badge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/anilove_badge_bg"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:text="Sẵn sàng"
+                android:textColor="@color/anilove_badge_green_text"
+                android:textSize="10sp"
+                android:textStyle="bold"
+            />
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

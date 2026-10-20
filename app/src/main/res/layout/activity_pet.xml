@@ -1,0 +1,20 @@
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/pet_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:saveEnabled="false"
+>
+    <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+        <com.gmail.manhle240406.project.auth.BoundedFormLayout
+            android:id="@+id/pet_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:saveEnabled="false"
+        />
+    </FrameLayout>
+</androidx.core.widget.NestedScrollView>
