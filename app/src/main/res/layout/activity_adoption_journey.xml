@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/anilove_bg"
+>
+    <!-- Top Navigation Header -->
+    <LinearLayout
+        android:id="@+id/adoption_header"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+    >
+        <ImageView
+            android:id="@+id/adoption_back"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/anilove_chip_bg"
+            android:contentDescription="Back"
+            android:padding="8dp"
+            android:src="@drawable/ic_nav_home"
+            app:tint="@color/anilove_text_dark"
+        />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+        >
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Yêu cầu Nhận nuôi"
+                android:textColor="@color/anilove_text_dark"
+                android:textSize="18sp"
+                android:textStyle="bold"
+            />
+
+            <TextView
+                android:id="@+id/adoption_step_indicator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Bước 1 / 2"
+                android:textColor="@color/anilove_text_muted"
+                android:textSize="12sp"
+            />
+        </LinearLayout>
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toTopOf="@id/adoption_bottom_bar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/adoption_header"
+    >
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp"
+        >
+            <!-- Section Title -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Lý do nhận nuôi"
+                android:textColor="@color/anilove_text_dark"
+                android:textSize="16sp"
+                android:textStyle="bold"
+            />
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/AniLoveOutlinedField"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Nhập lý do muốn nhận nuôi..."
+            >
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/adoption_reason_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="top|start"
+                    android:lines="4"
+                    android:minHeight="100dp"
+                />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="Kinh nghiệm chăm sóc"
+                android:textColor="@color/anilove_text_dark"
+                android:textSize="16sp"
+                android:textStyle="bold"
+            />
+
+            <CheckBox
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Đã từng nuôi Chó"
+                android:textColor="@color/anilove_text_dark"
+            />
+
+            <CheckBox
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Đã từng nuôi Mèo"
+                android:textColor="@color/anilove_text_dark"
+            />
+
+            <CheckBox
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Chưa có kinh nghiệm"
+                android:textColor="@color/anilove_text_dark"
+            />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="Điều kiện sống"
+                android:textColor="@color/anilove_text_dark"
+                android:textSize="16sp"
+                android:textStyle="bold"
+            />
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/AniLoveOutlinedField"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Loại nhà ở (Nhà riêng / Căn hộ)"
+            >
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/adoption_housing_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="52dp"
+                />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <FrameLayout
+        android:id="@+id/adoption_bottom_bar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+    >
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/adoption_submit_btn"
+            style="@style/AniLovePrimaryButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Xác nhận gửi yêu cầu"
+        />
+    </FrameLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
