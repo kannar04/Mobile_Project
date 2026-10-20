@@ -57,7 +57,7 @@ public class PostAdoptionTimelineActivity extends AppCompatActivity {
             tv.setPadding(24, 24, 24, 24);
             tv.setBackgroundResource(R.drawable.anilove_card_bg);
             tv.setTextSize(15f);
-            tv.setTextColor(0xFF2D2D2D);
+            tv.setTextColor(com.google.android.material.color.MaterialColors.getColor(tv,com.google.android.material.R.attr.colorOnSurface));
             return new ViewHolder(tv);
         }
 

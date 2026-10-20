@@ -56,7 +56,7 @@
         android:layout_marginHorizontal="16dp"
         android:layout_marginBottom="12dp"
         android:background="@drawable/anilove_card_bg"
-        android:backgroundTint="#F8E5DF"
+        android:backgroundTint="@color/anilove_primary_container"
         android:elevation="4dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"

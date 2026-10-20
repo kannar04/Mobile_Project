@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="review_gps_scan">Quét vị trí GPS quanh đây</string>
+    <string name="review_gps_loading">Đang xác định vị trí…</string>
+    <string name="review_gps_permission_denied">Cần quyền vị trí để quét khu vực quanh bạn. Bạn có thể cấp quyền trong Cài đặt Android.</string>
+    <string name="review_gps_disabled">Dịch vụ vị trí đang tắt</string>
+    <string name="review_gps_disabled_help">Bật dịch vụ vị trí rồi quay lại để thử lại.</string>
+    <string name="review_open_settings">Mở cài đặt</string>
+    <string name="review_gps_timeout">Không lấy được vị trí trong thời gian cho phép. Hãy ra nơi thoáng hơn rồi thử lại.</string>
+    <string name="review_gps_empty">Thiết bị chưa cung cấp được vị trí. Hãy thử lại sau.</string>
+    <string name="review_gps_result">Đã xác định vị trí: %1$.5f, %2$.5f. Hiện chưa có nguồn dữ liệu địa điểm gần đây, nên ứng dụng không hiển thị kết quả giả.</string>
+    <string name="review_offline_title">Dữ liệu ngoại tuyến</string>
+    <string name="review_offline_body">Nội dung đã tải được lưu tự động trên thiết bị. Khi có mạng trở lại, AniLove tự làm mới và gửi các thao tác đang chờ; bạn không cần đồng bộ thủ công.</string>
+    <string name="review_my_posts">Bài viết của tôi</string>
+    <string name="review_manage_pets">Quản lý thú cưng</string>
+    <string name="review_lost_empty_title">Chưa có thông báo thất lạc</string>
+    <string name="review_lost_empty_body">AniLove chưa có nguồn dữ liệu thất lạc đã xác thực. Ứng dụng sẽ không hiển thị thú cưng mẫu hoặc báo đã gửi bằng chứng khi chưa có nơi tiếp nhận thật.</string>
+    <string name="review_phone_sending">Đang gửi mã xác minh…</string>
+    <string name="review_phone_code_sent">Mã xác minh đã được gửi. Nhập mã SMS để tiếp tục.</string>
+    <string name="review_phone_verifying">Đang xác minh và lưu số điện thoại…</string>
+    <string name="review_phone_failed">Chưa thể xác minh số điện thoại. Kiểm tra số, mã SMS và kết nối rồi thử lại.</string>
+</resources>

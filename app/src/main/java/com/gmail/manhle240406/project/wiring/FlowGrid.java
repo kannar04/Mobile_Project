@@ -22,5 +22,26 @@ final class FlowGrid {
         GridLayout.LayoutParams lp=new GridLayout.LayoutParams(GridLayout.spec(GridLayout.UNDEFINED,1f),GridLayout.spec(GridLayout.UNDEFINED,1f));lp.width=0;lp.height=SocialViews.dp(c,148);int gap=SocialViews.dp(c,6);lp.setMargins(gap,gap,gap,gap);grid.addView(card,lp);return card;
     }
     static int groupIcon(int group){return new int[]{R.drawable.ic_shell_search,R.drawable.ic_nav_chat,R.drawable.ic_pet_paw_vector,R.drawable.ic_nav_favorite,R.drawable.ic_nav_profile,R.drawable.ic_shell_settings}[Math.max(0,Math.min(5,group))];}
-    static int featureIcon(String feature,int group){if(feature.equals("F09")||feature.equals("F07"))return R.drawable.ic_shell_photo;if(feature.equals("F14"))return R.drawable.ic_flow_favorite_outline;if(feature.equals("F15"))return R.drawable.ic_social_share;if(feature.equals("F19"))return R.drawable.ic_nav_chat;if(feature.equals("F30")||feature.equals("F36"))return R.drawable.ic_flow_notifications;if(feature.equals("F38")||feature.equals("F39")||feature.equals("F40")||feature.equals("F41"))return R.drawable.ic_shell_settings;return groupIcon(group);}
+    static int featureIcon(String feature,int group){
+        switch(feature){
+            case "F16":return R.drawable.ic_placement_questionnaire;
+            case "F17":return R.drawable.ic_placement_my_requests;
+            case "F18":return R.drawable.ic_placement_review_requests;
+            case "F20":return R.drawable.ic_placement_meeting;
+            case "F21":return R.drawable.ic_placement_handover;
+            case "F28":return R.drawable.ic_placement_review;
+            case "F34":return R.drawable.ic_placement_exchange;
+            case "F08":return R.drawable.ic_care_health;
+            case "F23":return R.drawable.ic_care_followup;
+            case "F24":return R.drawable.ic_care_extend;
+            case "F25":return R.drawable.ic_care_welfare;
+            case "F26":return R.drawable.ic_care_return;
+            case "F27":return R.drawable.ic_care_appeal;
+            case "F33":return R.drawable.ic_care_foster;
+            case "F36":return R.drawable.ic_care_reminder;
+            case "F44":return R.drawable.ic_care_support;
+            default:break;
+        }
+        if(feature.equals("F09")||feature.equals("F07"))return R.drawable.ic_shell_photo;if(feature.equals("F14"))return R.drawable.ic_flow_favorite_outline;if(feature.equals("F15"))return R.drawable.ic_social_share;if(feature.equals("F19"))return R.drawable.ic_nav_chat;if(feature.equals("F30"))return R.drawable.ic_flow_notifications;if(feature.equals("F38")||feature.equals("F39")||feature.equals("F40")||feature.equals("F41"))return R.drawable.ic_shell_settings;return groupIcon(group);
+    }
 }

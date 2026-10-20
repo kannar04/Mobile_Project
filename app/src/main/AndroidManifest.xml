@@ -4,6 +4,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
@@ -77,6 +79,7 @@
         <activity android:name=".adoption.AdminDashboardActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".adoption.OfflineSyncActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".profile.ProfileSetupActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".profile.PhoneVerificationActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".auth.PasswordRecoveryActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".profile.EnhancedSettingsActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".community.CommunityFeedActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />

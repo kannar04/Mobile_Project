@@ -17,8 +17,8 @@
  <string name="feedback_new_post">Viết bài mới</string>
  <string name="feedback_no_posts">Bạn chưa có bài viết nào. Chia sẻ câu chuyện đầu tiên của bạn.</string>
  <string name="feedback_open_post">Mở bài viết</string>
- <string name="feedback_my_posts">Lịch sử bài viết</string>
- <string name="feedback_history_filter">Lọc lịch sử bài viết</string>
+ <string name="feedback_my_posts">Bài viết của tôi</string>
+ <string name="feedback_history_filter">Lọc bài viết của tôi</string>
  <string name="feedback_history_all">Tất cả bài viết</string>
  <string name="feedback_history_community">Bài viết cộng đồng</string>
  <string name="feedback_history_adoption">Bài viết nhận nuôi</string>

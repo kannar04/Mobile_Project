@@ -25,6 +25,7 @@
             android:textColor="@color/anilove_text_dark" />
 
         <TextView
+            android:id="@+id/map_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
@@ -61,10 +62,11 @@
             android:textSize="14sp" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/map_scan"
             style="@style/AniLovePrimaryButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="Quét vị trí GPS quanh đây" />
+            android:text="@string/review_gps_scan" />
     </LinearLayout>
 </LinearLayout>

@@ -1,5 +1,11 @@
 <resources>
     <string name="pet_title">Thú cưng của bạn</string>
+    <string name="profile_pets_title">Thú cưng của tôi</string>
+    <string name="profile_pets_open">Mở danh sách thú cưng của tôi</string>
+    <string name="profile_pets_empty">Thêm thú cưng đầu tiên của bạn.</string>
+    <string name="profile_pets_load_failed">Chưa thể tải thú cưng. Danh sách sẽ thử lại khi bạn quay lại.</string>
+    <string name="profile_pet_unnamed">Thú cưng chưa đặt tên</string>
+    <string name="profile_pet_open">Mở hồ sơ của %1$s</string>
     <string name="pet_disclosure">Bản thử nghiệm. Thông tin tự khai; đăng ký hay xem xét không xác minh quyền sở hữu, không trao quyền thu hồi hoặc đảm bảo an toàn. Dùng lại mã thú cưng đã có. Bản sửa chỉ giữ trong bộ nhớ, có thể mất khi ứng dụng đóng.</string>
     <string name="pet_new">Đăng ký thú cưng mới</string>
     <string name="pet_refresh">Tải hồ sơ của tôi từ máy chủ</string>

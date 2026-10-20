@@ -44,7 +44,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Dữ liệu ngoại tuyến và đồng bộ"
+            android:text="@string/review_offline_title"
             android:textColor="@color/anilove_text_dark"
             android:textSize="16sp"
             android:textStyle="bold" />
@@ -53,7 +53,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="💾 Dung lượng Cache SQLite: 150MB"
+            android:text="@string/review_offline_body"
             android:textColor="@color/anilove_text_dark"
             android:textSize="14sp" />
 
@@ -61,7 +61,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="🔄 Trạng thái: Đã đồng bộ mới nhất"
+            android:text="Tự động đồng bộ khi có kết nối"
             android:textColor="@color/anilove_badge_green_text"
             android:textSize="14sp" />
 
@@ -71,6 +71,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Đồng bộ Ngay" />
+            android:text="Đồng bộ Ngay"
+            android:visibility="gone" />
     </LinearLayout>
 </LinearLayout>

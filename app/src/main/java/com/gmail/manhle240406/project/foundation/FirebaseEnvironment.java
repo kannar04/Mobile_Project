@@ -6,7 +6,7 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
-import com.google.firebase.firestore.MemoryCacheSettings;
+import com.google.firebase.firestore.PersistentCacheSettings;
 import com.gmail.manhle240406.project.BuildConfig;
 
 /** No cloud action until the course operator has verified the intended project. */
@@ -39,7 +39,8 @@ public final class FirebaseEnvironment {
             FirebaseAuth auth = FirebaseAuth.getInstance(app);
             FirebaseFirestore db = FirebaseFirestore.getInstance(app);
             db.setFirestoreSettings(new FirebaseFirestoreSettings.Builder()
-                    .setLocalCacheSettings(MemoryCacheSettings.newBuilder().build()).build());
+                    .setLocalCacheSettings(PersistentCacheSettings.newBuilder()
+                            .setSizeBytes(100L * 1024L * 1024L).build()).build());
             if (BuildConfig.FIREBASE_EMULATORS) {
                 // Android emulator reaches host loopback via this fixed alias; no user-supplied endpoints.
                 auth.useEmulator("10.0.2.2", 9199);

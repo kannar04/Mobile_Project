@@ -11,8 +11,8 @@
     <string name="profile_preview">Xem trước và công khai</string>
     <string name="profile_contact">Liên hệ riêng tư</string>
     <string name="profile_contact_help">Chỉ bạn xem được. Chưa chia sẻ với người nhận nuôi. Số do bạn cung cấp, chưa xác minh.</string>
-    <string name="profile_phone">Điện thoại · không bắt buộc</string>
-    <string name="profile_phone_help">Dạng + và 7–15 chữ số. Để trống và lưu để xóa số đã lưu.</string>
+    <string name="profile_phone">Số điện thoại riêng tư</string>
+    <string name="profile_phone_help">Nhập 0912345678 hoặc +84912345678. Số chỉ được xác minh bằng mã SMS và chỉ bắt buộc khi gửi yêu cầu nhận nuôi.</string>
     <string name="profile_save_contact">Lưu liên hệ riêng tư</string>
     <string name="profile_visibility">Hiển thị công khai</string>
     <string name="profile_visibility_help">Ẩn chặn lượt đọc mới sau khi máy chủ xác nhận. Không thu hồi ảnh chụp hoặc nội dung đã xem.</string>
@@ -33,7 +33,7 @@
     <string name="profile_discard_body">Bản đã lưu vẫn riêng tư. Yêu cầu đã gửi có thể hoàn tất sau khi bạn rời đi.</string>
     <string name="profile_name_error">Tên hiển thị phải có 2–40 ký tự.</string>
     <string name="profile_bio_error">Giới thiệu vượt quá 500 ký tự. Rút ngắn rồi thử lại.</string>
-    <string name="profile_invalid_phone">Nhập + và 7–15 chữ số, hoặc để trống để xóa.</string>
+    <string name="profile_invalid_phone">Nhập số Việt Nam dạng 0xxxxxxxxx hoặc +84xxxxxxxxx.</string>
     <string name="profile_sensitive">Có vẻ nội dung công khai chứa liên hệ hoặc địa chỉ. Xóa thông tin này trước khi gửi; kiểm tra thủ công vẫn cần thiết.</string>
     <string name="profile_save_first">Lưu bản nháp trước khi công khai.</string>
     <string name="profile_denied">Cần xác minh tài khoản và quyền tham gia. Hồ sơ bị hạn chế không thể công khai; bạn vẫn có thể lưu riêng hoặc ẩn.</string>

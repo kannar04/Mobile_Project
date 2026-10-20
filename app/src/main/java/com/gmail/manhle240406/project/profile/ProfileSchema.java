@@ -34,8 +34,23 @@ public final class ProfileSchema {
     public static boolean sensitive(Map<String,Object> map) {
         return CONTACT_PATTERN.matcher(map.get("displayName") + "\n" + map.get("bio")).find();
     }
-    public static String phone(String value) { String s=value.trim().replaceAll("[ ()\\-]", ""); return s.isEmpty()?null:s; }
-    public static boolean validPhone(Object value) { return value==null || value instanceof String && ((String)value).matches("\\+[0-9]{7,15}"); }
+    /** Normalizes Vietnamese mobile input without treating formatting as verification. */
+    public static String phone(String value) {
+        if(value==null)return null;
+        String s=value.trim().replaceAll("[\\s().-]", "");
+        if(s.isEmpty())return null;
+        if(s.startsWith("0084"))s="+84"+s.substring(4);
+        else if(s.startsWith("84"))s="+"+s;
+        else if(s.startsWith("0"))s="+84"+s.substring(1);
+        return s;
+    }
+    public static boolean validPhone(Object value) {
+        if(value==null)return true;
+        if(!(value instanceof String))return false;
+        String phone=(String)value;
+        // Current Vietnamese numbers contain nine national digits after +84 and do not start with zero.
+        return phone.matches("\\+84[1-9][0-9]{8}");
+    }
     public static boolean positive(Object n) { return n instanceof Long && (Long)n>0; }
     public static long version(Map<String,Object> record) { return record==null?0:(Long)record.get("version"); }
     public static boolean validRecord(Map<String,Object> m, Set<String> shape, String uid) {
