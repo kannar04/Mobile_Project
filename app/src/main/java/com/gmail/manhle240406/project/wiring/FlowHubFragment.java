@@ -3,6 +3,7 @@ package com.gmail.manhle240406.project.wiring;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.LinearLayout;
+import android.widget.GridLayout;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.activity.EdgeToEdge;
 import com.gmail.manhle240406.project.R;
@@ -19,20 +20,17 @@ public final class FlowHubFragment extends MainPageFragment {
         setContentView(root);
         SocialSurface.header(requireActivity(),root,group<0?R.string.flow_explore:FlowRoutes.GROUPS[group],this::finish);
         LinearLayout content=SocialSurface.content(requireActivity(),root);
-        if(group==5){android.view.View review=SocialViews.button(requireContext(),getString(R.string.ad_review),()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.adoption.ListingReviewActivity.class)));review.setTag("adoption_admin_review");content.addView(review);}
-        if(group==2){
-            content.addView(SocialViews.primaryButton(requireContext(),getString(R.string.ad_find),()->((com.gmail.manhle240406.project.MainActivity)requireActivity()).discovery("",false)));
-            content.addView(SocialSurface.quiet(requireContext(),getString(R.string.ad_new),()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.listing.ListingActivity.class))));
-            content.addView(SocialSurface.quiet(requireContext(),getString(R.string.ad_my_applications),()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.adoption.MyApplicationsActivity.class))));
-            content.addView(SocialSurface.quiet(requireContext(),getString(R.string.ad_owner_title),()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.listing.ListingActivity.class))));return;
-        }
-        if(group<0){for(int i=0;i<FlowRoutes.GROUPS.length;i++){
+        GridLayout grid=FlowGrid.create(requireContext());content.addView(grid,new LinearLayout.LayoutParams(-1,-2));
+        if(group==5)FlowGrid.add(grid,getString(R.string.ad_review),R.drawable.ic_shell_search,()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.adoption.ListingReviewActivity.class)),"adoption_admin_review");
+        if(group<0){
+            FlowGrid.add(grid,getString(R.string.pet_title),R.drawable.ic_pet_paw_vector,()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.pet.PetActivity.class)),"explore_pets");
+            FlowGrid.add(grid,getString(R.string.feedback_my_posts),R.drawable.ic_shell_photo,()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.community.SocialComposerActivity.class).putExtra("own",true)),"explore_listings");
+            FlowGrid.add(grid,getString(R.string.oc2_adoption_manager),R.drawable.ic_pet_paw_vector,()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.adoption.LifecycleActivity.class)),"explore_adoption_history");
+            for(int i=0;i<FlowRoutes.GROUPS.length;i++){
             final int selected=i;
-            android.view.View row=SocialViews.button(requireActivity(),getString(FlowRoutes.GROUPS[i]),()->((com.gmail.manhle240406.project.MainActivity)requireActivity()).navigate("tools:"+selected));
-            row.setTag("flow_group_"+i);content.addView(row);
+            FlowGrid.add(grid,getString(FlowRoutes.GROUPS[i]),FlowGrid.groupIcon(i),()->((com.gmail.manhle240406.project.MainActivity)requireActivity()).navigate("tools:"+selected),"flow_group_"+i);
         }}else for(FlowRoutes.Route route:FlowRoutes.ALL)if(route.group==group){
-            android.view.View row=SocialViews.button(requireActivity(),getString(route.title).replaceAll("\\s*\\(F[0-9]+\\)",""),()->open(route));
-            row.setTag("flow_"+route.feature);content.addView(row);
+            FlowGrid.add(grid,getString(route.title).replaceAll("\\s*\\(F[0-9]+\\)",""),FlowGrid.featureIcon(route.feature,route.group),()->open(route),"flow_"+route.feature);
         }
     }
     private void open(FlowRoutes.Route route){

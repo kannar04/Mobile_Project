@@ -56,7 +56,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:gravity="center"
-            android:text="Bản đồ Thú cưng &amp; Cửa hàng Quanh đây (F35)\n\nHiển thị vị trí GPS của các bé thú cưng, trạm cứu hộ và phòng khám thú y gần bạn."
+            android:text="Thú cưng và dịch vụ gần đây\n\nHiển thị vị trí của thú cưng, trạm cứu hộ, phòng khám thú y và cửa hàng gần bạn."
             android:textColor="@color/anilove_text_muted"
             android:textSize="14sp" />
 

@@ -65,7 +65,7 @@ public class LostAndFoundActivity extends AppCompatActivity {
             holder.text.setText(item);
             holder.itemView.setOnClickListener(v -> {
                 new MaterialAlertDialogBuilder(ctx)
-                    .setTitle("Thông báo Thất lạc & Tìm thấy (F32)")
+                    .setTitle("Thông báo thú cưng thất lạc")
                     .setMessage("Chi tiết thông báo: " + item + "\n\n- Gửi bằng chứng sở hữu để xác nhận.")
                     .setPositiveButton("Gửi bằng chứng", (d, w) -> Toast.makeText(ctx, "Đã gửi bằng chứng sở hữu", Toast.LENGTH_SHORT).show())
                     .setNegativeButton(android.R.string.cancel, null)

@@ -48,7 +48,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Chi tiết Sức khỏe &amp; Hành vi (F08 r3)"
+            android:text="Sức khỏe và hành vi"
                 android:textColor="@color/anilove_text_dark"
                 android:textSize="16sp"
                 android:textStyle="bold" />

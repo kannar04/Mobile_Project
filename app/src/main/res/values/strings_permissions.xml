@@ -54,4 +54,6 @@
     <string name="permissions_report_action_done">Đã xử lý nội dung</string>
     <string name="permissions_report_needs_support">Cần hỗ trợ xem xét</string>
     <string-array name="permissions_notice_types"><item>Nội dung của bạn</item><item>Tài khoản</item></string-array>
+    <string name="permissions_account_unavailable">Tài khoản này chưa sẵn sàng. Hãy đăng nhập lại hoặc liên hệ hỗ trợ nếu lỗi vẫn còn.</string>
+    <string name="permissions_not_participant">Bạn không thuộc hồ sơ nhận nuôi này.</string>
 </resources>

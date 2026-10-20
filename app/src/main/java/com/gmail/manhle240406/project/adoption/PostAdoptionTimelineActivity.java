@@ -67,7 +67,7 @@ public class PostAdoptionTimelineActivity extends AppCompatActivity {
             holder.text.setText(item);
             holder.itemView.setOnClickListener(v -> {
                 new MaterialAlertDialogBuilder(ctx)
-                    .setTitle("Nhật ký 90 ngày (F23)")
+                    .setTitle("Cập nhật trong 90 ngày")
                     .setMessage("Cập nhật trạng thái chăm sóc cho: " + item)
                     .setPositiveButton("Gửi cập nhật ảnh", (d, w) -> Toast.makeText(ctx, "Đã gửi nhật ký thành công", Toast.LENGTH_SHORT).show())
                     .setNegativeButton(android.R.string.cancel, null)

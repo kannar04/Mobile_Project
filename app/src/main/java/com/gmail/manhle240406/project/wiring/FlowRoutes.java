@@ -52,7 +52,7 @@ public final class FlowRoutes {
         page("F30",1,R.string.flow_inbox,InboxActivity.class),
         page("F31",1,R.string.social_title,SocialFeedActivity.class),
         page("F32",0,R.string.f32_title,LostAndFoundActivity.class),
-        page("F33",2,R.string.f33_title,FosteringActivity.class),
+        page("F33",3,R.string.f33_title,FosteringActivity.class),
         page("F34",2,R.string.f34_title,PetExchangeActivity.class),
         page("F35",0,R.string.f35_title,NearbyMapActivity.class),
         page("F36",3,R.string.f36_title,RemindersActivity.class),

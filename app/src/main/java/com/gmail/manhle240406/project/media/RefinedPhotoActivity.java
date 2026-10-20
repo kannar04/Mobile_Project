@@ -25,7 +25,7 @@ public class RefinedPhotoActivity extends AppCompatActivity {
 
         findViewById(R.id.refined_photo_back).setOnClickListener(v -> finish());
         findViewById(R.id.btn_pick_more_photos).setOnClickListener(v -> {
-            Toast.makeText(this, "Đã mở Photo Picker (F09 Refined)", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Đã mở trình chọn ảnh", Toast.LENGTH_SHORT).show();
             finish();
         });
     }

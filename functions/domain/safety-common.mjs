@@ -20,7 +20,7 @@ export async function capability(w,actor,name,{conflicts=[],reauth=false,now=Dat
 }
 export function party(record,uid){if(!record||![record.hostUid,record.applicantUid,record.caregiverUid,record.receiverUid,record.requesterUid].includes(uid))fail('not_participant');}
 export async function policy(w,field){const p=await w.get('safetyRuntimePolicy/current');if(p?.schemaVersion!==1||p[field]!==true)fail('adapter_not_enabled');return p;}
-export async function scopedRestriction(w,uid,scope){const d=await w.get(`accountRestrictionState/${uid}`);if(d&&(!integer(d.version)||!Array.isArray(d.scopes)||d.scopes.includes(scope)))fail('scoped_restriction');}
+export async function scopedRestriction(w,uid,scope){const d=await w.get(`accountRestrictionState/${uid}`);if(d&&(!integer(d.version)||!Array.isArray(d.scopes)||d.scopes.includes(scope)||d.scopes.includes('platform_access')))fail('scoped_restriction');}
 export class Commands {
  constructor(store,receiptCollection,specs,{clock=Date.now}={}){this.store=store;this.receipts=receiptCollection;this.specs=specs;this.clock=clock;}
  async execute(actor,input){

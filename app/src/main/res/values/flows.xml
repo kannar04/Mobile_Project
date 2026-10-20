@@ -2,11 +2,11 @@
 <resources>
     <string name="flow_explore">Khám phá và công cụ</string>
     <string name="flow_account">Tài khoản và cài đặt</string>
-    <string name="flow_discover">Tìm thú cưng</string>
-    <string name="flow_community">Cộng đồng</string>
-    <string name="flow_placement">Hành trình nhận nuôi</string>
+    <string name="flow_discover">Thú cưng và khám phá</string>
+    <string name="flow_community">Cộng đồng và liên lạc</string>
+    <string name="flow_placement">Nhận nuôi và chuyển giao</string>
     <string name="flow_care">Chăm sóc và hỗ trợ</string>
-    <string name="flow_operator">Công cụ người điều hành</string>
+    <string name="flow_operator">Quản trị và kiểm duyệt</string>
     <string name="flow_inbox">Thông báo</string>
     <string name="flow_change_password">Đổi mật khẩu</string>
     <string name="flow_delete_account">Xóa tài khoản</string>

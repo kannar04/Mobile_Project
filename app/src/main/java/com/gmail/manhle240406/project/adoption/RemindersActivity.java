@@ -65,7 +65,7 @@ public class RemindersActivity extends AppCompatActivity {
             holder.text.setText(item);
             holder.itemView.setOnClickListener(v -> {
                 new MaterialAlertDialogBuilder(ctx)
-                    .setTitle("Chi tiết Nhắc nhở (F36)")
+                    .setTitle("Chi tiết nhắc lịch")
                     .setMessage(item + "\n\n- Trạng thái: Sắp tới\n- Cài đặt nhắc nhở qua Push / Email.")
                     .setPositiveButton("Đã thực hiện", (d, w) -> Toast.makeText(ctx, "Đã đánh dấu hoàn thành lịch", Toast.LENGTH_SHORT).show())
                     .setNegativeButton(android.R.string.cancel, null)

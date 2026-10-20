@@ -96,8 +96,8 @@ export class MediaService {
     if(course){try{await ordinaryMember(w,{uid:actor.uid},{recovery:true});return true;}catch(e){if(['account_restricted','account_unavailable'].includes(e.message))return false;throw e;}}
     const [m,s]=await Promise.all([w.get('communityMemberships/'+actor.uid),w.get('securitySubjects/'+actor.uid)]);return m?.status==='active'&&s?.status==='active';
    }
-   try{await capability(w,{uid:actor.uid,emailVerified:actor.email_verified===true},'adoption_lifecycle',{conflicts:d.participantUids});}catch(e){if(['protected_account_ineligible','capability_or_conflict','scoped_restriction','account_unavailable'].includes(e.message))return false;throw e;}
-   const assignment=await w.get('adoptionFlowCases/'+id);return assignment?.assignedUid===actor.uid;
+   try{await capability(w,{uid:actor.uid,emailVerified:actor.email_verified===true},'adoption_lifecycle');}catch(e){if(['protected_account_ineligible','capability_or_conflict','scoped_restriction','account_unavailable'].includes(e.message))return false;throw e;}
+    return true;
   }
   if(a.targetId.startsWith('post:')){
    const id=a.targetId.slice(5),p=await this.read(tx,`communityPosts/${id}`),f=await this.read(tx,`communityFeed/${id}`);

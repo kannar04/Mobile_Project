@@ -60,8 +60,8 @@
     <string name="listing_closed_state">Đã đóng, không còn đề nghị</string>
     <string name="listing_archived_state">Đã lưu trữ</string>
     <string name="listing_candidate">Nội dung dự kiến · Không công khai\n%1$s\n%2$s\nKhu vực: %3$s\nLoại: Nhận nuôi\nChưa đủ chăm sóc/kiểm duyệt. Không phải bằng chứng quyền nuôi.</string>
-    <string name="listing_logout">Đăng xuất xóa các bản nháp riêng trên thiết bị, kể cả chưa đồng bộ. Bạn có thể lưu máy chủ trước khi đăng xuất.</string>
-    <string name="listing_logout_now">Đăng xuất và xóa bản trên thiết bị</string>
+    <string name="listing_logout">Bạn có muốn đăng xuất khỏi tài khoản này?</string>
+    <string name="listing_logout_now">Xác nhận</string>
     <string name="listing_logout_save">Mở tin để lưu máy chủ</string>
     <string name="listing_recovery">Có thao tác chưa rõ kết quả được giữ trên thiết bị. Kiểm tra kết quả trước khi chỉnh sửa hoặc tạo tin.</string>
     <string name="listing_no_receipt">Máy chủ chưa có kết quả cho mã này. Không tự tạo tin mới. Tải lại dữ liệu để xử lý bản nháp.</string>

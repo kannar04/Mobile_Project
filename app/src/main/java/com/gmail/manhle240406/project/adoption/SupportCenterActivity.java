@@ -66,7 +66,7 @@ public class SupportCenterActivity extends AppCompatActivity {
             holder.text.setText(item);
             holder.itemView.setOnClickListener(v -> {
                 new MaterialAlertDialogBuilder(ctx)
-                    .setTitle("Trung tâm Trợ giúp (F44)")
+                    .setTitle("Trợ giúp và hướng dẫn")
                     .setMessage("Đang xem hướng dẫn: " + item + "\n\n(Lưu ý: Phiên bản Thử nghiệm - Một số tính năng có thể chưa hoàn chỉnh. Liên hệ admin để được hỗ trợ trực tiếp.)")
                     .setPositiveButton("Đã hiểu", null)
                     .show();

@@ -27,7 +27,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            android:text="Bản tin Cộng đồng (F31)"
+            android:text="Bản tin cộng đồng"
             android:textColor="@color/anilove_text_dark"
             android:textSize="18sp"
             android:textStyle="bold" />

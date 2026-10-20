@@ -8,6 +8,8 @@ public class InboxContractTest {
         String id="11111111-1111-4111-a111-111111111111";
         assertTrue(InboxContract.route("comment","post",id,"comments_on_post"));
         assertTrue(InboxContract.route("own_intake","own_report",id,"report_received"));
+        assertTrue(InboxContract.route("adoption","adoption_request",id,"adoption_update"));
+        assertFalse(InboxContract.route("adoption","adoption_request",id,"direct_message"));
         assertFalse(InboxContract.route("comment","admin",id,"comments_on_post"));
         assertFalse(InboxContract.route("comment","post","https://example.org","comments_on_post"));
         assertFalse(InboxContract.route("reviewer","own_report",id,"report_received"));

@@ -20,25 +20,14 @@ import com.gmail.manhle240406.project.preferences.AppearanceRepository;
 import com.google.firebase.FirebaseApp;
 import java.util.concurrent.TimeUnit;
 
-/** Runs against the installed Spark APK. No account creation, email send, upload or billing action. */
+/** Runs against the installed Blaze course build. Server authorization remains authoritative. */
 @RunWith(AndroidJUnit4.class)
 public final class SparkWiringNativeTest {
     private AniloveApplication app(){return (AniloveApplication)InstrumentationRegistry.getInstrumentation().getTargetContext().getApplicationContext();}
-    @Test public void realProjectIsSelectedAndPaidCapabilitiesAreOff(){
+    @Test public void realProjectIsSelectedAndManagedClientsAreReachable(){
         assertEquals("aniloveproject",FirebaseApp.getInstance().getOptions().getProjectId());
         assertEquals("course_demo",app().foundation().alias);
-        assertFalse(SparkCapabilities.uploadsEnabled());assertFalse(SparkCapabilities.trustedCommandsEnabled());
-    }
-    @Test public void uploadRouteShowsPausedStateInsteadOfFakeProgress(){
-        try(ActivityScenario<PhotoGalleryActivity> screen=ActivityScenario.launch(PhotoGalleryActivity.class)){
-            onView(withText(R.string.wiring_uploads_paused)).check(matches(isDisplayed()));
-            screen.recreate();onView(withText(R.string.wiring_uploads_paused)).check(matches(isDisplayed()));
-        }
-    }
-    @Test public void managedRouteCannotShowSyntheticClaimSuccess(){
-        try(ActivityScenario<LostAndFoundActivity> screen=ActivityScenario.launch(LostAndFoundActivity.class)){
-            onView(withText(R.string.wiring_service_unavailable)).check(matches(isDisplayed()));
-        }
+        assertTrue(SparkCapabilities.uploadsEnabled());assertTrue(SparkCapabilities.trustedCommandsEnabled());assertTrue(SparkCapabilities.MANAGED_ROUTES.isEmpty());
     }
     @Test public void invalidRecoveryInputNeverClaimsAnEmailWasSent(){
         try(ActivityScenario<PasswordRecoveryActivity> screen=ActivityScenario.launch(PasswordRecoveryActivity.class)){

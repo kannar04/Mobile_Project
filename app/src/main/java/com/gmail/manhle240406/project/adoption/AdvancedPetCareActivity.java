@@ -25,7 +25,7 @@ public class AdvancedPetCareActivity extends AppCompatActivity {
 
         findViewById(R.id.advanced_pet_care_back).setOnClickListener(v -> finish());
         findViewById(R.id.btn_save_f08).setOnClickListener(v -> {
-            Toast.makeText(this, "Đã lưu thông tin sức khỏe & hành vi nâng cao (F08 r3)", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Đã lưu thông tin sức khỏe và hành vi", Toast.LENGTH_SHORT).show();
             finish();
         });
     }

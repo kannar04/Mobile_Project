@@ -9,7 +9,7 @@ import static org.junit.Assert.*;import static androidx.test.espresso.Espresso.*
  @Before public void begin(){uid=FirebaseAuth.getInstance().getUid();assertNotNull(uid);AdoptionApi.testTransport=null;}
  @After public void end(){assertEquals("Identity preserved",uid,FirebaseAuth.getInstance().getUid());}
  @Test public void bindInstallation(){((NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE)).cancelAll();try(ActivityScenario<NotificationSettingsActivity> s=ActivityScenario.launch(NotificationSettingsActivity.class)){
-  onView(withText(R.string.oc4_enable_notifications)).perform(scrollTo(),click());long end=SystemClock.elapsedRealtime()+60000;
+  s.onActivity(a->{androidx.appcompat.widget.SwitchCompat enabled=a.findViewById(R.id.notification_enabled_switch);if(!enabled.isChecked())enabled.performClick();else com.gmail.manhle240406.project.notifications.AdoptionPushService.enable(a,new android.widget.TextView(a));});long end=SystemClock.elapsedRealtime()+60000;
   while(SystemClock.elapsedRealtime()<end&&c.getSharedPreferences("adoption_push",0).getString("epoch",null)==null)SystemClock.sleep(200);
   assertNotNull("FCM challenge confirmed",c.getSharedPreferences("adoption_push",0).getString("epoch",null));
  }}

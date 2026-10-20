@@ -11,7 +11,7 @@ public final class InboxContract {
     public static boolean route(String kind,String route,String target,String template) {
         if(kind==null||route==null||template==null||target==null||target.length()>128)return false;
         boolean uuid=target.matches("[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}");
-        return (kind.equals("adoption")&&((route.equals("adoption")&&uuid)||(route.equals("inbox")&&target.equals("main")))&&template.equals("adoption_update"))
+        return (kind.equals("adoption")&&(((route.equals("adoption")||route.equals("adoption_request"))&&uuid)||(route.equals("inbox")&&target.equals("main")))&&template.equals("adoption_update"))
             ||(kind.equals("message")&&route.equals("direct")&&target.matches("[0-9a-f]{64}")&&template.equals("direct_message"))
             ||(kind.equals("like")&&route.equals("post")&&uuid&&template.equals("likes_on_post"))
             ||(kind.equals("pet_review")&&route.equals("pet")&&uuid&&(template.equals("pet_approved")||template.equals("pet_rejected")))

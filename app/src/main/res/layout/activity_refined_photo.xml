@@ -27,7 +27,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            android:text="Tải ảnh &amp; Thư viện Nâng cao (F09)"
+            android:text="Ảnh và thư viện"
             android:textColor="@color/anilove_text_dark"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -43,7 +43,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Trạng thái Tải lên Ảnh (F09 Refined)"
+            android:text="Trạng thái tải ảnh"
             android:textColor="@color/anilove_text_dark"
             android:textSize="16sp"
             android:textStyle="bold" />

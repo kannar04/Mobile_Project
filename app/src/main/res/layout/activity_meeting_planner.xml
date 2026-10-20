@@ -48,7 +48,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Lên lịch Đặt gặp &amp; Thỏa thuận (F20)"
+            android:text="Lịch gặp và thỏa thuận"
                 android:textColor="@color/anilove_text_dark"
                 android:textSize="16sp"
                 android:textStyle="bold" />

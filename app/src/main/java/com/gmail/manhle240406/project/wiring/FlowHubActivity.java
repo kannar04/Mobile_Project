@@ -3,6 +3,7 @@ package com.gmail.manhle240406.project.wiring;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.LinearLayout;
+import android.widget.GridLayout;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.activity.EdgeToEdge;
 import com.gmail.manhle240406.project.R;
@@ -18,13 +19,12 @@ public final class FlowHubActivity extends AppCompatActivity {
         LinearLayout root=SocialSurface.page(this);
         SocialSurface.header(this,root,group<0?R.string.flow_explore:FlowRoutes.GROUPS[group],this::finish);
         LinearLayout content=SocialSurface.content(this,root);
+        GridLayout grid=FlowGrid.create(this);content.addView(grid,new LinearLayout.LayoutParams(-1,-2));
         if(group<0){for(int i=0;i<FlowRoutes.GROUPS.length;i++){
             final int selected=i;
-            android.view.View row=SocialViews.button(this,getString(FlowRoutes.GROUPS[i]),()->startActivity(new Intent(this,FlowHubActivity.class).putExtra("group",selected)));
-            row.setTag("flow_group_"+i);content.addView(row);
+            FlowGrid.add(grid,getString(FlowRoutes.GROUPS[i]),FlowGrid.groupIcon(i),()->startActivity(new Intent(this,FlowHubActivity.class).putExtra("group",selected)),"flow_group_"+i);
         }}else for(FlowRoutes.Route route:FlowRoutes.ALL)if(route.group==group){
-            android.view.View row=SocialViews.button(this,getString(route.title).replaceAll("\\s*\\(F[0-9]+\\)",""),()->open(route));
-            row.setTag("flow_"+route.feature);content.addView(row);
+            FlowGrid.add(grid,getString(route.title).replaceAll("\\s*\\(F[0-9]+\\)",""),FlowGrid.featureIcon(route.feature,route.group),()->open(route),"flow_"+route.feature);
         }
     }
     private void open(FlowRoutes.Route route){

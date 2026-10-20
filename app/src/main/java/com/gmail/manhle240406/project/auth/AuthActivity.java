@@ -28,7 +28,6 @@ public final class AuthActivity extends AppCompatActivity {
         super.onCreate(saved);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_auth);
-        android.view.ViewGroup form=(android.view.ViewGroup)findViewById(R.id.auth_status).getParent();com.google.android.material.button.MaterialButton guest=new com.google.android.material.button.MaterialButton(this,null,com.google.android.material.R.attr.materialButtonOutlinedStyle);guest.setText(R.string.guest_stories);guest.setOnClickListener(v->startActivity(new android.content.Intent(this,com.gmail.manhle240406.project.community.GuestStoriesActivity.class)));form.addView(guest);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.auth_root), (view, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             Insets keyboard = insets.getInsets(WindowInsetsCompat.Type.ime());
@@ -55,10 +54,6 @@ public final class AuthActivity extends AppCompatActivity {
         button(R.id.auth_refresh).setOnClickListener(v -> coordinator.refreshVerification());
         button(R.id.auth_retry_setup).setOnClickListener(v -> coordinator.refreshReadiness());
         button(R.id.auth_back).setOnClickListener(v -> leave());
-        button(R.id.auth_visitor).setOnClickListener(v -> {
-            startActivity(new android.content.Intent(this, com.gmail.manhle240406.project.MainActivity.class));
-            finish();
-        });
         password.setOnEditorActionListener((v, action, event) -> {
             if (action == EditorInfo.IME_ACTION_DONE && !model.registering()) { submit(); return true; } return false;
         });

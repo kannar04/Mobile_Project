@@ -13,4 +13,8 @@ This project is currently a native Android starter using Java and XML layouts. P
 
 ## Requested-scope boundary — 14 October 2026
 
-Follow planning implementation/WORKFLOW.md v2.0. Bare implement-feature means non-UI domain/data code and applicable tests/audit only. Do not modify presentation/Figma/layouts/navigation or wire the main app unless explicitly requested. UI design, UI-code implementation and wiring are separate flows; UI requirement flags grant no execution permission.
+Follow planning implementation/WORKFLOW.md v2.1. Bare implement-feature means non-UI domain/data code and applicable tests/audit only. Do not modify presentation/Figma/layouts/navigation or wire the main app unless explicitly requested. UI design, UI-code implementation and wiring are separate flows; UI requirement flags grant no execution permission.
+
+## Focused verification — 20 October 2026
+
+Read planning `implementation/VERIFICATION.md` with the workflow. Default to checks for changed behavior; reuse applicable prior evidence, rerun only affected failures and stop when relevant checks pass. No full suite/device matrix/clean-build loop without concrete cause. Required authorization/data-integrity/native checks remain; report blocked required coverage honestly.

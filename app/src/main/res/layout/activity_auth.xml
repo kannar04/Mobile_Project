@@ -278,15 +278,6 @@
                 android:text="@string/auth_logout"
                 android:visibility="gone" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/auth_visitor"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textColor="@color/anilove_text_muted"
-                android:text="@string/auth_visitor" />
-
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

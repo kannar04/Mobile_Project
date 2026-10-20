@@ -8,6 +8,8 @@
  <string name="feedback_inbox_settings_help">Kết quả duyệt thú cưng và các cập nhật của bạn nằm trong hộp thông báo. Bạn có thể mở từng mục để xem chi tiết.</string>
  <string name="feedback_open_inbox">Mở hộp thông báo</string>
  <string name="feedback_device_notifications">Cài đặt thông báo trên thiết bị</string>
+ <string name="notifications_enabled">Thông báo</string>
+ <string name="notification_advanced">Cài đặt nâng cao</string>
  <string name="feedback_choose_pet">Chọn thú cưng đã được duyệt</string>
  <string name="feedback_no_approved_pet">Chưa có thú cưng đủ điều kiện. Đăng ký thú cưng và chờ duyệt trước khi đăng bài cho nuôi.</string>
  <string name="feedback_needs_adopter">Cần tìm người nhận nuôi</string>
@@ -15,7 +17,11 @@
  <string name="feedback_new_post">Viết bài mới</string>
  <string name="feedback_no_posts">Bạn chưa có bài viết nào. Chia sẻ câu chuyện đầu tiên của bạn.</string>
  <string name="feedback_open_post">Mở bài viết</string>
- <string name="feedback_my_posts">Bài viết của tôi</string>
+ <string name="feedback_my_posts">Lịch sử bài viết</string>
+ <string name="feedback_history_filter">Lọc lịch sử bài viết</string>
+ <string name="feedback_history_all">Tất cả bài viết</string>
+ <string name="feedback_history_community">Bài viết cộng đồng</string>
+ <string name="feedback_history_adoption">Bài viết nhận nuôi</string>
  <string name="feedback_received_requests">Yêu cầu nhận nuôi gửi đến bạn</string>
  <string name="feedback_private_contacts">Liên hệ riêng tư</string>
  <string name="feedback_done">Xong</string>
@@ -46,4 +52,6 @@
  <string-array name="feedback_genders"><item>Không cung cấp</item><item>Nam</item><item>Nữ</item></string-array>
  <string name="feedback_personal_saved">Đã lưu thông tin cá nhân.</string>
  <string name="feedback_contacts_empty">Chưa có liên hệ riêng tư. Khi bạn và chủ thú cưng được chọn để tiếp tục nhận nuôi, cuộc trò chuyện và thông tin liên hệ sẽ xuất hiện ở đây.</string>
+ <string name="notification_status_on">Thông báo đang được bật.</string>
+ <string name="notification_status_off">Thông báo đang được tắt. Bạn có thể thay đổi quyền trong cài đặt Android.</string>
 </resources>

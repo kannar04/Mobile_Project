@@ -23,6 +23,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean selecting;
     private String conversationId;
     private String toolsOrigin="home",discoveryOrigin="home";
+    private final java.util.ArrayDeque<String> navigationHistory=new java.util.ArrayDeque<>();
     private Bundle discoveryArgs=new Bundle();
     public void discovery(String search,boolean filters){discoveryArgs=new Bundle();discoveryArgs.putString("search",search);discoveryArgs.putBoolean("filters",filters);Fragment old=getSupportFragmentManager().findFragmentByTag("discovery");if(old!=null)getSupportFragmentManager().beginTransaction().remove(old).commitNow();navigate("discovery");}
     private com.gmail.manhle240406.project.profile.ProfileSetupViewModel profileGate;
@@ -53,12 +54,12 @@ public class MainActivity extends AppCompatActivity {
             if(state==null||state.uid==null){startActivity(new Intent(this,AuthActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));finish();}
             else if(profileGate!=null&&state.setupReady&&!state.pending&&!profileGate.checked&&!profileGate.busy&&profileGate.code==com.gmail.manhle240406.project.profile.ProfileRepository.Code.OK)profileGate.load();
         });
-        if(saved!=null){destination=saved.getString(PAGE,"home");notificationOrigin=saved.getString("notification_origin","home");toolsOrigin=saved.getString("tools_origin","home");discoveryOrigin=saved.getString("discovery_origin","home");discoveryArgs=saved.getBundle("discovery_args")==null?new Bundle():saved.getBundle("discovery_args");conversationId=saved.getString("conversation_id");}
+        if(saved!=null){destination=saved.getString(PAGE,"home");notificationOrigin=saved.getString("notification_origin","home");toolsOrigin=saved.getString("tools_origin","home");discoveryOrigin=saved.getString("discovery_origin","home");discoveryArgs=saved.getBundle("discovery_args")==null?new Bundle():saved.getBundle("discovery_args");conversationId=saved.getString("conversation_id");java.util.ArrayList<String> restored=saved.getStringArrayList("navigation_history");if(restored!=null)for(String page:restored)if(page!=null&&navigationHistory.size()<32)navigationHistory.addLast(page);}
         bottomNav.setOnItemSelectedListener(item->{if(selecting)return true;navigate(item.getItemId()==R.id.nav_favorites?"favorites":item.getItemId()==R.id.nav_chat?"chat":item.getItemId()==R.id.nav_profile?"profile":"home");return false;});
         bottomNav.setOnItemReselectedListener(item->{});
         getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){public void handleOnBackPressed(){
-            if("home".equals(destination)){setEnabled(false);getOnBackPressedDispatcher().onBackPressed();setEnabled(true);}
-            else navigate(parentPage());
+            if(navigationHistory.isEmpty()&&"home".equals(destination)){setEnabled(false);getOnBackPressedDispatcher().onBackPressed();setEnabled(true);}
+            else up();
         }});
         requestedPage=saved!=null?destination:getIntent().getStringExtra(PAGE)==null?destination:getIntent().getStringExtra(PAGE);
         readiness=com.gmail.manhle240406.project.community.SocialViews.column(this);
@@ -78,24 +79,26 @@ public class MainActivity extends AppCompatActivity {
         if(auth!=null&&auth.setupReady&&!profileGate.checked&&!profileGate.busy)profileGate.load();
     }
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);requestedPage=intent.getStringExtra(PAGE)==null?"home":intent.getStringExtra(PAGE);if(profileReady)navigate(requestedPage);}
-    @Override protected void onSaveInstanceState(Bundle out){out.putString("tools_origin",toolsOrigin);out.putString("discovery_origin",discoveryOrigin);out.putBundle("discovery_args",discoveryArgs);out.putString("conversation_id",conversationId);out.putString(PAGE,destination);out.putString("notification_origin",notificationOrigin);super.onSaveInstanceState(out);}
+    @Override protected void onSaveInstanceState(Bundle out){out.putString("tools_origin",toolsOrigin);out.putString("discovery_origin",discoveryOrigin);out.putBundle("discovery_args",discoveryArgs);out.putString("conversation_id",conversationId);out.putString(PAGE,destination);out.putString("notification_origin",notificationOrigin);out.putStringArrayList("navigation_history",new java.util.ArrayList<>(navigationHistory));super.onSaveInstanceState(out);}
     public void home(){navigate("home");}
-    private String parentPage(){if(destination.startsWith("direct:"))return "chat";return destination.startsWith("tools:")?"tools":destination.equals("discovery")?discoveryOrigin:destination.equals("tools")?toolsOrigin:destination.startsWith("conversation:")?"chat":destination.equals("notifications")?notificationOrigin:"home";}
-    public void up(){navigate(parentPage());}
-    public void conversation(String id){if(profileReady&&com.gmail.manhle240406.project.profile.ProfileSchema.validOperationId(id)){conversationId=id;show("conversation:"+id);}}
+    public void up(){if(isFinishing()||isDestroyed())return;Fragment current=getSupportFragmentManager().getPrimaryNavigationFragment();Runnable back=()->{String previous=navigationHistory.pollLast();if(previous==null){if(!"home".equals(destination))show("home",false);else finish();}else show(previous,false);};if(current instanceof MainPageFragment)((MainPageFragment)current).leave(back);else back.run();}
+    public void conversation(String id){if(profileReady&&com.gmail.manhle240406.project.profile.ProfileSchema.validOperationId(id)){conversationId=id;show("conversation:"+id,true);}}
     public void navigate(String requested){
         if(isFinishing()||isDestroyed())return;
         if(!profileReady){requestedPage=requested;return;}
-        if(requested!=null&&requested.matches("direct:[a-f0-9]{64}")){show(requested);return;}
+        if(requested!=null&&requested.matches("direct:[a-f0-9]{64}")){show(requested,true);return;}
+        if(requested!=null&&requested.startsWith("adoption-chat:")&&com.gmail.manhle240406.project.profile.ProfileSchema.validOperationId(requested.substring("adoption-chat:".length()))){show(requested,true);return;}
         if(requested!=null&&requested.startsWith("conversation:")&&com.gmail.manhle240406.project.profile.ProfileSchema.validOperationId(requested.substring("conversation:".length())))conversationId=requested.substring("conversation:".length());
-        if(requested!=null&&requested.startsWith("conversation:")&&com.gmail.manhle240406.project.profile.ProfileSchema.validOperationId(conversationId)){show("conversation:"+conversationId);return;}
+        if(requested!=null&&requested.startsWith("conversation:")&&com.gmail.manhle240406.project.profile.ProfileSchema.validOperationId(conversationId)){show("conversation:"+conversationId,true);return;}
         final String page=java.util.Arrays.asList("home","favorites","chat","profile","notifications","discovery","tools","tools:0","tools:1","tools:2","tools:3","tools:4","tools:5").contains(requested)?requested:"home";
         Fragment current=getSupportFragmentManager().getPrimaryNavigationFragment();
-        Runnable change=()->show(page);
+        Runnable change=()->show(page,true);
         if(!page.equals(destination)&&current instanceof MainPageFragment)((MainPageFragment)current).leave(change);else change.run();
     }
-    private void show(String page){
+    private void show(String page){show(page,true);}
+    private void show(String page,boolean rememberCurrent){
         FragmentManager fm=getSupportFragmentManager();if(fm.isStateSaved())return;
+        if(rememberCurrent&&!page.equals(destination)){if(navigationHistory.size()>=32)navigationHistory.removeFirst();navigationHistory.addLast(destination);}
         if(!page.equals(destination)&&getCurrentFocus()!=null){View focus=getCurrentFocus();((android.view.inputmethod.InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(focus.getWindowToken(),0);focus.clearFocus();}
         if(page.equals("notifications")&&!destination.equals("notifications"))notificationOrigin=destination;
         if(page.equals("tools")&&!destination.equals(page)&&!destination.startsWith("tools:")&&!destination.equals("discovery"))toolsOrigin=destination;
@@ -107,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
             else tx.hide(f).setMaxLifecycle(f,androidx.lifecycle.Lifecycle.State.STARTED);
         }
         if(next==null){
-            next=page.startsWith("direct:")?com.gmail.manhle240406.project.community.DirectConversationFragment.create(page.substring(7)):page.equals("discovery")?new com.gmail.manhle240406.project.adoption.DiscoveryFragment():page.startsWith("tools")?new com.gmail.manhle240406.project.wiring.FlowHubFragment():page.startsWith("conversation:")?com.gmail.manhle240406.project.community.ConversationFragment.create(conversationId):page.equals("favorites")?new com.gmail.manhle240406.project.adoption.FavoritesLibraryFragment()
+            next=page.startsWith("direct:")?com.gmail.manhle240406.project.community.DirectConversationFragment.create(page.substring(7)):page.startsWith("adoption-chat:")?com.gmail.manhle240406.project.community.ConversationFragment.createFlow(page.substring("adoption-chat:".length())):page.equals("discovery")?new com.gmail.manhle240406.project.adoption.DiscoveryFragment():page.startsWith("tools")?new com.gmail.manhle240406.project.wiring.FlowHubFragment():page.startsWith("conversation:")?com.gmail.manhle240406.project.community.ConversationFragment.create(conversationId):page.equals("favorites")?new com.gmail.manhle240406.project.adoption.FavoritesLibraryFragment()
                 :page.equals("profile")?new com.gmail.manhle240406.project.profile.ProfileFragment()
                 :page.equals("notifications")?new com.gmail.manhle240406.project.notifications.InboxFragment()
                 :page.equals("chat")?new com.gmail.manhle240406.project.community.ConversationsFragment():new HomeFragment();
@@ -118,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
         tx.setMaxLifecycle(next,androidx.lifecycle.Lifecycle.State.RESUMED).setPrimaryNavigationFragment(next).commitNow();
         destination=page;selecting=true;
         String selected=page.startsWith("tools")?toolsOrigin:page.equals("discovery")?(discoveryOrigin.startsWith("tools")?toolsOrigin:discoveryOrigin):page;
-        bottomNav.setSelectedItemId(selected.equals("favorites")?R.id.nav_favorites:(selected.equals("chat")||selected.startsWith("conversation:")||selected.startsWith("direct:"))?R.id.nav_chat:selected.equals("profile")?R.id.nav_profile:R.id.nav_home);
+        bottomNav.setSelectedItemId(selected.equals("favorites")?R.id.nav_favorites:(selected.equals("chat")||selected.startsWith("conversation:")||selected.startsWith("direct:")||selected.startsWith("adoption-chat:"))?R.id.nav_chat:selected.equals("profile")?R.id.nav_profile:R.id.nav_home);
         selecting=false;
     }
     public String destination(){return destination;}

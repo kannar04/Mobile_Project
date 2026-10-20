@@ -64,7 +64,7 @@ public class PlacementReviewsActivity extends AppCompatActivity {
             holder.text.setText(item);
             holder.itemView.setOnClickListener(v -> {
                 new MaterialAlertDialogBuilder(ctx)
-                    .setTitle("Chi tiết Đánh giá (F28)")
+                    .setTitle("Chi tiết đánh giá")
                     .setMessage(item + "\n\nNhận xét chi tiết: Thủ tục nhận nuôi nhanh chóng, minh bạch.")
                     .setPositiveButton(android.R.string.ok, null)
                     .show();

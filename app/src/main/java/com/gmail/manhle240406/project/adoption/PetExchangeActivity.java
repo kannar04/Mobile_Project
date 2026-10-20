@@ -65,7 +65,7 @@ public class PetExchangeActivity extends AppCompatActivity {
             holder.text.setText(item);
             holder.itemView.setOnClickListener(v -> {
                 new MaterialAlertDialogBuilder(ctx)
-                    .setTitle("Trao đổi Thú cưng (F34)")
+                    .setTitle("Trao đổi thú cưng")
                     .setMessage(item + "\n\n- Thỏa thuận: Kiểm tra sức khỏe -> Bàn giao phụ kiện -> Xác nhận bốn bên.")
                     .setPositiveButton("Gửi đề nghị đổi", (d, w) -> Toast.makeText(ctx, "Đã gửi đề nghị trao đổi", Toast.LENGTH_SHORT).show())
                     .setNegativeButton(android.R.string.cancel, null)

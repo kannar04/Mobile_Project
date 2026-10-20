@@ -65,7 +65,7 @@ public class FosteringActivity extends AppCompatActivity {
             holder.text.setText(item);
             holder.itemView.setOnClickListener(v -> {
                 new MaterialAlertDialogBuilder(ctx)
-                    .setTitle("Chăm sóc Tạm thời (F33)")
+                    .setTitle("Chăm sóc tạm thời")
                     .setMessage("Chi tiết Fostering: " + item + "\n\n- Timeline: Nhận thú cưng -> Cập nhật hằng ngày -> Bàn giao lại.")
                     .setPositiveButton("Chấp nhận giữ chỗ", (d, w) -> Toast.makeText(ctx, "Đã chấp nhận giữ chỗ fostering", Toast.LENGTH_SHORT).show())
                     .setNegativeButton(android.R.string.cancel, null)
