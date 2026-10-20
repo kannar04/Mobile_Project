@@ -1,62 +1,957 @@
 package com.gmail.manhle240406.project.community;
+
+import static com.gmail.manhle240406.project.community.SocialRepository.*;
+import static com.gmail.manhle240406.project.community.SocialViews.*;
+
 import android.os.Bundle;
 import android.text.*;
 import android.widget.*;
 import androidx.activity.*;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
+import com.gmail.manhle240406.project.AniloveApplication;
+import com.gmail.manhle240406.project.R;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
-import com.gmail.manhle240406.project.AniloveApplication;
-import com.gmail.manhle240406.project.R;
 import java.util.*;
-import static com.gmail.manhle240406.project.community.SocialViews.*;
-import static com.gmail.manhle240406.project.community.SocialRepository.*;
 
 public final class SocialComposerActivity extends AppCompatActivity {
-    private DailyViewModel model;private LinearLayout col;private TextInputEditText body;private TextView notice,audience;private MaterialButton save,publish,retryButton,reconcileButton,restartButton,compareButton,accountButton,ownerButton;private androidx.appcompat.app.AlertDialog dialog;private boolean rendering;private Spinner illustration;
-    @Override public void onCreate(Bundle state){super.onCreate(state);EdgeToEdge.enable(this);model=new ViewModelProvider(this).get(DailyViewModel.class);if(model.lost){finish();return;}LinearLayout outer=column(this);install(this,outer);insets(outer);ScrollView scroll=new ScrollView(this);outer.addView(scroll,new LinearLayout.LayoutParams(-1,-1));col=column(this);scroll.addView(col);col.addView(text(this,getString(R.string.social_compose),true));col.addView(button(this,getString(R.string.social_close),this::leave));
-        if(getIntent().getBooleanExtra("own",false)){own(false);return;}
-        String id=getIntent().getStringExtra("post");if(model.postId==null)model.identify(id==null?UUID.randomUUID().toString():id);
-        audience=text(this,getString(R.string.social_only_me),false);col.addView(audience);body=field(this,col,getString(R.string.social_body),6);body.setText(model.body);body.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int st,int count,int after){}public void afterTextChanged(Editable e){}public void onTextChanged(CharSequence s,int st,int before,int count){if(!rendering){model.body=s.toString();model.dirty=true;}}});
-        TextView label=text(this,getString(R.string.social_illustration),false);col.addView(label);illustration=new Spinner(this);illustration.setMinimumHeight(dp(this,48));illustration.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,getResources().getStringArray(R.array.community_illustrations)));col.addView(illustration);label.setLabelFor(android.view.View.generateViewId());illustration.setId(label.getLabelFor());illustration.setSelection(model.illustration);illustration.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){public void onItemSelected(AdapterView<?> p,android.view.View v,int position,long row){if(!rendering&&position!=model.illustration){model.illustration=position;model.dirty=true;}}public void onNothingSelected(AdapterView<?> p){}});
-        notice=text(this,"",false);notice.setAccessibilityLiveRegion(android.view.View.ACCESSIBILITY_LIVE_REGION_POLITE);col.addView(notice);save=button(this,getString(R.string.social_save_private),()->save(false));publish=primaryButton(this,getString(R.string.social_publish),()->preview());col.addView(publish);col.addView(save);ownerButton=button(this,getString(R.string.social_menu),this::ownerOptions);col.addView(ownerButton);accountButton=button(this,getString(R.string.auth_entry),()->startActivity(new android.content.Intent(this,com.gmail.manhle240406.project.auth.AuthActivity.class)));col.addView(accountButton);compareButton=button(this,getString(R.string.profile_resolve_conflict),this::compare);col.addView(compareButton);retryButton=button(this,getString(R.string.social_retry),model::retry);col.addView(retryButton);reconcileButton=button(this,getString(R.string.social_reconcile),model::reconcile);col.addView(reconcileButton);restartButton=button(this,getString(R.string.social_restart),model::abandonCold);col.addView(restartButton);
-        model.changes.observe(this,x->render());getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){public void handleOnBackPressed(){leave();}});
-        if(id!=null&&model.root==null)loadOwner(id);model.read("system/communityPolicy",p->{publish.setTag(p!=null&&Boolean.TRUE.equals(p.get("enabled")));render();});
-        if(model.restored)model.reconcile();privateView(outer);
+  private com.gmail.manhle240406.project.media.PostPhotoEditor photos;
+  private LinearLayout requirementFields;
+  private AuthorLookup ownAuthors;
+  private int ownFilter;
+  private final java.util.List<android.view.View> ownCards = new java.util.ArrayList<>();
+  private Spinner illustration, audiencePicker;
+  private com.google.android.material.materialswitch.MaterialSwitch typePicker;
+  private MaterialButton listingPicker;
+  private DailyViewModel model;
+  private LinearLayout col;
+  private TextInputEditText body;
+  private TextView notice, audience, counter;
+  private MaterialButton save,
+      publish,
+      retryButton,
+      reconcileButton,
+      restartButton,
+      compareButton,
+      accountButton,
+      ownerButton;
+  private androidx.appcompat.app.AlertDialog dialog;
+  private boolean rendering;
+  private long pickerGeneration;
+
+  @Override
+  public void onCreate(Bundle state) {
+    super.onCreate(state);
+    EdgeToEdge.enable(this);
+    model = new ViewModelProvider(this).get(DailyViewModel.class);
+    if (model.lost) {
+      finish();
+      return;
     }
-    private void own(boolean next){if(model.busy)return;model.busy=true;model.social.own(model.ticket.uid,next?model.cursor:null).addOnCompleteListener(t->{if(!model.current())return;model.busy=false;if(!t.isSuccessful()){col.addView(button(this,getString(R.string.social_retry),()->own(next)));return;}col.removeAllViews();col.addView(text(this,getString(R.string.social_drafts),true));col.addView(button(this,getString(R.string.social_close),this::finish));for(com.google.firebase.firestore.DocumentSnapshot d:t.getResult()){String label=Long.valueOf(2).equals(d.get("schemaVersion"))?("visible".equals(d.getString("visibility"))?getString(R.string.social_audience):getString(R.string.social_only_me)):getString(R.string.social_legacy);col.addView(button(this,label,()->{if(Long.valueOf(2).equals(d.get("schemaVersion")))startActivity(new android.content.Intent(this,SocialComposerActivity.class).putExtra("post",d.getId()));else legacy(d.getId());}));}java.util.List<com.google.firebase.firestore.DocumentSnapshot> docs=t.getResult().getDocuments();model.cursor=docs.size()==20?docs.get(19):null;if(model.cursor!=null)col.addView(button(this,getString(R.string.social_more),()->own(true)));});}
-    private void loadOwner(String id){model.read("communityPosts/"+id,p->{model.root=p;if(p!=null)model.read("communityPosts/"+id+"/revisions/"+p.get("currentRevisionId"),r->{if(r!=null)showRevision(r);});});}
-    void showRevision(Map<String,Object> revision){
-        model.body=(String)revision.get("body");
-        model.illustration=CommunitySchema.ILLUSTRATIONS.indexOf(revision.get("bundledIllustrationKey"));
-        rendering=true;
-        body.setText(model.body);
-        illustration.setSelection(model.illustration);
-        rendering=false;
-        model.dirty=false;
+    if (state == null && model.body.isEmpty() && getIntent().getStringExtra("initial_body") != null)
+      model.body = getIntent().getStringExtra("initial_body");
+    if (state == null && getIntent().getBooleanExtra("adoption", false)) model.adoption = true;
+    LinearLayout outer = SocialSurface.page(this);
+    SocialSurface.header(
+        this,
+        outer,
+        getIntent().getBooleanExtra("own", false)
+            ? R.string.feedback_my_posts
+            : R.string.ui_write_post,
+        this::leave);
+    col = SocialSurface.content(this, outer);
+    TextView heading = text(this, getString(R.string.ui_write_prompt), true);
+    heading.setTextAppearance(
+        com.google.android.material.R.style.TextAppearance_Material3_HeadlineSmall);
+    if (!getIntent().getBooleanExtra("own", false)) col.addView(heading);
+    SocialSurface.gap(col, 8);
+    if (getIntent().getBooleanExtra("own", false)) {
+      own(false);
+      return;
     }
-    private void save(boolean visible){if(!CommunitySchema.fields(CommunitySchema.fields(model.body.trim(),CommunitySchema.ILLUSTRATIONS.get(model.illustration)))){body.setError(getString(R.string.community_invalid));body.requestFocus();return;}Map<String,Object> r=model.root;String cmd=r==null?"create_private":visible?"edit_visible":"edit_private";model.send(new SocialCommand(cmd,model.postId,null,number(r,"contentVersion"),number(r,"controlVersion"),0,CommunitySchema.fields(model.body.trim(),CommunitySchema.ILLUSTRATIONS.get(model.illustration)),UUID.randomUUID().toString()));}
-    private void preview(){
-        String story=model.body.trim();Map<String,Object> content=CommunitySchema.fields(story,CommunitySchema.ILLUSTRATIONS.get(model.illustration));
-        if(!CommunitySchema.fields(content)){body.setError(getString(R.string.community_invalid));body.requestFocus();return;}
-        dialog=new MaterialAlertDialogBuilder(this).setTitle(R.string.social_audience).setMessage(story+"\n\n"+getString(R.string.social_no_contact)).setPositiveButton(R.string.social_publish,(d,w)->{
-            if(model.root==null){Map<String,Object> input=new HashMap<>(content);input.put("consent",true);model.send(new SocialCommand("publish",model.postId,null,0,0,0,input,UUID.randomUUID().toString()));}
-            else if(model.dirty)model.send(new SocialCommand("edit_visible",model.postId,null,number(model.root,"contentVersion"),number(model.root,"controlVersion"),0,content,UUID.randomUUID().toString()));
-            else model.send(new SocialCommand(model.root.get("firstPublishedAt")==null?"publish":"show",model.postId,null,number(model.root,"contentVersion"),number(model.root,"controlVersion"),0,map("consent",true),UUID.randomUUID().toString()));
-        }).setNegativeButton(android.R.string.cancel,null).show();
+    String id = getIntent().getStringExtra("post");
+    if (model.postId == null) model.identify(id == null ? UUID.randomUUID().toString() : id);
+    typePicker = new com.google.android.material.materialswitch.MaterialSwitch(this);
+    typePicker.setId(R.id.post_type_picker);
+    typePicker.setText(R.string.feedback_needs_adopter);
+    typePicker.setMinimumHeight(dp(this, 48));
+    typePicker.setChecked(model.adoption);
+    col.addView(typePicker);
+    col.addView(SocialSurface.muted(this, getString(R.string.feedback_adoption_switch_help)));
+    listingPicker =
+        SocialSurface.quiet(
+            this,
+            getString(
+                Boolean.TRUE.equals(model.participation.get("simplified"))
+                    ? R.string.permissions_choose_pet
+                    : R.string.feedback_choose_pet),
+            () -> listingPage(null));
+    listingPicker.setId(R.id.adoption_listing_action);
+    col.addView(listingPicker);
+    typePicker.setOnCheckedChangeListener(
+        (button, on) -> {
+          if (model.adoption != on) {
+            model.adoption = on;
+            model.dirty = true;
+            if (!on && photos != null) photos.model.clearPetPhotos();
+          }
+          if (on && audiencePicker != null) audiencePicker.setSelection(1);
+          if (publish != null) render();
+        });
+    audience = text(this, getString(R.string.community_audience_label), false);
+    col.addView(audience);
+    audiencePicker = new Spinner(this);
+    audiencePicker.setMinimumHeight(dp(this, 48));
+    audiencePicker.setId(android.view.View.generateViewId());
+    audience.setLabelFor(audiencePicker.getId());
+    audiencePicker.setAdapter(
+        new ArrayAdapter<>(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            getResources().getStringArray(R.array.community_audiences)));
+    Integer chosen = model.saved.get("audience_choice");
+    audiencePicker.setSelection(chosen == null ? 0 : chosen);
+    audiencePicker.setOnItemSelectedListener(
+        new AdapterView.OnItemSelectedListener() {
+          public void onItemSelected(
+              AdapterView<?> p, android.view.View v, int position, long row) {
+            model.saved.set("audience_choice", position);
+          }
+
+          public void onNothingSelected(AdapterView<?> p) {}
+        });
+    col.addView(audiencePicker);
+    body = field(this, col, getString(R.string.ui_story_label), 7);
+    body.setId(R.id.social_body_input);
+    body.setHint(null);
+    com.google.android.material.textfield.TextInputLayout storyField =
+        (com.google.android.material.textfield.TextInputLayout) body.getParent().getParent();
+    storyField.setExpandedHintEnabled(false);
+    storyField.setPlaceholderText(getString(R.string.ui_write_hint));
+    body.setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyLarge);
+    body.setText(model.body);
+    counter =
+        SocialSurface.muted(
+            this,
+            getString(R.string.ui_char_count, model.body.codePointCount(0, model.body.length())));
+    counter.setGravity(android.view.Gravity.END);
+    col.addView(counter);
+    body.addTextChangedListener(
+        new TextWatcher() {
+          public void beforeTextChanged(CharSequence s, int st, int count, int after) {}
+
+          public void afterTextChanged(Editable e) {}
+
+          public void onTextChanged(CharSequence s, int st, int before, int count) {
+            if (!rendering) {
+              model.body = s.toString();
+              model.dirty = true;
+              counter.setText(
+                  getString(
+                      R.string.ui_char_count, model.body.codePointCount(0, model.body.length())));
+            }
+          }
+        });
+    requirementFields = column(this);
+    col.addView(requirementFields);
+    for (String key : new String[] {"temperament", "careRequirements", "adoptionRequirements"}) {
+      int labelId =
+          key.equals("temperament")
+              ? R.string.lc_temperament
+              : key.equals("careRequirements") ? R.string.lc_care : R.string.lc_requirements;
+      TextInputEditText input = field(this, requirementFields, getString(labelId), 3);
+      input.setTag("adoption_" + key);
+      input.setText(model.adoptionRequirements.getOrDefault(key, ""));
+      input.setFilters(new InputFilter[] {new InputFilter.LengthFilter(2000)});
+      input.addTextChangedListener(
+          new TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int a, int c, int f) {}
+
+            public void afterTextChanged(Editable e) {}
+
+            public void onTextChanged(CharSequence s, int a, int b, int c) {
+              model.adoptionRequirements.put(key, s.toString());
+              model.dirty = true;
+            }
+          });
     }
-    private void ownerOptions(){if(model.root==null||model.busy||model.pending!=null)return;android.widget.PopupMenu menu=new android.widget.PopupMenu(this,notice);menu.getMenu().add(0,1,0,R.string.community_hide);menu.getMenu().add(0,2,1,R.string.social_delete);menu.getMenu().add(0,3,2,R.string.community_history);menu.setOnMenuItemClickListener(item->{if(item.getItemId()==3){history(null);return true;}Runnable commit=()->model.send(new SocialCommand(item.getItemId()==1?"hide":"archive",model.postId,null,number(model.root,"contentVersion"),number(model.root,"controlVersion"),0,Collections.emptyMap(),UUID.randomUUID().toString()));if(item.getItemId()==2)dialog=new MaterialAlertDialogBuilder(this).setMessage(R.string.social_delete_help).setPositiveButton(R.string.social_delete,(d,w)->commit.run()).setNegativeButton(android.R.string.cancel,null).show();else commit.run();return true;});menu.show();}
-    private void history(com.google.firebase.firestore.DocumentSnapshot start){model.social.revisions(model.postId,start).addOnCompleteListener(t->{if(!model.current()||isDestroyed()||isFinishing())return;if(!t.isSuccessful()){notice.setText(R.string.social_unavailable);return;}LinearLayout content=column(this);for(com.google.firebase.firestore.DocumentSnapshot row:t.getResult())content.addView(SocialViews.text(this,getString(R.string.social_edited)+" · "+row.get("contentVersion")+"\n"+row.getString("body"),false));java.util.List<com.google.firebase.firestore.DocumentSnapshot> rows=t.getResult().getDocuments();ScrollView scroll=new ScrollView(this);scroll.addView(content);privateView(scroll);MaterialAlertDialogBuilder builder=new MaterialAlertDialogBuilder(this).setTitle(R.string.community_history).setView(scroll).setPositiveButton(android.R.string.ok,null);if(rows.size()==20)builder.setNeutralButton(R.string.social_more,(d,w)->history(rows.get(19)));dialog=builder.show();});}
-    private void legacy(String id){model.read("communityPosts/"+id,r->{if(r==null||!CommunitySchema.root(r,id)||!model.ticket.uid.equals(r.get("authorUid"))||isDestroyed())return;model.read("communityPosts/"+id+"/revisions/"+r.get("currentRevisionId"),v->{if(v==null||isDestroyed())return;dialog=new MaterialAlertDialogBuilder(this).setTitle(R.string.social_legacy).setMessage((String)v.get("body")).setPositiveButton(android.R.string.ok,null).show();});});}
-    private void compare(){if(model.busy||model.restored)return;final String candidate=model.body;model.read("communityPosts/"+model.postId,r->{if(r==null)return;model.read("communityPosts/"+model.postId+"/revisions/"+r.get("currentRevisionId"),v->{if(v==null)return;dialog=new MaterialAlertDialogBuilder(this).setTitle(R.string.social_conflict).setMessage(getString(R.string.community_server_label)+"\n"+v.get("body")+"\n\n"+getString(R.string.community_candidate_label)+"\n"+candidate).setPositiveButton(R.string.community_keep,(d,w)->{model.clearKnownFailure();if(model.pending==null){model.root=r;model.body=candidate;model.dirty=true;model.changed();}}).setNegativeButton(R.string.community_reload,(d,w)->{model.clearKnownFailure();if(model.pending==null)loadOwner(model.postId);}).show();});});}
-    private void render(){if(model.lost){if(dialog!=null)dialog.dismiss();finish();return;}if(body==null)return;boolean locked=model.busy||model.pending!=null||model.restored;body.setEnabled(!locked);com.gmail.manhle240406.project.auth.AuthState auth=((AniloveApplication)getApplication()).auth().state().getValue();boolean ready=auth!=null&&auth.communityReady();boolean archived=model.root!=null&&"archived".equals(model.root.get("lifecycle"));body.setEnabled(!locked&&!archived);illustration.setEnabled(!locked&&!archived);save.setEnabled(!locked&&ready&&!archived);publish.setEnabled(!locked&&!archived&&Boolean.TRUE.equals(publish.getTag())&&ready);retryButton.setVisibility(model.pending!=null?android.view.View.VISIBLE:android.view.View.GONE);retryButton.setEnabled(!model.busy);
-        reconcileButton.setVisibility(model.pending!=null||model.restored?android.view.View.VISIBLE:android.view.View.GONE);reconcileButton.setEnabled(!model.busy);
-        restartButton.setVisibility(model.restored&&"not_committed".equals(model.notice)?android.view.View.VISIBLE:android.view.View.GONE);
-        compareButton.setVisibility("conflict".equals(model.notice)||"not_committed".equals(model.notice)?android.view.View.VISIBLE:android.view.View.GONE);
-        ownerButton.setVisibility(model.root!=null?android.view.View.VISIBLE:android.view.View.GONE);accountButton.setVisibility(!ready?android.view.View.VISIBLE:android.view.View.GONE);
-        notice.setText(DailyCopy.notice(this,model.notice));if(model.committed){model.committed=false;loadOwner(model.postId);}audience.setText(model.root!=null&&"visible".equals(model.root.get("visibility"))?R.string.social_audience:R.string.social_only_me);}
-    private void leave(){if(!model.dirty){finish();return;}dialog=new MaterialAlertDialogBuilder(this).setTitle(R.string.community_leave).setPositiveButton(R.string.social_save_private,(d,w)->save(false)).setNegativeButton(R.string.community_discard,(d,w)->finish()).setNeutralButton(R.string.community_cancel,null).show();}
-    @Override protected void onDestroy(){if(dialog!=null)dialog.dismiss();super.onDestroy();}
+    com.gmail.manhle240406.project.adoption.AdoptionApi.call("flowRead", map("kind", "readiness"))
+        .addOnSuccessListener(
+            r -> {
+              if (model.current() && !isDestroyed()) {
+                model.participation = r;
+                render();
+              }
+            });
+    SocialSurface.gap(col, 20);
+    TextView label = text(this, getString(R.string.ui_illustration), true);
+    if (id != null) col.addView(label);
+    illustration = new Spinner(this);
+    illustration.setMinimumHeight(dp(this, 48));
+    illustration.setAdapter(
+        new ArrayAdapter<>(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            getResources().getStringArray(R.array.community_illustrations)));
+    if (id != null) col.addView(illustration);
+    label.setLabelFor(android.view.View.generateViewId());
+    illustration.setId(R.id.social_illustration_picker);
+    label.setLabelFor(illustration.getId());
+    illustration.setSelection(model.illustration);
+    illustration.setOnItemSelectedListener(
+        new AdapterView.OnItemSelectedListener() {
+          public void onItemSelected(
+              AdapterView<?> p, android.view.View v, int position, long row) {
+            model.illustration = position;
+          }
+
+          public void onNothingSelected(AdapterView<?> p) {}
+        });
+    photos =
+        new com.gmail.manhle240406.project.media.PostPhotoEditor(
+            this,
+            col,
+            () -> {
+              model.dirty = true;
+              if (publish != null) render();
+            });
+    notice = text(this, "", false);
+    notice.setAccessibilityLiveRegion(android.view.View.ACCESSIBILITY_LIVE_REGION_POLITE);
+    col.addView(notice);
+    save = SocialSurface.quiet(this, getString(R.string.social_save_private), () -> save(false));
+    save.setId(R.id.social_save_action);
+    publish = primaryButton(this, getString(R.string.social_publish), () -> preview());
+    publish.setId(R.id.social_publish_action);
+    SocialSurface.gap(col, 16);
+    col.addView(publish);
+    ((com.google.android.material.appbar.MaterialToolbar) outer.getChildAt(0))
+        .addView(
+            save,
+            new com.google.android.material.appbar.MaterialToolbar.LayoutParams(
+                -2, -2, android.view.Gravity.END));
+    ownerButton = button(this, getString(R.string.social_menu), this::ownerOptions);
+    col.addView(ownerButton);
+    accountButton = button(this, getString(R.string.profile_verify_email), this::verification);
+    col.addView(accountButton);
+    compareButton = button(this, getString(R.string.profile_resolve_conflict), this::compare);
+    col.addView(compareButton);
+    retryButton = button(this, getString(R.string.social_retry), model::retry);
+    col.addView(retryButton);
+    reconcileButton = button(this, getString(R.string.social_reconcile), model::reconcile);
+    col.addView(reconcileButton);
+    restartButton = button(this, getString(R.string.social_restart), model::abandonCold);
+    col.addView(restartButton);
+    model.changes.observe(this, x -> render());
+    ((AniloveApplication) getApplication()).auth().state().observe(this, x -> render());
+    getOnBackPressedDispatcher()
+        .addCallback(
+            this,
+            new OnBackPressedCallback(true) {
+              public void handleOnBackPressed() {
+                leave();
+              }
+            });
+    if (id != null && model.root == null) loadOwner(id);
+    model.read(
+        "system/communityPolicy",
+        p -> {
+          publish.setTag(p != null && Boolean.TRUE.equals(p.get("enabled")));
+          render();
+        });
+    if (model.restored) model.reconcile();
+    privateView(outer);
+    if (state == null && getIntent().getBooleanExtra("select_photos", false))
+      outer.post(photos::select);
+  }
+
+  private void own(boolean next) {
+    if (model.busy) return;
+    model.busy = true;
+    model
+        .social
+        .own(model.ticket.uid, next ? model.cursor : null)
+        .addOnCompleteListener(
+            t -> {
+              if (!model.current() || isDestroyed()) return;
+              model.busy = false;
+              if (!t.isSuccessful()) {
+                col.addView(button(this, getString(R.string.social_retry), () -> own(next)));
+                return;
+              }
+              col.removeAllViews();
+              ownCards.clear();
+              if (ownAuthors == null) ownAuthors = new AuthorLookup(model.sessions);
+              col.addView(
+                  primaryButton(
+                      this,
+                      getString(R.string.feedback_new_post),
+                      () ->
+                          startActivity(
+                              new android.content.Intent(this, SocialComposerActivity.class))));
+              Spinner filter = new Spinner(this);
+              filter.setId(R.id.oc3_post_filter);
+              filter.setMinimumHeight(dp(this, 48));
+              filter.setAdapter(
+                  new ArrayAdapter<>(
+                      this,
+                      android.R.layout.simple_spinner_dropdown_item,
+                      new String[] {
+                        getString(R.string.oc3_all_posts),
+                        getString(R.string.oc3_social_posts),
+                        getString(R.string.oc3_adoption_posts)
+                      }));
+              filter.setSelection(ownFilter);
+              col.addView(filter);
+              filter.setOnItemSelectedListener(
+                  new AdapterView.OnItemSelectedListener() {
+                    public void onItemSelected(
+                        AdapterView<?> p, android.view.View v, int n, long id) {
+                      ownFilter = n;
+                      for (android.view.View card : ownCards) {
+                        boolean adoption = Boolean.TRUE.equals(card.getTag(R.id.post_type_picker));
+                        card.setVisibility(
+                            n == 0 || adoption == (n == 2)
+                                ? android.view.View.VISIBLE
+                                : android.view.View.GONE);
+                      }
+                    }
+
+                    public void onNothingSelected(AdapterView<?> p) {}
+                  });
+              if (t.getResult().isEmpty())
+                col.addView(SocialSurface.muted(this, getString(R.string.feedback_no_posts)));
+              for (com.google.firebase.firestore.DocumentSnapshot d : t.getResult()) {
+                SocialPostCard card = new SocialPostCard(this);
+                card.setTag(R.id.post_type_picker, "adoption".equals(d.get("type")));
+                ownCards.add(card);
+                col.addView(card);
+                Map<String, Object> data = new HashMap<>(d.getData());
+                Runnable open =
+                    () ->
+                        startActivity(
+                            new android.content.Intent(this, SocialComposerActivity.class)
+                                .putExtra("post", d.getId()));
+                card.bind(data, d.getId(), ownAuthors, null, model, false, open);
+                String revision = d.getString("currentRevisionId");
+                if (revision != null)
+                  model
+                      .social
+                      .read("communityPosts/" + d.getId() + "/revisions/" + revision)
+                      .addOnSuccessListener(
+                          r -> {
+                            if (!model.current() || isDestroyed() || !r.exists()) return;
+                            data.putAll(r.getData());
+                            data.put("visibility", d.get("visibility"));
+                            data.put("type", d.get("type"));
+                            data.put("authorUid", d.get("authorUid"));
+                            card.bind(data, d.getId(), ownAuthors, null, model, false, open);
+                          });
+              }
+              java.util.List<com.google.firebase.firestore.DocumentSnapshot> docs =
+                  t.getResult().getDocuments();
+              model.cursor = docs.size() == 20 ? docs.get(19) : null;
+              if (model.cursor != null)
+                col.addView(button(this, getString(R.string.social_more), () -> own(true)));
+            });
+  }
+
+  private void loadOwner(String id) {
+    model.read(
+        "communityPosts/" + id,
+        p -> {
+          model.root = p;
+          if (p != null && Long.valueOf(6).equals(p.get("schemaVersion"))) {
+            model.adoption = true;
+            model.selectedListing = new HashMap<>();
+            for (String key :
+                java.util.Arrays.asList(
+                    "listingId", "listingContentVersion", "listingPublicationVersion"))
+              model.selectedListing.put(key, p.get(key));
+            typePicker.setChecked(true);
+          }
+          if (p != null) {
+            audiencePicker.setSelection("everyone".equals(p.get("audience")) ? 0 : 1);
+            audiencePicker.setEnabled(false);
+          }
+          if (p != null)
+            model.read(
+                "communityPosts/" + id + "/revisions/" + p.get("currentRevisionId"),
+                r -> {
+                  if (r != null) {
+                    photos.model.restore(r.get("mediaAssetIds"));
+                    model.body = (String) r.get("body");
+                    model.illustration =
+                        CommunitySchema.ILLUSTRATIONS.indexOf(r.get("bundledIllustrationKey"));
+                    rendering = true;
+                    illustration.setSelection(Math.max(0, model.illustration));
+                    body.setText(model.body);
+                    rendering = false;
+                    model.dirty = false;
+                  }
+                });
+        });
+  }
+
+  private void save(boolean visible) {
+    if (!listingReady()) return;
+    if (!CommunitySchema.fields(
+        CommunitySchema.fields(
+            model.body.trim(), CommunitySchema.ILLUSTRATIONS.get(model.illustration)))) {
+      body.setError(getString(R.string.community_invalid));
+      body.requestFocus();
+      return;
+    }
+    Map<String, Object> r = model.root;
+    String cmd = r == null ? "create_private" : visible ? "edit_visible" : "edit_private";
+    model.send(
+        new SocialCommand(
+            cmd,
+            model.postId,
+            null,
+            number(r, "contentVersion"),
+            number(r, "controlVersion"),
+            0,
+            photoContent(
+                CommunitySchema.fields(
+                    model.body.trim(), CommunitySchema.ILLUSTRATIONS.get(model.illustration))),
+            UUID.randomUUID().toString()));
+  }
+
+  private void preview() {
+    preview(false);
+  }
+
+  private void preview(boolean termsAccepted) {
+    if (!listingReady()) return;
+    if (model.adoption
+        && model.root == null
+        && Boolean.TRUE.equals(model.participation.get("simplified"))) {
+      if (model.selectedListing == null || !model.selectedListing.containsKey("listingId"))
+        for (String key : new String[] {"temperament", "careRequirements", "adoptionRequirements"})
+          if (model.adoptionRequirements.getOrDefault(key, "").trim().isEmpty()) {
+            notice.setText(R.string.permissions_listing_fields);
+            notice.setVisibility(android.view.View.VISIBLE);
+            android.view.View missing = requirementFields.findViewWithTag("adoption_" + key);
+            if (missing instanceof TextInputEditText) {
+              ((TextInputEditText) missing).setError(getString(R.string.ad_required));
+              missing.requestFocus();
+            }
+            return;
+          }
+      if (!termsAccepted && !Boolean.TRUE.equals(model.participation.get("terms"))) {
+        dialog =
+            new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.lc_terms)
+                .setMessage(String.valueOf(model.participation.get("termsText")))
+                .setPositiveButton(R.string.permissions_agree_continue, (d, w) -> preview(true))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+        return;
+      }
+    }
+    String story = model.body.trim();
+    Map<String, Object> content =
+        CommunitySchema.fields(story, CommunitySchema.ILLUSTRATIONS.get(model.illustration));
+    if (!CommunitySchema.fields(content)) {
+      body.setError(getString(R.string.community_invalid));
+      body.requestFocus();
+      return;
+    }
+    content = photoContent(content);
+    final Map<String, Object> finalContent = content;
+    Map<String, Object> previewData = new HashMap<>(content);
+    previewData.put("authorUid", model.ticket.uid);
+    SocialPostCard previewCard = new SocialPostCard(this);
+    if (ownAuthors == null) ownAuthors = new AuthorLookup(model.sessions);
+    previewCard.bind(previewData, model.postId, ownAuthors, null, null, true, null);
+    ScrollView previewScroll = new ScrollView(this);
+    previewScroll.addView(previewCard);
+    dialog =
+        new MaterialAlertDialogBuilder(this)
+            .setTitle(
+                audiencePicker.getSelectedItemPosition() == 0
+                    ? R.string.community_everyone
+                    : R.string.social_audience)
+            .setView(previewScroll)
+            .setPositiveButton(
+                R.string.social_publish,
+                (d, w) -> {
+                  if (model.root == null) {
+                    Map<String, Object> input = new HashMap<>(finalContent);
+                    input.put("consent", true);
+                    if (audiencePicker.getSelectedItemPosition() == 0)
+                      input.put("audience", "everyone");
+                    model.send(
+                        new SocialCommand(
+                            "publish",
+                            model.postId,
+                            null,
+                            0,
+                            0,
+                            0,
+                            input,
+                            UUID.randomUUID().toString()));
+                  } else if (model.dirty)
+                    model.send(
+                        new SocialCommand(
+                            "edit_visible",
+                            model.postId,
+                            null,
+                            number(model.root, "contentVersion"),
+                            number(model.root, "controlVersion"),
+                            0,
+                            finalContent,
+                            UUID.randomUUID().toString()));
+                  else
+                    model.send(
+                        new SocialCommand(
+                            model.root.get("firstPublishedAt") == null ? "publish" : "show",
+                            model.postId,
+                            null,
+                            number(model.root, "contentVersion"),
+                            number(model.root, "controlVersion"),
+                            0,
+                            map("consent", true),
+                            UUID.randomUUID().toString()));
+                })
+            .setNegativeButton(android.R.string.cancel, null)
+            .show();
+  }
+
+  private void ownerOptions() {
+    if (model.root == null || model.busy || model.pending != null) return;
+    android.widget.PopupMenu menu = new android.widget.PopupMenu(this, notice);
+    boolean shown = "visible".equals(model.root.get("visibility"));
+    if (!"archived".equals(model.root.get("lifecycle")))
+      menu.getMenu().add(0, 1, 0, shown ? R.string.community_hide : R.string.profile_show);
+    menu.getMenu().add(0, 2, 1, R.string.social_delete);
+    menu.getMenu().add(0, 3, 2, R.string.community_history);
+    menu.setOnMenuItemClickListener(
+        item -> {
+          if (item.getItemId() == 3) {
+            history(null);
+            return true;
+          }
+          Runnable commit =
+              () ->
+                  model.send(
+                      new SocialCommand(
+                          item.getItemId() == 1 ? (shown ? "hide" : "show") : "archive",
+                          model.postId,
+                          null,
+                          number(model.root, "contentVersion"),
+                          number(model.root, "controlVersion"),
+                          0,
+                          item.getItemId() == 1 && !shown
+                              ? map("consent", true)
+                              : Collections.emptyMap(),
+                          UUID.randomUUID().toString()));
+          if (item.getItemId() == 2)
+            dialog =
+                new MaterialAlertDialogBuilder(this)
+                    .setMessage(R.string.social_delete_help)
+                    .setPositiveButton(R.string.social_delete, (d, w) -> commit.run())
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show();
+          else commit.run();
+          return true;
+        });
+    menu.show();
+  }
+
+  private void history(com.google.firebase.firestore.DocumentSnapshot start) {
+    model
+        .social
+        .revisions(model.postId, start)
+        .addOnCompleteListener(
+            t -> {
+              if (!model.current() || isDestroyed() || isFinishing()) return;
+              if (!t.isSuccessful()) {
+                notice.setText(R.string.social_unavailable);
+                return;
+              }
+              LinearLayout content = column(this);
+              for (com.google.firebase.firestore.DocumentSnapshot row : t.getResult())
+                content.addView(
+                    SocialViews.text(
+                        this,
+                        getString(R.string.social_edited)
+                            + " · "
+                            + row.get("contentVersion")
+                            + "\n"
+                            + row.getString("body"),
+                        false));
+              java.util.List<com.google.firebase.firestore.DocumentSnapshot> rows =
+                  t.getResult().getDocuments();
+              ScrollView scroll = new ScrollView(this);
+              scroll.addView(content);
+              privateView(scroll);
+              MaterialAlertDialogBuilder builder =
+                  new MaterialAlertDialogBuilder(this)
+                      .setTitle(R.string.community_history)
+                      .setView(scroll)
+                      .setPositiveButton(android.R.string.ok, null);
+              if (rows.size() == 20)
+                builder.setNeutralButton(R.string.social_more, (d, w) -> history(rows.get(19)));
+              dialog = builder.show();
+            });
+  }
+
+  private void legacy(String id) {
+    model.read(
+        "communityPosts/" + id,
+        r -> {
+          if (r == null
+              || !CommunitySchema.root(r, id)
+              || !model.ticket.uid.equals(r.get("authorUid"))
+              || isDestroyed()) return;
+          model.read(
+              "communityPosts/" + id + "/revisions/" + r.get("currentRevisionId"),
+              v -> {
+                if (v == null || isDestroyed()) return;
+                dialog =
+                    new MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.social_legacy)
+                        .setMessage((String) v.get("body"))
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show();
+              });
+        });
+  }
+
+  private void compare() {
+    if (model.busy || model.restored) return;
+    final String candidate = model.body;
+    model.read(
+        "communityPosts/" + model.postId,
+        r -> {
+          if (r == null) return;
+          model.read(
+              "communityPosts/" + model.postId + "/revisions/" + r.get("currentRevisionId"),
+              v -> {
+                if (v == null) return;
+                dialog =
+                    new MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.social_conflict)
+                        .setMessage(
+                            getString(R.string.community_server_label)
+                                + "\n"
+                                + v.get("body")
+                                + "\n\n"
+                                + getString(R.string.community_candidate_label)
+                                + "\n"
+                                + candidate)
+                        .setPositiveButton(
+                            R.string.community_keep,
+                            (d, w) -> {
+                              model.clearKnownFailure();
+                              if (model.pending == null) {
+                                model.root = r;
+                                model.body = candidate;
+                                model.dirty = true;
+                                model.changed();
+                              }
+                            })
+                        .setNegativeButton(
+                            R.string.community_reload,
+                            (d, w) -> {
+                              model.clearKnownFailure();
+                              if (model.pending == null) loadOwner(model.postId);
+                            })
+                        .show();
+              });
+        });
+  }
+
+  private boolean listingReady() {
+    if (!model.adoption || model.selectedListing != null) return true;
+    notice.setText(R.string.feed_listing_required);
+    notice.setVisibility(android.view.View.VISIBLE);
+    listingPicker.requestFocus();
+    return false;
+  }
+
+  private void listingPage(java.util.Map<String, Object> cursor) {
+    if (!model.current() || !model.adoption) return;
+    long request = ++pickerGeneration;
+    notice.setText(R.string.wiring_loading);
+    notice.setVisibility(android.view.View.VISIBLE);
+    com.gmail.manhle240406.project.adoption.OwnedPets.read(
+            model.sessions, 20, cursor == null ? null : String.valueOf(cursor.get("petsAfter")))
+        .addOnCompleteListener(
+            done -> {
+              if (!model.current()
+                  || isFinishing()
+                  || isDestroyed()
+                  || request != pickerGeneration
+                  || !model.adoption) return;
+              notice.setText("");
+              LinearLayout choices = column(this);
+              TextView feedback = SocialSurface.muted(this, "");
+              choices.addView(feedback);
+              int eligible = 0;
+              if (done.isSuccessful())
+                for (Map<String, Object> pet :
+                    com.gmail.manhle240406.project.adoption.AdoptionFlowModel.rows(
+                        done.getResult().get("pets"))) {
+                  Map<String, Object> claim =
+                      com.gmail.manhle240406.project.adoption.AdoptionFlowModel.object(
+                          pet.get("claim"));
+                  if (!java.util.Arrays.asList("accepted_for_demo", "self_declared_for_demo")
+                      .contains(claim.get("reviewState"))) continue;
+                  if (Boolean.TRUE.equals(model.participation.get("simplified"))
+                      && com.gmail.manhle240406.project.adoption.AdoptionFlowModel.object(
+                              pet.get("offering"))
+                          .isEmpty()
+                      && com.gmail.manhle240406.project.media.MediaGrid.ids(
+                              pet.get("photoAssetIds"))
+                          .isEmpty()) continue;
+                  eligible++;
+                  Map<String, Object> identity =
+                      com.gmail.manhle240406.project.adoption.AdoptionFlowModel.object(
+                          pet.get("identity"));
+                  String name = String.valueOf(identity.getOrDefault("displayName", ""));
+                  choices.addView(
+                      button(
+                          this,
+                          name
+                              + " · "
+                              + String.valueOf(identity.getOrDefault("breed", ""))
+                              + " · "
+                              + String.valueOf(identity.getOrDefault("sex", "unknown")),
+                          () -> {
+                            model.selectedListing = map("petId", pet.get("petId"), "petName", name);
+                            model.selectedListing.putAll(
+                                com.gmail.manhle240406.project.adoption.AdoptionFlowModel.object(
+                                    pet.get("offering")));
+                            if (photos != null) photos.model.merge(pet.get("photoAssetIds"));
+                            model.dirty = true;
+                            if (dialog != null) dialog.dismiss();
+                            render();
+                          }));
+                }
+              if (eligible == 0)
+                feedback.setText(
+                    done.isSuccessful()
+                        ? (Boolean.TRUE.equals(model.participation.get("simplified"))
+                            ? R.string.permissions_no_pet
+                            : R.string.feedback_no_approved_pet)
+                        : R.string.feed_listing_unavailable);
+              choices.addView(
+                  button(
+                      this,
+                      getString(R.string.ad_add_pet),
+                      () ->
+                          startActivity(
+                              new android.content.Intent(
+                                  this, com.gmail.manhle240406.project.pet.PetActivity.class))));
+              if (!done.isSuccessful())
+                choices.addView(
+                    button(
+                        this,
+                        getString(R.string.social_retry),
+                        () -> {
+                          if (dialog != null) dialog.dismiss();
+                          col.post(() -> listingPage(cursor));
+                        }));
+              ScrollView scroll = new ScrollView(this);
+              scroll.addView(choices);
+              MaterialAlertDialogBuilder builder =
+                  new MaterialAlertDialogBuilder(this)
+                      .setTitle(R.string.feedback_choose_pet)
+                      .setView(scroll)
+                      .setNegativeButton(android.R.string.cancel, null);
+              if (done.isSuccessful() && done.getResult().get("nextPets") != null)
+                builder.setNeutralButton(
+                    R.string.social_more,
+                    (d, w) ->
+                        col.post(
+                            () -> listingPage(map("petsAfter", done.getResult().get("nextPets")))));
+              dialog = builder.show();
+              dialog.setOnDismissListener(
+                  d -> {
+                    if (pickerGeneration == request) pickerGeneration++;
+                  });
+            });
+  }
+
+  private void verification() {
+    dialog =
+        new MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.profile_verify_email)
+            .setMessage(R.string.profile_email_unverified)
+            .setPositiveButton(
+                R.string.profile_verify_email,
+                (d, w) -> ((AniloveApplication) getApplication()).auth().sendVerification())
+            .setNeutralButton(
+                R.string.profile_refresh_verification,
+                (d, w) -> ((AniloveApplication) getApplication()).auth().refreshVerification())
+            .setNegativeButton(android.R.string.cancel, null)
+            .show();
+  }
+
+  private Map<String, Object> photoContent(Map<String, Object> content) {
+    Map<String, Object> out = new HashMap<>(content);
+    if (model.adoption) {
+      out.put("type", "adoption");
+      if (model.selectedListing != null) out.putAll(model.selectedListing);
+      out.remove("petName");
+      out.put("audience", "community");
+      if (model.root == null && Boolean.TRUE.equals(model.participation.get("simplified"))) {
+        Map<String, Object> requirements = new HashMap<>();
+        requirements.put("description", model.body.trim());
+        for (String key : new String[] {"temperament", "careRequirements", "adoptionRequirements"})
+          requirements.put(key, model.adoptionRequirements.getOrDefault(key, "").trim());
+        out.put("listingRequirements", requirements);
+        out.put(
+            "participationConsent",
+            map(
+                "termsVersion",
+                model.participation.get("termsVersion"),
+                "termsHash",
+                model.participation.get("termsHash")));
+      }
+    }
+    if (photos != null
+        && (!photos.model.entries.isEmpty()
+            || model.root != null && Long.valueOf(5).equals(model.root.get("schemaVersion")))) {
+      out.put("mediaAssetIds", photos.model.ids());
+      if (!photos.model.entries.isEmpty()) out.put("bundledIllustrationKey", null);
+    }
+    return out;
+  }
+
+  private void render() {
+    if (model.lost) {
+      if (dialog != null) dialog.dismiss();
+      finish();
+      return;
+    }
+    if (body == null) return;
+    boolean locked = model.busy || model.pending != null || model.restored;
+    if (requirementFields != null) {
+      requirementFields.setVisibility(
+          model.adoption
+                  && model.root == null
+                  && (model.selectedListing == null
+                      || !model.selectedListing.containsKey("listingId"))
+                  && Boolean.TRUE.equals(model.participation.get("simplified"))
+              ? android.view.View.VISIBLE
+              : android.view.View.GONE);
+      for (int i = 0; i < requirementFields.getChildCount(); i++)
+        requirementFields.getChildAt(i).setEnabled(!locked);
+    }
+    body.setEnabled(!locked);
+    com.gmail.manhle240406.project.auth.AuthState auth =
+        ((AniloveApplication) getApplication()).auth().state().getValue();
+    boolean ready = auth != null && auth.communityReady();
+    boolean archived = model.root != null && "archived".equals(model.root.get("lifecycle"));
+    body.setEnabled(!locked && !archived);
+    illustration.setEnabled(!locked && !archived);
+    audiencePicker.setVisibility(
+        model.adoption ? android.view.View.GONE : android.view.View.VISIBLE);
+    audiencePicker.setEnabled(!locked && !archived && model.root == null && !model.adoption);
+    typePicker.setEnabled(!locked && !archived && model.root == null);
+    listingPicker.setVisibility(
+        model.adoption ? android.view.View.VISIBLE : android.view.View.GONE);
+    listingPicker.setEnabled(!locked && !archived);
+    listingPicker.setText(
+        model.selectedListing != null && model.selectedListing.get("petName") != null
+            ? getString(R.string.feed_listing_selected, model.selectedListing.get("petName"))
+            : getString(
+                Boolean.TRUE.equals(model.participation.get("simplified"))
+                    ? R.string.permissions_choose_pet
+                    : R.string.feedback_choose_pet));
+    save.setVisibility(
+        model.adoption && model.root == null ? android.view.View.GONE : android.view.View.VISIBLE);
+    save.setEnabled(!locked && ready && !archived && (photos == null || photos.model.ready()));
+    publish.setEnabled(!locked && !archived && ready && (photos == null || photos.model.ready()));
+    retryButton.setVisibility(
+        model.pending != null ? android.view.View.VISIBLE : android.view.View.GONE);
+    retryButton.setEnabled(!model.busy);
+    reconcileButton.setVisibility(
+        model.pending != null || model.restored
+            ? android.view.View.VISIBLE
+            : android.view.View.GONE);
+    reconcileButton.setEnabled(!model.busy);
+    restartButton.setVisibility(
+        model.restored && "not_committed".equals(model.notice)
+            ? android.view.View.VISIBLE
+            : android.view.View.GONE);
+    compareButton.setVisibility(
+        "conflict".equals(model.notice) || "not_committed".equals(model.notice)
+            ? android.view.View.VISIBLE
+            : android.view.View.GONE);
+    ownerButton.setVisibility(
+        model.root != null ? android.view.View.VISIBLE : android.view.View.GONE);
+    accountButton.setVisibility(
+        auth != null && (!auth.verified || !auth.verificationKnown)
+            ? android.view.View.VISIBLE
+            : android.view.View.GONE);
+    notice.setText(
+        model.notice.isEmpty() && Boolean.TRUE.equals(publish.getTag())
+            ? ""
+            : DailyCopy.notice(this, model.notice));
+    if (!ready && auth != null && model.notice.isEmpty()) {
+      if (auth.verified && auth.verificationKnown)
+        notice.setText(
+            auth.membership
+                    == com.gmail.manhle240406.project.foundation.MembershipRepository.State
+                        .RESTRICTED
+                ? R.string.auth_restricted
+                : R.string.auth_setup_pending);
+      else if (auth.notice == com.gmail.manhle240406.project.auth.AuthState.Notice.SENT)
+        notice.setText(R.string.auth_send_success);
+      else if (auth.notice == com.gmail.manhle240406.project.auth.AuthState.Notice.SEND_FAILED)
+        notice.setText(R.string.auth_send_error);
+      else if (auth.notice == com.gmail.manhle240406.project.auth.AuthState.Notice.COOLDOWN)
+        notice.setText(R.string.auth_cooldown);
+    }
+    SocialSurface.hideEmpty(notice);
+    counter.setText(
+        getString(R.string.ui_char_count, model.body.codePointCount(0, model.body.length())));
+    if ("queued".equals(model.notice)) {
+      model.dirty = false;
+      setResult(RESULT_OK);
+      finish();
+      return;
+    }
+    if (model.committed) {
+      model.committed = false;
+      if (model.adoption) com.gmail.manhle240406.project.adoption.OwnedPets.clear();
+      if (java.util.Arrays.asList("publish", "edit_visible", "show", "hide", "archive")
+          .contains(model.lastCommittedCommand)) {
+        model.dirty = false;
+        setResult(RESULT_OK);
+        finish();
+        return;
+      }
+      loadOwner(model.postId);
+    }
+    audience.setText(
+        model.adoption ? R.string.feed_adoption_audience : R.string.community_audience_label);
+  }
+
+  private void leave() {
+    if (!model.dirty) {
+      finish();
+      return;
+    }
+    dialog =
+        new MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.community_leave)
+            .setPositiveButton(R.string.social_save_private, (d, w) -> save(false))
+            .setNegativeButton(R.string.community_discard, (d, w) -> finish())
+            .setNeutralButton(R.string.community_cancel, null)
+            .show();
+  }
+
+  @Override
+  protected void onDestroy() {
+    if (dialog != null) dialog.dismiss();
+    if (ownAuthors != null) ownAuthors.close();
+    super.onDestroy();
+  }
 }

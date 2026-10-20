@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/pet_care_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/anilove_bg"
+    android:fillViewport="true"
+>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+    >
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+        >
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/pet_care_back"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:text="@string/auth_back"
+                android:textColor="@color/anilove_text_dark"
+            />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="@string/pet_care_title"
+                android:textColor="@color/anilove_text_dark"
+                android:textSize="18sp"
+                android:textStyle="bold"
+            />
+        </RelativeLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/anilove_card_bg"
+            android:orientation="vertical"
+            android:padding="20dp"
+        >
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Thông tin Sức khỏe &amp; Tiêm phòng"
+                android:textColor="@color/anilove_text_dark"
+                android:textSize="16sp"
+                android:textStyle="bold"
+            />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switch_vaccinated"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:minHeight="48dp"
+                android:text="Đã tiêm phòng đầy đủ"
+                android:textColor="@color/anilove_text_dark"
+                android:textSize="15sp"
+            />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switch_sterilized"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:minHeight="48dp"
+                android:text="Đã triệt sản"
+                android:textColor="@color/anilove_text_dark"
+                android:textSize="15sp"
+            />
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/AniLoveOutlinedField"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:hint="Ghi chú y tế / Bệnh lý"
+            >
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/input_medical_notes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minLines="3"
+                />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/pet_care_save"
+                style="@style/AniLovePrimaryButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="@string/profile_save"
+            />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
