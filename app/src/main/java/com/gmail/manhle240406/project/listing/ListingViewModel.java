@@ -1,86 +1,1047 @@
 package com.gmail.manhle240406.project.listing;
 
+import static com.gmail.manhle240406.project.pet.PetSchema.*;
+
 import android.app.Application;
 import android.os.*;
 import androidx.lifecycle.*;
 import com.gmail.manhle240406.project.AniloveApplication;
 import com.gmail.manhle240406.project.foundation.*;
 import com.gmail.manhle240406.project.pet.*;
-import com.google.firebase.firestore.*;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.*;
 import java.util.*;
 import java.util.concurrent.*;
 import org.json.JSONObject;
-import static com.gmail.manhle240406.project.pet.PetSchema.*;
 
 /** Private draft and command state, with application-owned SQLite and existing session epoch. */
 public final class ListingViewModel extends AndroidViewModel {
-    public final MutableLiveData<Long> changes=new MutableLiveData<>(0L);
-    public LocalListingDraftStore.Draft draft;
-    public ListingRepository.Detail detail,conflict;
-    public ListingRepository.Page page;
-    public List<LocalListingDraftStore.Draft> localRows=Collections.emptyList();
-    public PetIdentityRepository.Page pets;
-    public PetIdentityRepository.Detail identityConflict;
-    public String kind="canonical",message="",title="",description="",petId;
-    public int region,offset;
-    public boolean busy,writePending,dirty,reconciled,editing,petsVisible,restorationInvalid;
-    public ListingCommand pending;
-    private long change,generation;
-    private final Handler main=new Handler(Looper.getMainLooper());
-    private final LocalListingDraftStore store;
-    private final SessionGateway sessions;
-    private final ListingRepository repo;
-    private final PetIdentityRepository petRepo;
-    private final ExecutorService disk;
-    private final SavedStateHandle saved;
-    private final Runnable invalidation,autosave;
-    private SessionEpoch.Ticket ticket;
-    private Map<String,Object> remoteIntent;
-    public Map<String,Object> remoteConflict;
-    private boolean intentDurable;
-    public ListingViewModel(Application app,SavedStateHandle saved){super(app);this.saved=saved;AniloveApplication a=(AniloveApplication)app;store=a.listingDrafts();disk=store.executor();sessions=a.foundation().sessions;repo=sessions==null?null:new ListingRepository(FirebaseFirestore.getInstance(),sessions);petRepo=sessions==null?null:new PetIdentityRepository(FirebaseFirestore.getInstance(),sessions);ticket=sessions==null?null:sessions.capture();invalidation=()->{generation++;main.removeCallbacksAndMessages(null);draft=null;detail=null;conflict=null;remoteConflict=null;pending=null;intentDurable=false;restorationInvalid=false;remoteIntent=null;page=null;pets=null;identityConflict=null;localRows=Collections.emptyList();title="";description="";petId=null;dirty=false;editing=false;busy=false;writePending=false;reconciled=false;saved.remove("listing_local_id");saved.remove("listing_local_uid");notifyChange();};autosave=()->saveLocal(false,null);if(sessions!=null)sessions.onInvalidated(invalidation);if(ticket!=null&&ticket.uid!=null)list("canonical",false);else message="denied";}
-    private boolean current(SessionEpoch.Ticket t){return sessions!=null&&t!=null&&t.uid!=null&&sessions.current(t);}
-    private boolean idle(){return !restorationInvalid&&current(ticket)&&!busy&&!writePending&&pending==null&&remoteIntent==null;}
-    public void notifyChange(){changes.setValue(++change);}
-    public void changed(String title,String description,int region){if(!idle()||draft==null)return;this.title=title;this.description=description;this.region=region;dirty=true;main.removeCallbacks(autosave);main.postDelayed(autosave,750);}
-    public void choosePet(String id){if(!idle()||draft==null||draft.contentVersion!=0)return;petId=id;draft.petId=id;petsVisible=false;draft.identityVersion=0;dirty=true;busy=true;notifyChange();SessionEpoch.Ticket t=ticket;long g=generation;petRepo.load(t,id).addOnSuccessListener(r->{if(!current(t)||g!=generation)return;busy=false;if(r.value!=null){identityConflict=r.value;message="identity_changed";}else message="denied";notifyChange();});notifyChange();}
-    public void acceptIdentity(){if(identityConflict==null||draft==null||writePending)return;draft.identityVersion=version(identityConflict.pet,"identityVersion");identityConflict=null;dirty=true;message="";saveLocal(false,null);notifyChange();}
-    public Map<String,Object> fields(){return map("title",title.trim(),"description",description.trim(),"regionCode",region==0?null:Arrays.asList("north","central","south").get(region-1),"offerType","adoption","mediaRefs",Collections.emptyList());}
-    private void fill(){title=(String)draft.fields.get("title");description=(String)draft.fields.get("description");petId=draft.petId;region=draft.fields.get("regionCode")==null?0:Arrays.asList("north","central","south").indexOf(draft.fields.get("regionCode"))+1;dirty=false;editing=true;}
-    private static LocalListingDraftStore.Draft copy(LocalListingDraftStore.Draft d){LocalListingDraftStore.Draft n=new LocalListingDraftStore.Draft(d.uid);n.id=d.id;n.listingId=d.listingId;n.petId=d.petId;n.fields=ListingSchema.freeze(d.fields);n.identityVersion=d.identityVersion;n.contentVersion=d.contentVersion;n.controlVersion=d.controlVersion;n.localVersion=d.localVersion;n.serverVersion=d.serverVersion;n.remoteOperation=d.remoteOperation;n.pendingJson=d.pendingJson;return n;}
-    public void saveLocal(boolean explicit,Runnable after){if(!current(ticket)||draft==null)return;main.removeCallbacks(autosave);draft.fields=fields();draft.petId=petId;LocalListingDraftStore.Draft snapshot=copy(draft);SessionEpoch.Ticket t=ticket;long g=generation;disk.execute(()->{String result="local";try{store.save(t,snapshot);}catch(Exception e){result="storage";}String status=result;main.post(()->{if(!current(t)||g!=generation||draft==null||!draft.id.equals(snapshot.id))return;if("local".equals(status)){draft.localVersion=Math.max(draft.localVersion,snapshot.localVersion);if(explicit){dirty=false;message=status;}if(after!=null)after.run();}else message=status;notifyChange();});});}
-    public void flush(){if(dirty&&!writePending&&pending==null&&remoteIntent==null)saveLocal(false,null);}
-    public void local(boolean next){if(!idle())return;offset=next?offset+20:0;SessionEpoch.Ticket t=ticket;long g=generation;busy=true;notifyChange();disk.execute(()->{try{List<LocalListingDraftStore.Draft> r=store.list(t,offset);main.post(()->{if(!current(t)||g!=generation)return;busy=false;kind="local";page=null;localRows=r;notifyChange();});}catch(Exception e){main.post(()->{if(current(t)&&g==generation){busy=false;message="storage";notifyChange();}});}});}
-    public void openLocal(LocalListingDraftStore.Draft row){if(!idle())return;generation++;draft=copy(row);detail=null;conflict=null;pets=null;petsVisible=false;fill();saved.set("listing_local_id",draft.id);saved.set("listing_local_uid",ticket.uid);if(draft.pendingJson!=null)restoreIntent();notifyChange();}
-    private void restoreIntent(){try{Map<String,Object> p=LocalListingDraftStore.decode(draft.pendingJson);if("canonical".equals(p.get("kind")))pending=ListingCommand.restored(nested(p,"command"));else if("remote".equals(p.get("kind")))remoteIntent=ListingSchema.freeze(nested(p,"payload"));else throw new IllegalArgumentException();if(pending!=null&&(!draft.listingId.equals(pending.listingId)||!Objects.equals(draft.petId,pending.petId)))throw new IllegalArgumentException();if(remoteIntent!=null&&(!keys(remoteIntent,"linkedPetId","intendedListingId","baseListingVersion","baseControlVersion","editableFields","operationId","baseVersion")||!draft.listingId.equals(remoteIntent.get("intendedListingId"))||!id(remoteIntent.get("operationId"))||!number(remoteIntent.get("baseVersion"),0)||!(remoteIntent.get("editableFields") instanceof Map)||!ListingSchema.fields(nested(remoteIntent,"editableFields"),false)))throw new IllegalArgumentException();intentDurable=true;message="recovery";}catch(Exception e){message="schema";writePending=false;restorationInvalid=true;pending=null;remoteIntent=null;}}
-    public void returnToList(){if(!idle())return;generation++;draft=null;detail=null;conflict=null;remoteConflict=null;pets=null;petsVisible=false;dirty=false;editing=false;saved.remove("listing_local_id");saved.remove("listing_local_uid");list("canonical",false);notifyChange();}
-    public void newDraft(){if(!idle())return;generation++;draft=new LocalListingDraftStore.Draft(ticket.uid);detail=null;conflict=null;pets=null;petsVisible=false;fill();dirty=true;saved.set("listing_local_id",draft.id);saved.set("listing_local_uid",ticket.uid);saveLocal(true,null);notifyChange();}
-    public void list(String kind,boolean next){if(!idle())return;busy=true;notifyChange();this.kind=kind;DocumentSnapshot cursor=next&&page!=null?page.cursor:null;long g=generation;SessionEpoch.Ticket t=ticket;repo.list(t,kind,draft==null?null:draft.listingId,cursor).addOnSuccessListener(r->{if(!current(t)||g!=generation)return;busy=false;if(r.value!=null){page=r.value;localRows=Collections.emptyList();if("canonical".equals(kind))reconciled=true;String restore=saved.get("listing_local_id"),uid=saved.get("listing_local_uid");if(draft==null&&restore!=null&&Objects.equals(uid,t.uid))restoreLocalById(restore);}else {message=code(r.code);String restore=saved.get("listing_local_id"),uid=saved.get("listing_local_uid");if(draft==null&&restore!=null&&Objects.equals(uid,t.uid))restoreLocalById(restore);}notifyChange();});}
-    private void restoreLocalById(String id){SessionEpoch.Ticket t=ticket;long g=generation;disk.execute(()->{try{LocalListingDraftStore.Draft found=null;for(int offset=0;offset<100&&found==null;offset+=20)for(LocalListingDraftStore.Draft d:store.list(t,offset))if(id.equals(d.id)){found=d;break;}LocalListingDraftStore.Draft f=found;main.post(()->{if(current(t)&&g==generation&&f!=null&&draft==null)openLocal(f);});}catch(Exception e){main.post(()->{if(current(t)&&g==generation){message="storage";notifyChange();}});}});}
-    public void loadCanonical(String id){if(!idle())return;busy=true;notifyChange();SessionEpoch.Ticket t=ticket;long g=generation;repo.load(t,id).addOnSuccessListener(r->{if(!current(t)||g!=generation)return;busy=false;if(r.value!=null){detail=r.value;draft=new LocalListingDraftStore.Draft(t.uid);draft.listingId=id;draft.petId=(String)detail.root.get("petId");draft.contentVersion=version(detail.root,"contentVersion");draft.controlVersion=version(detail.root,"controlVersion");draft.identityVersion=version(detail.revision,"petIdentityVersion");draft.fields=nested(detail.revision,"editableFields");fill();editing=false;saved.set("listing_local_id",draft.id);saved.set("listing_local_uid",t.uid);saveLocal(false,null);}else message=code(r.code);notifyChange();});}
-    public void openRemote(Map<String,Object> row){if(!idle())return;generation++;draft=new LocalListingDraftStore.Draft(ticket.uid);draft.id=(String)row.get("documentId");draft.listingId=(String)row.get("intendedListingId");draft.petId=(String)row.get("linkedPetId");draft.contentVersion=row.get("baseListingVersion")==null?0:(Long)row.get("baseListingVersion");draft.controlVersion=row.get("baseControlVersion")==null?0:(Long)row.get("baseControlVersion");draft.serverVersion=version(row,"draftVersion");draft.remoteOperation=(String)row.get("lastOperationId");draft.fields=nested(row,"editableFields");detail=null;conflict=null;pets=null;petsVisible=false;fill();saved.set("listing_local_id",draft.id);saved.set("listing_local_uid",ticket.uid);saveLocal(false,null);notifyChange();}
-    public void listPets(boolean next){if(!idle())return;busy=true;notifyChange();SessionEpoch.Ticket t=ticket;long g=generation;petRepo.list(t,"pets",next&&pets!=null?pets.cursor:null).addOnSuccessListener(r->{if(!current(t)||g!=generation)return;busy=false;if(r.value!=null){pets=r.value;petsVisible=true;}else message="denied";notifyChange();});}
-    public void canonical(String command){if(!idle()||draft==null)return;if("create".equals(command)&&!reconciled){message="network";notifyChange();return;}if(("create".equals(command)||"edit".equals(command))&&!ListingSchema.fields(fields(),true)){message="invalid";notifyChange();return;}if(petId==null){message="invalid";notifyChange();return;}if("hide".equals(command)){freezeCommand(command,map("contentVersion",draft.contentVersion,"controlVersion",draft.controlVersion,"slotVersion",0L,"identityVersion",0L,"authorityVersion",0L,"custodyVersion",0L));return;}
-        busy=true;notifyChange();SessionEpoch.Ticket t=ticket;long g=generation;
-        // Offering loads full F06 data; terminal commands read only protected gates, never another claimant's private record.
-        if("archive".equals(command)){repo.load(t,draft.listingId).addOnSuccessListener(r->{if(!current(t)||g!=generation)return;busy=false;if(r.value==null){message=code(r.code);notifyChange();return;}if(version(r.value.root,"contentVersion")!=draft.contentVersion||version(r.value.root,"controlVersion")!=draft.controlVersion){conflict=r.value;message="conflict";notifyChange();return;}detail=r.value;if("closed".equals(detail.root.get("lifecycle")))freezeCommand(command,map("contentVersion",draft.contentVersion,"controlVersion",draft.controlVersion,"slotVersion",0L,"identityVersion",0L,"authorityVersion",0L,"custodyVersion",0L));else prepareTerminal(command,t,g);});return;}
-        if("create".equals(command)||"edit".equals(command))petRepo.load(t,petId).addOnSuccessListener(r->{if(!current(t)||g!=generation)return;busy=false;if(r.value==null){message="denied";notifyChange();return;}PetIdentityRepository.Detail d=r.value;if(draft.identityVersion!=version(d.pet,"identityVersion")){identityConflict=d;message="identity_changed";notifyChange();return;}freezeCommand(command,map("contentVersion",draft.contentVersion,"controlVersion",draft.controlVersion,"slotVersion",version(d.slot,"slotVersion"),"identityVersion",version(d.pet,"identityVersion"),"authorityVersion",version(d.authority,"authorityVersion"),"custodyVersion",version(d.pet,"custodyVersion")));});
-        else prepareTerminal(command,t,g);}
-    private void prepareTerminal(String command,SessionEpoch.Ticket t,long g){busy=true;notifyChange();FirebaseFirestore db=FirebaseFirestore.getInstance();List<Task<DocumentSnapshot>> reads=Arrays.asList(db.document("petListingSlots/"+petId).get(Source.SERVER),db.document("petOfferAuthorities/"+petId).get(Source.SERVER),db.document("petActivityGates/"+petId).get(Source.SERVER));com.google.android.gms.tasks.Tasks.withTimeout(com.google.android.gms.tasks.Tasks.whenAllSuccess(reads),15,TimeUnit.SECONDS).addOnCompleteListener(r->{if(!current(t)||g!=generation)return;busy=false;if(!r.isSuccessful()){message="denied";notifyChange();return;}Map<String,Object> s=reads.get(0).getResult().getData(),a=reads.get(1).getResult().getData(),gate=reads.get(2).getResult().getData();if(!PetOfferAuthority.slot(s,petId)||!PetOfferAuthority.authority(a,petId)||!PetOfferAuthority.gate(gate,petId)){message="schema";notifyChange();return;}freezeCommand(command,map("contentVersion",draft.contentVersion,"controlVersion",draft.controlVersion,"slotVersion",version(s,"slotVersion"),"identityVersion",0L,"authorityVersion",version(a,"authorityVersion"),"custodyVersion",version(gate,"custodyVersion")));});}
-    private void freezeCommand(String command,Map<String,Object> base){pending=new ListingCommand(command,draft.listingId,petId,UUID.randomUUID().toString(),base,"create".equals(command)||"edit".equals(command)?fields():Collections.emptyMap());draft.pendingJson=new JSONObject(map("kind","canonical","command",pending.persisted())).toString();message="recovery";intentDurable=false;saveLocal(false,()->{intentDurable=true;retry();});notifyChange();}
-    public void remoteSave(){if(!idle()||draft==null)return;Map<String,Object> payload=map("linkedPetId",petId,"intendedListingId",draft.listingId,"baseListingVersion",draft.contentVersion==0?null:draft.contentVersion,"baseControlVersion",draft.controlVersion==0?null:draft.controlVersion,"editableFields",fields(),"operationId",UUID.randomUUID().toString(),"baseVersion",draft.serverVersion);remoteIntent=ListingSchema.freeze(payload);draft.pendingJson=new JSONObject(map("kind","remote","payload",remoteIntent)).toString();intentDurable=false;saveLocal(false,()->{intentDurable=true;retry();});notifyChange();}
-    public void retry(){if(restorationInvalid)return;if(!current(ticket)||busy||writePending||draft==null)return;if(!intentDurable){saveLocal(false,()->{intentDurable=true;retry();});return;}writePending=true;message="busy";SessionEpoch.Ticket t=ticket;long g=generation;main.postDelayed(()->{if(current(t)&&g==generation&&writePending){message="unknown";notifyChange();}},15000);if(pending!=null)repo.execute(t,pending).addOnSuccessListener(r->complete(t,g,r.code,r.value));else if(remoteIntent!=null){Map<String,Object> p=new HashMap<>(remoteIntent);String op=(String)p.remove("operationId");long base=(Long)p.remove("baseVersion");repo.saveDraft(t,draft.id,op,base,p).addOnSuccessListener(r->complete(t,g,r.code,r.value));}else writePending=false;notifyChange();}
-    private void refreshCommitted(SessionEpoch.Ticket t,long g){busy=true;notifyChange();String id=draft.listingId;repo.load(t,id).addOnSuccessListener(r->{if(!current(t)||g!=generation)return;busy=false;if(r.value!=null)detail=r.value;else message="network";notifyChange();});}
-    private void complete(SessionEpoch.Ticket t,long g,ListingRepository.Code code,Map<String,Object> r){if(!current(t)||g!=generation)return;writePending=false;if(code==ListingRepository.Code.COMMITTED||code==ListingRepository.Code.SERVER&&r!=null){if(pending!=null){draft.contentVersion=version(nested(r,"result"),"contentVersion");draft.controlVersion=version(nested(r,"result"),"controlVersion");pending=null;message="committed";detail=null;editing=false;refreshCommitted(t,g);}else{draft.serverVersion=version(r,"draftVersion");draft.remoteOperation=(String)r.get("lastOperationId");remoteIntent=null;message="remote";}draft.pendingJson=null;dirty=false;saveLocal(false,null);notifyChange();return;}message=code(code);if(code==ListingRepository.Code.CONFLICT){notifyChange();}else if(code==ListingRepository.Code.DENIED||code==ListingRepository.Code.UNKNOWN_SCHEMA){pending=null;remoteIntent=null;draft.pendingJson=null;saveLocal(false,null);}notifyChange();}
-    public void reconcile(){if(restorationInvalid)return;if(!current(ticket)||busy||writePending||draft==null)return;SessionEpoch.Ticket t=ticket;long g=generation;busy=true;notifyChange();if(pending!=null)repo.reconcile(t,pending).addOnSuccessListener(r->{if(!current(t)||g!=generation)return;busy=false;if(r.code==ListingRepository.Code.SERVER)complete(t,g,r.code,r.value);else{message=r.code==ListingRepository.Code.NOT_FOUND?"no_receipt":code(r.code);notifyChange();}});else if(remoteIntent!=null)repo.remoteDraft(t,draft.id).addOnSuccessListener(r->{if(!current(t)||g!=generation)return;busy=false;boolean matches=r.value!=null&&Objects.equals(r.value.get("lastOperationId"),remoteIntent.get("operationId"))&&version(r.value,"draftVersion")==version(remoteIntent,"baseVersion")+1;for(String key:new String[]{"linkedPetId","intendedListingId","baseListingVersion","baseControlVersion","editableFields"})matches=matches&&Objects.equals(r.value==null?null:r.value.get(key),remoteIntent.get(key));if(matches)complete(t,g,ListingRepository.Code.SERVER,r.value);else{message=r.value!=null?"conflict":code(r.code);notifyChange();}});else{busy=false;notifyChange();}}
-    public void compare(){if(!current(ticket)||busy||writePending||draft==null)return;if(remoteIntent!=null){compareRemote();return;}busy=true;notifyChange();SessionEpoch.Ticket t=ticket;long g=generation;repo.load(t,draft.listingId).addOnSuccessListener(r->{if(!current(t)||g!=generation)return;busy=false;if(r.value!=null)conflict=r.value;else message=code(r.code);notifyChange();});}
-    private void compareRemote(){SessionEpoch.Ticket t=ticket;long g=generation;busy=true;notifyChange();repo.remoteDraft(t,draft.id).addOnSuccessListener(r->{if(!current(t)||g!=generation)return;busy=false;if(r.value!=null)remoteConflict=r.value;else message=code(r.code);notifyChange();});}
-    public void resolveRemote(boolean keep){if(remoteConflict==null||writePending)return;draft.serverVersion=version(remoteConflict,"draftVersion");draft.remoteOperation=(String)remoteConflict.get("lastOperationId");if(!keep){draft.listingId=(String)remoteConflict.get("intendedListingId");draft.petId=(String)remoteConflict.get("linkedPetId");draft.contentVersion=remoteConflict.get("baseListingVersion")==null?0:(Long)remoteConflict.get("baseListingVersion");draft.controlVersion=remoteConflict.get("baseControlVersion")==null?0:(Long)remoteConflict.get("baseControlVersion");draft.fields=nested(remoteConflict,"editableFields");fill();}remoteConflict=null;pending=null;remoteIntent=null;draft.pendingJson=null;dirty=true;message="";saveLocal(false,null);notifyChange();}
-    public void resolve(boolean keep){if(conflict==null||writePending)return;draft.contentVersion=version(conflict.root,"contentVersion");draft.controlVersion=version(conflict.root,"controlVersion");detail=conflict;draft.petId=(String)conflict.root.get("petId");petId=draft.petId;if(!keep){draft.fields=nested(conflict.revision,"editableFields");fill();}pending=null;remoteIntent=null;draft.pendingJson=null;conflict=null;dirty=true;message="";saveLocal(false,null);notifyChange();}
-    public void abandonFailedIntent(){if(writePending||busy||draft==null||!"no_receipt".equals(message))return;pending=null;remoteIntent=null;draft.pendingJson=null;saveLocal(false,null);message="";notifyChange();}
-    public void discard(){if(!current(ticket)||busy||writePending||(!restorationInvalid&&!idle())||draft==null)return;restorationInvalid=false;SessionEpoch.Ticket t=ticket;String id=draft.id;disk.execute(()->{try{store.delete(t,id);}catch(Exception ignored){main.post(()->{message="storage";notifyChange();});}});generation++;draft=null;detail=null;editing=false;dirty=false;saved.remove("listing_local_id");saved.remove("listing_local_uid");notifyChange();}
-    public void deleteRemote(){if(!idle()||draft==null||draft.serverVersion==0)return;busy=true;notifyChange();writePending=true;message="busy";SessionEpoch.Ticket t=ticket;long g=generation;main.postDelayed(()->{if(current(t)&&g==generation&&writePending){message="unknown";notifyChange();}},15000);notifyChange();repo.deleteDraft(t,draft.id,draft.serverVersion,draft.remoteOperation).addOnSuccessListener(r->{if(!current(t)||g!=generation)return;busy=false;writePending=false;message=code(r.code);if(r.code==ListingRepository.Code.COMMITTED){draft.serverVersion=0;draft.remoteOperation=null;saveLocal(false,null);}notifyChange();});}
-    public static String code(ListingRepository.Code c){switch(c){case COMMITTED:return "committed";case SERVER:return "";case CONFLICT:return "conflict";case DENIED:case SESSION_CHANGED:return "denied";case UNKNOWN_SCHEMA:return "schema";case UNKNOWN_OUTCOME:return "unknown";case NOT_FOUND:return "no_receipt";default:return "network";}}
-    @Override protected void onCleared(){generation++;main.removeCallbacksAndMessages(null);if(sessions!=null)sessions.removeInvalidation(invalidation);}
+  public final MutableLiveData<Long> changes = new MutableLiveData<>(0L);
+  public LocalListingDraftStore.Draft draft;
+  public ListingRepository.Detail detail, conflict;
+  public ListingRepository.Page page;
+  public List<LocalListingDraftStore.Draft> localRows = Collections.emptyList();
+  public PetIdentityRepository.Page pets;
+  public PetIdentityRepository.Detail identityConflict;
+  public String kind = "canonical", message = "", title = "", description = "", petId;
+  public int region, offset;
+  public boolean busy, writePending, dirty, reconciled, editing, petsVisible, restorationInvalid;
+  public ListingCommand pending;
+  private long change, generation;
+  private final Handler main = new Handler(Looper.getMainLooper());
+  private final LocalListingDraftStore store;
+  private final SessionGateway sessions;
+  private final ListingRepository repo;
+  private final PetIdentityRepository petRepo;
+  private final ExecutorService disk;
+  private final SavedStateHandle saved;
+  private final Runnable invalidation, autosave;
+  private SessionEpoch.Ticket ticket;
+  private Map<String, Object> remoteIntent;
+  public Map<String, Object> remoteConflict;
+  private boolean intentDurable;
+
+  public ListingViewModel(Application app, SavedStateHandle saved) {
+    super(app);
+    this.saved = saved;
+    AniloveApplication a = (AniloveApplication) app;
+    store = a.listingDrafts();
+    disk = store.executor();
+    sessions = a.foundation().sessions;
+    repo =
+        sessions == null ? null : new ListingRepository(FirebaseFirestore.getInstance(), sessions);
+    petRepo =
+        sessions == null
+            ? null
+            : new PetIdentityRepository(FirebaseFirestore.getInstance(), sessions);
+    ticket = sessions == null ? null : sessions.capture();
+    invalidation =
+        () -> {
+          generation++;
+          main.removeCallbacksAndMessages(null);
+          draft = null;
+          detail = null;
+          conflict = null;
+          remoteConflict = null;
+          pending = null;
+          intentDurable = false;
+          restorationInvalid = false;
+          remoteIntent = null;
+          page = null;
+          pets = null;
+          identityConflict = null;
+          localRows = Collections.emptyList();
+          title = "";
+          description = "";
+          petId = null;
+          dirty = false;
+          editing = false;
+          busy = false;
+          writePending = false;
+          reconciled = false;
+          saved.remove("listing_local_id");
+          saved.remove("listing_local_uid");
+          notifyChange();
+        };
+    autosave = () -> saveLocal(false, null);
+    if (sessions != null) sessions.onInvalidated(invalidation);
+    if (ticket != null && ticket.uid != null) list("canonical", false);
+    else message = "denied";
+  }
+
+  private boolean current(SessionEpoch.Ticket t) {
+    return sessions != null && t != null && t.uid != null && sessions.current(t);
+  }
+
+  private boolean idle() {
+    return !restorationInvalid
+        && current(ticket)
+        && !busy
+        && !writePending
+        && pending == null
+        && remoteIntent == null;
+  }
+
+  public void notifyChange() {
+    changes.setValue(++change);
+  }
+
+  public void changed(String title, String description, int region) {
+    if (!idle() || draft == null) return;
+    this.title = title;
+    this.description = description;
+    this.region = region;
+    dirty = true;
+    main.removeCallbacks(autosave);
+    main.postDelayed(autosave, 750);
+  }
+
+  public void choosePet(String id) {
+    if (!idle() || draft == null || draft.contentVersion != 0) return;
+    petId = id;
+    draft.petId = id;
+    petsVisible = false;
+    draft.identityVersion = 0;
+    dirty = true;
+    busy = true;
+    notifyChange();
+    SessionEpoch.Ticket t = ticket;
+    long g = generation;
+    petRepo
+        .load(t, id)
+        .addOnSuccessListener(
+            r -> {
+              if (!current(t) || g != generation) return;
+              busy = false;
+              if (r.value != null) {
+                identityConflict = r.value;
+                message = "identity_changed";
+              } else message = "denied";
+              notifyChange();
+            });
+    notifyChange();
+  }
+
+  public void acceptIdentity() {
+    if (identityConflict == null || draft == null || writePending) return;
+    draft.identityVersion = version(identityConflict.pet, "identityVersion");
+    identityConflict = null;
+    dirty = true;
+    message = "";
+    saveLocal(false, null);
+    notifyChange();
+  }
+
+  public Map<String, Object> fields() {
+    return map(
+        "title",
+        title.trim(),
+        "description",
+        description.trim(),
+        "regionCode",
+        region == 0 ? null : Arrays.asList("north", "central", "south").get(region - 1),
+        "offerType",
+        "adoption",
+        "mediaRefs",
+        Collections.emptyList());
+  }
+
+  private void fill() {
+    title = (String) draft.fields.get("title");
+    description = (String) draft.fields.get("description");
+    petId = draft.petId;
+    region =
+        draft.fields.get("regionCode") == null
+            ? 0
+            : Arrays.asList("north", "central", "south").indexOf(draft.fields.get("regionCode"))
+                + 1;
+    dirty = false;
+    editing = true;
+  }
+
+  private static LocalListingDraftStore.Draft copy(LocalListingDraftStore.Draft d) {
+    LocalListingDraftStore.Draft n = new LocalListingDraftStore.Draft(d.uid);
+    n.id = d.id;
+    n.listingId = d.listingId;
+    n.petId = d.petId;
+    n.fields = ListingSchema.freeze(d.fields);
+    n.identityVersion = d.identityVersion;
+    n.contentVersion = d.contentVersion;
+    n.controlVersion = d.controlVersion;
+    n.localVersion = d.localVersion;
+    n.serverVersion = d.serverVersion;
+    n.remoteOperation = d.remoteOperation;
+    n.pendingJson = d.pendingJson;
+    return n;
+  }
+
+  public void saveLocal(boolean explicit, Runnable after) {
+    if (!current(ticket) || draft == null) return;
+    main.removeCallbacks(autosave);
+    draft.fields = fields();
+    draft.petId = petId;
+    LocalListingDraftStore.Draft snapshot = copy(draft);
+    SessionEpoch.Ticket t = ticket;
+    long g = generation;
+    disk.execute(
+        () -> {
+          String result = "local";
+          try {
+            store.save(t, snapshot);
+          } catch (Exception e) {
+            result = "storage";
+          }
+          String status = result;
+          main.post(
+              () -> {
+                if (!current(t)
+                    || g != generation
+                    || draft == null
+                    || !draft.id.equals(snapshot.id)) return;
+                if ("local".equals(status)) {
+                  draft.localVersion = Math.max(draft.localVersion, snapshot.localVersion);
+                  if (explicit) {
+                    dirty = false;
+                    message = status;
+                  }
+                  if (after != null) after.run();
+                } else message = status;
+                notifyChange();
+              });
+        });
+  }
+
+  public void flush() {
+    if (dirty && !writePending && pending == null && remoteIntent == null) saveLocal(false, null);
+  }
+
+  public void local(boolean next) {
+    if (!idle()) return;
+    offset = next ? offset + 20 : 0;
+    SessionEpoch.Ticket t = ticket;
+    long g = generation;
+    busy = true;
+    notifyChange();
+    disk.execute(
+        () -> {
+          try {
+            List<LocalListingDraftStore.Draft> r = store.list(t, offset);
+            main.post(
+                () -> {
+                  if (!current(t) || g != generation) return;
+                  busy = false;
+                  kind = "local";
+                  page = null;
+                  localRows = r;
+                  notifyChange();
+                });
+          } catch (Exception e) {
+            main.post(
+                () -> {
+                  if (current(t) && g == generation) {
+                    busy = false;
+                    message = "storage";
+                    notifyChange();
+                  }
+                });
+          }
+        });
+  }
+
+  public void openLocal(LocalListingDraftStore.Draft row) {
+    if (!idle()) return;
+    generation++;
+    draft = copy(row);
+    detail = null;
+    conflict = null;
+    pets = null;
+    petsVisible = false;
+    fill();
+    saved.set("listing_local_id", draft.id);
+    saved.set("listing_local_uid", ticket.uid);
+    if (draft.pendingJson != null) restoreIntent();
+    notifyChange();
+  }
+
+  private void restoreIntent() {
+    try {
+      Map<String, Object> p = LocalListingDraftStore.decode(draft.pendingJson);
+      if ("canonical".equals(p.get("kind")))
+        pending = ListingCommand.restored(nested(p, "command"));
+      else if ("remote".equals(p.get("kind")))
+        remoteIntent = ListingSchema.freeze(nested(p, "payload"));
+      else throw new IllegalArgumentException();
+      if (pending != null
+          && (!draft.listingId.equals(pending.listingId)
+              || !Objects.equals(draft.petId, pending.petId))) throw new IllegalArgumentException();
+      if (remoteIntent != null
+          && (!keys(
+                  remoteIntent,
+                  "linkedPetId",
+                  "intendedListingId",
+                  "baseListingVersion",
+                  "baseControlVersion",
+                  "editableFields",
+                  "operationId",
+                  "baseVersion")
+              || !draft.listingId.equals(remoteIntent.get("intendedListingId"))
+              || !id(remoteIntent.get("operationId"))
+              || !number(remoteIntent.get("baseVersion"), 0)
+              || !(remoteIntent.get("editableFields") instanceof Map)
+              || !ListingSchema.fields(nested(remoteIntent, "editableFields"), false)))
+        throw new IllegalArgumentException();
+      intentDurable = true;
+      message = "recovery";
+    } catch (Exception e) {
+      message = "schema";
+      writePending = false;
+      restorationInvalid = true;
+      pending = null;
+      remoteIntent = null;
+    }
+  }
+
+  public void returnToList() {
+    if (!idle()) return;
+    generation++;
+    draft = null;
+    detail = null;
+    conflict = null;
+    remoteConflict = null;
+    pets = null;
+    petsVisible = false;
+    dirty = false;
+    editing = false;
+    saved.remove("listing_local_id");
+    saved.remove("listing_local_uid");
+    list("canonical", false);
+    notifyChange();
+  }
+
+  public void newDraft() {
+    if (!idle()) return;
+    generation++;
+    draft = new LocalListingDraftStore.Draft(ticket.uid);
+    detail = null;
+    conflict = null;
+    pets = null;
+    petsVisible = false;
+    fill();
+    dirty = true;
+    saved.set("listing_local_id", draft.id);
+    saved.set("listing_local_uid", ticket.uid);
+    saveLocal(true, null);
+    notifyChange();
+  }
+
+  public void list(String kind, boolean next) {
+    if (!idle()) return;
+    busy = true;
+    notifyChange();
+    this.kind = kind;
+    DocumentSnapshot cursor = next && page != null ? page.cursor : null;
+    long g = generation;
+    SessionEpoch.Ticket t = ticket;
+    repo.list(t, kind, draft == null ? null : draft.listingId, cursor)
+        .addOnSuccessListener(
+            r -> {
+              if (!current(t) || g != generation) return;
+              busy = false;
+              if (r.value != null) {
+                page = r.value;
+                localRows = Collections.emptyList();
+                if ("canonical".equals(kind)) reconciled = true;
+                String restore = saved.get("listing_local_id"),
+                    uid = saved.get("listing_local_uid");
+                if (draft == null && restore != null && Objects.equals(uid, t.uid))
+                  restoreLocalById(restore);
+              } else {
+                message = code(r.code);
+                String restore = saved.get("listing_local_id"),
+                    uid = saved.get("listing_local_uid");
+                if (draft == null && restore != null && Objects.equals(uid, t.uid))
+                  restoreLocalById(restore);
+              }
+              notifyChange();
+            });
+  }
+
+  private void restoreLocalById(String id) {
+    SessionEpoch.Ticket t = ticket;
+    long g = generation;
+    disk.execute(
+        () -> {
+          try {
+            LocalListingDraftStore.Draft found = null;
+            for (int offset = 0; offset < 100 && found == null; offset += 20)
+              for (LocalListingDraftStore.Draft d : store.list(t, offset))
+                if (id.equals(d.id)) {
+                  found = d;
+                  break;
+                }
+            LocalListingDraftStore.Draft f = found;
+            main.post(
+                () -> {
+                  if (current(t) && g == generation && f != null && draft == null) openLocal(f);
+                });
+          } catch (Exception e) {
+            main.post(
+                () -> {
+                  if (current(t) && g == generation) {
+                    message = "storage";
+                    notifyChange();
+                  }
+                });
+          }
+        });
+  }
+
+  public void loadCanonical(String id) {
+    if (!idle()) return;
+    busy = true;
+    notifyChange();
+    SessionEpoch.Ticket t = ticket;
+    long g = generation;
+    repo.load(t, id)
+        .addOnSuccessListener(
+            r -> {
+              if (!current(t) || g != generation) return;
+              busy = false;
+              if (r.value != null) {
+                detail = r.value;
+                draft = new LocalListingDraftStore.Draft(t.uid);
+                draft.listingId = id;
+                draft.petId = (String) detail.root.get("petId");
+                draft.contentVersion = version(detail.root, "contentVersion");
+                draft.controlVersion = version(detail.root, "controlVersion");
+                draft.identityVersion = version(detail.revision, "petIdentityVersion");
+                draft.fields = nested(detail.revision, "editableFields");
+                fill();
+                editing = false;
+                saved.set("listing_local_id", draft.id);
+                saved.set("listing_local_uid", t.uid);
+                saveLocal(false, null);
+              } else message = code(r.code);
+              notifyChange();
+            });
+  }
+
+  public void openRemote(Map<String, Object> row) {
+    if (!idle()) return;
+    generation++;
+    draft = new LocalListingDraftStore.Draft(ticket.uid);
+    draft.id = (String) row.get("documentId");
+    draft.listingId = (String) row.get("intendedListingId");
+    draft.petId = (String) row.get("linkedPetId");
+    draft.contentVersion =
+        row.get("baseListingVersion") == null ? 0 : (Long) row.get("baseListingVersion");
+    draft.controlVersion =
+        row.get("baseControlVersion") == null ? 0 : (Long) row.get("baseControlVersion");
+    draft.serverVersion = version(row, "draftVersion");
+    draft.remoteOperation = (String) row.get("lastOperationId");
+    draft.fields = nested(row, "editableFields");
+    detail = null;
+    conflict = null;
+    pets = null;
+    petsVisible = false;
+    fill();
+    saved.set("listing_local_id", draft.id);
+    saved.set("listing_local_uid", ticket.uid);
+    saveLocal(false, null);
+    notifyChange();
+  }
+
+  public void listPets(boolean next) {
+    if (!idle()) return;
+    busy = true;
+    notifyChange();
+    SessionEpoch.Ticket t = ticket;
+    long g = generation;
+    petRepo
+        .list(t, "pets", next && pets != null ? pets.cursor : null)
+        .addOnSuccessListener(
+            r -> {
+              if (!current(t) || g != generation) return;
+              busy = false;
+              if (r.value != null) {
+                pets = r.value;
+                petsVisible = true;
+              } else message = "denied";
+              notifyChange();
+            });
+  }
+
+  public void canonical(String command) {
+    if (!idle() || draft == null) return;
+    if ("create".equals(command) && !reconciled) {
+      message = "network";
+      notifyChange();
+      return;
+    }
+    if (("create".equals(command) || "edit".equals(command))
+        && !ListingSchema.fields(fields(), true)) {
+      message = "invalid";
+      notifyChange();
+      return;
+    }
+    if (petId == null) {
+      message = "invalid";
+      notifyChange();
+      return;
+    }
+    if ("hide".equals(command)) {
+      freezeCommand(
+          command,
+          map(
+              "contentVersion",
+              draft.contentVersion,
+              "controlVersion",
+              draft.controlVersion,
+              "slotVersion",
+              0L,
+              "identityVersion",
+              0L,
+              "authorityVersion",
+              0L,
+              "custodyVersion",
+              0L));
+      return;
+    }
+    busy = true;
+    notifyChange();
+    SessionEpoch.Ticket t = ticket;
+    long g = generation;
+    // Offering loads full F06 data; terminal commands read only protected gates, never another
+    // claimant's private record.
+    if ("archive".equals(command)) {
+      repo.load(t, draft.listingId)
+          .addOnSuccessListener(
+              r -> {
+                if (!current(t) || g != generation) return;
+                busy = false;
+                if (r.value == null) {
+                  message = code(r.code);
+                  notifyChange();
+                  return;
+                }
+                if (version(r.value.root, "contentVersion") != draft.contentVersion
+                    || version(r.value.root, "controlVersion") != draft.controlVersion) {
+                  conflict = r.value;
+                  message = "conflict";
+                  notifyChange();
+                  return;
+                }
+                detail = r.value;
+                if ("closed".equals(detail.root.get("lifecycle")))
+                  freezeCommand(
+                      command,
+                      map(
+                          "contentVersion",
+                          draft.contentVersion,
+                          "controlVersion",
+                          draft.controlVersion,
+                          "slotVersion",
+                          0L,
+                          "identityVersion",
+                          0L,
+                          "authorityVersion",
+                          0L,
+                          "custodyVersion",
+                          0L));
+                else prepareTerminal(command, t, g);
+              });
+      return;
+    }
+    if ("create".equals(command) || "edit".equals(command))
+      petRepo
+          .load(t, petId)
+          .addOnSuccessListener(
+              r -> {
+                if (!current(t) || g != generation) return;
+                busy = false;
+                if (r.value == null) {
+                  message = "denied";
+                  notifyChange();
+                  return;
+                }
+                PetIdentityRepository.Detail d = r.value;
+                if (draft.identityVersion != version(d.pet, "identityVersion")) {
+                  identityConflict = d;
+                  message = "identity_changed";
+                  notifyChange();
+                  return;
+                }
+                freezeCommand(
+                    command,
+                    map(
+                        "contentVersion",
+                        draft.contentVersion,
+                        "controlVersion",
+                        draft.controlVersion,
+                        "slotVersion",
+                        version(d.slot, "slotVersion"),
+                        "identityVersion",
+                        version(d.pet, "identityVersion"),
+                        "authorityVersion",
+                        version(d.authority, "authorityVersion"),
+                        "custodyVersion",
+                        version(d.pet, "custodyVersion")));
+              });
+    else prepareTerminal(command, t, g);
+  }
+
+  private void prepareTerminal(String command, SessionEpoch.Ticket t, long g) {
+    busy = true;
+    notifyChange();
+    FirebaseFirestore db = FirebaseFirestore.getInstance();
+    List<Task<DocumentSnapshot>> reads =
+        Arrays.asList(
+            db.document("petListingSlots/" + petId).get(Source.SERVER),
+            db.document("petOfferAuthorities/" + petId).get(Source.SERVER),
+            db.document("petActivityGates/" + petId).get(Source.SERVER));
+    com.google.android.gms.tasks.Tasks.withTimeout(
+            com.google.android.gms.tasks.Tasks.whenAllSuccess(reads), 15, TimeUnit.SECONDS)
+        .addOnCompleteListener(
+            r -> {
+              if (!current(t) || g != generation) return;
+              busy = false;
+              if (!r.isSuccessful()) {
+                message = "denied";
+                notifyChange();
+                return;
+              }
+              Map<String, Object> s = reads.get(0).getResult().getData(),
+                  a = reads.get(1).getResult().getData(),
+                  gate = reads.get(2).getResult().getData();
+              if (!PetOfferAuthority.slot(s, petId)
+                  || !PetOfferAuthority.authority(a, petId)
+                  || !PetOfferAuthority.gate(gate, petId)) {
+                message = "schema";
+                notifyChange();
+                return;
+              }
+              freezeCommand(
+                  command,
+                  map(
+                      "contentVersion",
+                      draft.contentVersion,
+                      "controlVersion",
+                      draft.controlVersion,
+                      "slotVersion",
+                      version(s, "slotVersion"),
+                      "identityVersion",
+                      0L,
+                      "authorityVersion",
+                      version(a, "authorityVersion"),
+                      "custodyVersion",
+                      version(gate, "custodyVersion")));
+            });
+  }
+
+  private void freezeCommand(String command, Map<String, Object> base) {
+    pending =
+        new ListingCommand(
+            command,
+            draft.listingId,
+            petId,
+            UUID.randomUUID().toString(),
+            base,
+            "create".equals(command) || "edit".equals(command) ? fields() : Collections.emptyMap());
+    draft.pendingJson =
+        new JSONObject(map("kind", "canonical", "command", pending.persisted())).toString();
+    message = "recovery";
+    intentDurable = false;
+    saveLocal(
+        false,
+        () -> {
+          intentDurable = true;
+          retry();
+        });
+    notifyChange();
+  }
+
+  public void remoteSave() {
+    if (!idle() || draft == null) return;
+    Map<String, Object> payload =
+        map(
+            "linkedPetId",
+            petId,
+            "intendedListingId",
+            draft.listingId,
+            "baseListingVersion",
+            draft.contentVersion == 0 ? null : draft.contentVersion,
+            "baseControlVersion",
+            draft.controlVersion == 0 ? null : draft.controlVersion,
+            "editableFields",
+            fields(),
+            "operationId",
+            UUID.randomUUID().toString(),
+            "baseVersion",
+            draft.serverVersion);
+    remoteIntent = ListingSchema.freeze(payload);
+    draft.pendingJson = new JSONObject(map("kind", "remote", "payload", remoteIntent)).toString();
+    intentDurable = false;
+    saveLocal(
+        false,
+        () -> {
+          intentDurable = true;
+          retry();
+        });
+    notifyChange();
+  }
+
+  public void retry() {
+    if (restorationInvalid) return;
+    if (!current(ticket) || busy || writePending || draft == null) return;
+    if (!intentDurable) {
+      saveLocal(
+          false,
+          () -> {
+            intentDurable = true;
+            retry();
+          });
+      return;
+    }
+    writePending = true;
+    message = "busy";
+    SessionEpoch.Ticket t = ticket;
+    long g = generation;
+    main.postDelayed(
+        () -> {
+          if (current(t) && g == generation && writePending) {
+            message = "unknown";
+            notifyChange();
+          }
+        },
+        15000);
+    if (pending != null)
+      repo.execute(t, pending).addOnSuccessListener(r -> complete(t, g, r.code, r.value));
+    else if (remoteIntent != null) {
+      Map<String, Object> p = new HashMap<>(remoteIntent);
+      String op = (String) p.remove("operationId");
+      long base = (Long) p.remove("baseVersion");
+      repo.saveDraft(t, draft.id, op, base, p)
+          .addOnSuccessListener(r -> complete(t, g, r.code, r.value));
+    } else writePending = false;
+    notifyChange();
+  }
+
+  private void refreshCommitted(SessionEpoch.Ticket t, long g) {
+    busy = true;
+    notifyChange();
+    String id = draft.listingId;
+    repo.load(t, id)
+        .addOnSuccessListener(
+            r -> {
+              if (!current(t) || g != generation) return;
+              busy = false;
+              if (r.value != null) detail = r.value;
+              else message = "network";
+              notifyChange();
+            });
+  }
+
+  private void complete(
+      SessionEpoch.Ticket t, long g, ListingRepository.Code code, Map<String, Object> r) {
+    if (!current(t) || g != generation) return;
+    writePending = false;
+    if (code == ListingRepository.Code.COMMITTED
+        || code == ListingRepository.Code.SERVER && r != null) {
+      if (pending != null) {
+        draft.contentVersion = version(nested(r, "result"), "contentVersion");
+        draft.controlVersion = version(nested(r, "result"), "controlVersion");
+        pending = null;
+        message = "committed";
+        detail = null;
+        editing = false;
+        refreshCommitted(t, g);
+      } else {
+        draft.serverVersion = version(r, "draftVersion");
+        draft.remoteOperation = (String) r.get("lastOperationId");
+        remoteIntent = null;
+        message = "remote";
+      }
+      draft.pendingJson = null;
+      dirty = false;
+      saveLocal(false, null);
+      notifyChange();
+      return;
+    }
+    message = code(code);
+    if (code == ListingRepository.Code.CONFLICT) {
+      notifyChange();
+    } else if (code == ListingRepository.Code.DENIED
+        || code == ListingRepository.Code.UNKNOWN_SCHEMA) {
+      pending = null;
+      remoteIntent = null;
+      draft.pendingJson = null;
+      saveLocal(false, null);
+    }
+    notifyChange();
+  }
+
+  public void reconcile() {
+    if (restorationInvalid) return;
+    if (!current(ticket) || busy || writePending || draft == null) return;
+    SessionEpoch.Ticket t = ticket;
+    long g = generation;
+    busy = true;
+    notifyChange();
+    if (pending != null)
+      repo.reconcile(t, pending)
+          .addOnSuccessListener(
+              r -> {
+                if (!current(t) || g != generation) return;
+                busy = false;
+                if (r.code == ListingRepository.Code.SERVER) complete(t, g, r.code, r.value);
+                else {
+                  message =
+                      r.code == ListingRepository.Code.NOT_FOUND ? "no_receipt" : code(r.code);
+                  notifyChange();
+                }
+              });
+    else if (remoteIntent != null)
+      repo.remoteDraft(t, draft.id)
+          .addOnSuccessListener(
+              r -> {
+                if (!current(t) || g != generation) return;
+                busy = false;
+                boolean matches =
+                    r.value != null
+                        && Objects.equals(
+                            r.value.get("lastOperationId"), remoteIntent.get("operationId"))
+                        && version(r.value, "draftVersion")
+                            == version(remoteIntent, "baseVersion") + 1;
+                for (String key :
+                    new String[] {
+                      "linkedPetId",
+                      "intendedListingId",
+                      "baseListingVersion",
+                      "baseControlVersion",
+                      "editableFields"
+                    })
+                  matches =
+                      matches
+                          && Objects.equals(
+                              r.value == null ? null : r.value.get(key), remoteIntent.get(key));
+                if (matches) complete(t, g, ListingRepository.Code.SERVER, r.value);
+                else {
+                  message = r.value != null ? "conflict" : code(r.code);
+                  notifyChange();
+                }
+              });
+    else {
+      busy = false;
+      notifyChange();
+    }
+  }
+
+  public void compare() {
+    if (!current(ticket) || busy || writePending || draft == null) return;
+    if (remoteIntent != null) {
+      compareRemote();
+      return;
+    }
+    busy = true;
+    notifyChange();
+    SessionEpoch.Ticket t = ticket;
+    long g = generation;
+    repo.load(t, draft.listingId)
+        .addOnSuccessListener(
+            r -> {
+              if (!current(t) || g != generation) return;
+              busy = false;
+              if (r.value != null) conflict = r.value;
+              else message = code(r.code);
+              notifyChange();
+            });
+  }
+
+  private void compareRemote() {
+    SessionEpoch.Ticket t = ticket;
+    long g = generation;
+    busy = true;
+    notifyChange();
+    repo.remoteDraft(t, draft.id)
+        .addOnSuccessListener(
+            r -> {
+              if (!current(t) || g != generation) return;
+              busy = false;
+              if (r.value != null) remoteConflict = r.value;
+              else message = code(r.code);
+              notifyChange();
+            });
+  }
+
+  public void resolveRemote(boolean keep) {
+    if (remoteConflict == null || writePending) return;
+    draft.serverVersion = version(remoteConflict, "draftVersion");
+    draft.remoteOperation = (String) remoteConflict.get("lastOperationId");
+    if (!keep) {
+      draft.listingId = (String) remoteConflict.get("intendedListingId");
+      draft.petId = (String) remoteConflict.get("linkedPetId");
+      draft.contentVersion =
+          remoteConflict.get("baseListingVersion") == null
+              ? 0
+              : (Long) remoteConflict.get("baseListingVersion");
+      draft.controlVersion =
+          remoteConflict.get("baseControlVersion") == null
+              ? 0
+              : (Long) remoteConflict.get("baseControlVersion");
+      draft.fields = nested(remoteConflict, "editableFields");
+      fill();
+    }
+    remoteConflict = null;
+    pending = null;
+    remoteIntent = null;
+    draft.pendingJson = null;
+    dirty = true;
+    message = "";
+    saveLocal(false, null);
+    notifyChange();
+  }
+
+  public void resolve(boolean keep) {
+    if (conflict == null || writePending) return;
+    draft.contentVersion = version(conflict.root, "contentVersion");
+    draft.controlVersion = version(conflict.root, "controlVersion");
+    detail = conflict;
+    draft.petId = (String) conflict.root.get("petId");
+    petId = draft.petId;
+    if (!keep) {
+      draft.fields = nested(conflict.revision, "editableFields");
+      fill();
+    }
+    pending = null;
+    remoteIntent = null;
+    draft.pendingJson = null;
+    conflict = null;
+    dirty = true;
+    message = "";
+    saveLocal(false, null);
+    notifyChange();
+  }
+
+  public void abandonFailedIntent() {
+    if (writePending || busy || draft == null || !"no_receipt".equals(message)) return;
+    pending = null;
+    remoteIntent = null;
+    draft.pendingJson = null;
+    saveLocal(false, null);
+    message = "";
+    notifyChange();
+  }
+
+  public void discard() {
+    if (!current(ticket)
+        || busy
+        || writePending
+        || (!restorationInvalid && !idle())
+        || draft == null) return;
+    restorationInvalid = false;
+    SessionEpoch.Ticket t = ticket;
+    String id = draft.id;
+    disk.execute(
+        () -> {
+          try {
+            store.delete(t, id);
+          } catch (Exception ignored) {
+            main.post(
+                () -> {
+                  message = "storage";
+                  notifyChange();
+                });
+          }
+        });
+    generation++;
+    draft = null;
+    detail = null;
+    editing = false;
+    dirty = false;
+    saved.remove("listing_local_id");
+    saved.remove("listing_local_uid");
+    notifyChange();
+  }
+
+  public void deleteRemote() {
+    if (!idle() || draft == null || draft.serverVersion == 0) return;
+    busy = true;
+    notifyChange();
+    writePending = true;
+    message = "busy";
+    SessionEpoch.Ticket t = ticket;
+    long g = generation;
+    main.postDelayed(
+        () -> {
+          if (current(t) && g == generation && writePending) {
+            message = "unknown";
+            notifyChange();
+          }
+        },
+        15000);
+    notifyChange();
+    repo.deleteDraft(t, draft.id, draft.serverVersion, draft.remoteOperation)
+        .addOnSuccessListener(
+            r -> {
+              if (!current(t) || g != generation) return;
+              busy = false;
+              writePending = false;
+              message = code(r.code);
+              if (r.code == ListingRepository.Code.COMMITTED) {
+                draft.serverVersion = 0;
+                draft.remoteOperation = null;
+                saveLocal(false, null);
+              }
+              notifyChange();
+            });
+  }
+
+  public static String code(ListingRepository.Code c) {
+    switch (c) {
+      case COMMITTED:
+        return "committed";
+      case SERVER:
+        return "";
+      case CONFLICT:
+        return "conflict";
+      case DENIED:
+      case SESSION_CHANGED:
+        return "denied";
+      case UNKNOWN_SCHEMA:
+        return "schema";
+      case UNKNOWN_OUTCOME:
+        return "unknown";
+      case NOT_FOUND:
+        return "no_receipt";
+      default:
+        return "network";
+    }
+  }
+
+  @Override
+  protected void onCleared() {
+    generation++;
+    main.removeCallbacksAndMessages(null);
+    if (sessions != null) sessions.removeInvalidation(invalidation);
+  }
 }
