@@ -1,6 +1,47 @@
 package com.gmail.manhle240406.project.adoption;
+
+import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.map;
+import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.number;
+import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.object;
+import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.rows;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.text.Editable;
+import android.text.InputFilter;
+import android.text.TextWatcher;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.Spinner;
+import android.widget.TextView;
+
+import androidx.activity.EdgeToEdge;
+import androidx.activity.OnBackPressedCallback;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
+
 import com.gmail.manhle240406.project.MainActivity;
-import android.os.Bundle;import android.content.*;import android.text.*;import android.view.*;import android.widget.*;import androidx.activity.*;import androidx.appcompat.app.AppCompatActivity;import androidx.lifecycle.ViewModelProvider;import com.gmail.manhle240406.project.R;import com.gmail.manhle240406.project.community.*;import com.gmail.manhle240406.project.media.*;import com.google.android.material.dialog.MaterialAlertDialogBuilder;import com.google.android.material.button.MaterialButton;import com.google.android.material.tabs.TabLayout;import com.google.android.material.textfield.*;import com.google.firebase.FirebaseException;import com.google.firebase.auth.*;import java.util.*;import java.util.concurrent.TimeUnit;import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.*;
+import com.gmail.manhle240406.project.R;
+import com.gmail.manhle240406.project.community.SocialSurface;
+import com.gmail.manhle240406.project.community.SocialViews;
+import com.gmail.manhle240406.project.media.MediaGrid;
+import com.gmail.manhle240406.project.media.PostPhotoEditor;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.textfield.TextInputEditText;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 /** Focused role-aware tasks in the existing native Material world; no client role grants. */
 public final class LifecycleActivity extends AppCompatActivity {
  private LifecycleModel m;private LinearLayout body,footer,photoPanel;private PostPhotoEditor photos;private MaterialButton photoSubmit;private String verificationId,photoListing;private androidx.appcompat.app.AlertDialog dialog;private String phoneOwner;private boolean directApplication,phonePrompted;

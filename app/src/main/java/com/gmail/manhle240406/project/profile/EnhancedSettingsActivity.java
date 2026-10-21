@@ -16,7 +16,7 @@ public final class EnhancedSettingsActivity extends AppCompatActivity {
  private AppServices services;private AppearanceRepository.State selection;private boolean saving;private androidx.appcompat.app.AlertDialog dialog;
  @Override protected void onCreate(Bundle state){super.onCreate(state);EdgeToEdge.enable(this);setContentView(R.layout.activity_enhanced_settings);SocialViews.insets(findViewById(R.id.enhanced_settings_root));
   services=((AniloveApplication)getApplication()).services();services.appearance.read().thenAccept(value->runOnUiThread(()->{if(!isDestroyed())selection=value;}));
-  ((com.google.android.material.appbar.MaterialToolbar)findViewById(R.id.settings_back)).setNavigationOnClickListener(v->finish());
+  findViewById(R.id.settings_back).setOnClickListener(v->finish());
   ((TextView)findViewById(R.id.btn_setting_account)).setText(R.string.profile_title);
   findViewById(R.id.btn_setting_account).setVisibility(android.view.View.GONE);
   findViewById(R.id.btn_setting_account).setOnClickListener(v->startActivity(new Intent(this,ProfileActivity.class)));

@@ -70,8 +70,8 @@ async function main() {
       const writes = {
         participation: { schemaVersion: 1, policyVersion: Math.max(1, participation?.policyVersion ?? 0), mode: 'course_simplified', enabled: true, requireVerifiedEmailForAuthoring: true, phoneRequired: false, publicProfileRequired: false, termsVersion: 1, sourceSchema: 3, updatedAt: now, auditRef: auditId },
         lifecycle: { ...lifecycle, enabled: true, jobsEnabled: true, pushEnabled: true, courseDemoOnly: true, updatedAt: now, auditRef: auditId },
-        workflow: { ...workflow, schemaVersion: 2, commandsEnabled: true, publicationEnabled: true, writerSetVersion: 2, reviewCapacityVerified: true, updatedAt: now, reviewNote: 'Explicit user-authorized full course testing rollout', auditRef: auditId },
-        browse: { ...browse, schemaVersion: 1, version: Math.max(1, browse?.version ?? 0), enabled: true, applicationsEnabled: true, updatedAt: now, auditRef: auditId },
+        workflow: { ...workflow, schemaVersion: 2, commandsEnabled: true, publicationEnabled: true, writerSetVersion: 3, reviewCapacityVerified: true, updatedAt: now, reviewNote: 'Explicit user-authorized full course testing rollout', auditRef: auditId },
+        browse: { ...browse, schemaVersion: 1, version: Math.max(1, browse?.version ?? 0) + 1, enabled: true, mode: 'course_participation', allowedSourceSchema: 3, applicationsEnabled: true, updatedAt: now, auditRef: auditId },
         notifications: { ...notifications, schemaVersion: 1, enabled: true, updatedAt: now, auditRef: auditId },
         moderation: { ...moderation, schemaVersion: 1, mode: 'course_manual_owner', staffingVerified: true, supportedPostSchemas: [2, 4, 5, 6], updatedAt: now, auditRef: auditId },
         reviewer: { ...reviewer, capabilities, version: reviewer.version + (capabilities.length === reviewer.capabilities.length ? 0 : 1), updatedAt: now, auditRef: auditId },

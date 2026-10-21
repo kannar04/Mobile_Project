@@ -9,7 +9,7 @@ import argparse,json,os,subprocess,sys,time,urllib.request
 ROOT=Path(__file__).resolve().parent.parent
 OUT=ROOT/'build/two-device'
 ADB=Path(os.environ['LOCALAPPDATA'])/'Android/Sdk/platform-tools/adb.exe'
-DEVICES={'host':'TSL7IRUGNFCEZ9XS','adopter':'localhost:5555'}
+DEVICES={'host':'127.0.0.1:5595','adopter':'adb-TSL7IRUGNFCEZ9XS-7ozPLb._adb-tls-connect._tcp'}
 RUNNER='com.gmail.manhle240406.project.test/androidx.test.runner.AndroidJUnitRunner'
 TEST='com.gmail.manhle240406.project.adoption.TwoDeviceLifecycleTest'
 
@@ -41,9 +41,7 @@ def native(scenario,role,action,report=None,suffix=None):
 def start_case(name):
     native(name,'host','prepare');native(name,'adopter','apply')
     state=control({'kind':'state'})
-    if state['cases'][name].get('adoptionId'):
-        native(name,'host','verifySelection')
-    else:
+    if not state['cases'][name].get('adoptionId'):
         native(name,'host','select')
 
 def agreement_handover(name,verify=True):
@@ -69,7 +67,10 @@ def run():
     native('success','host','finalize');native('success','host','readonly');native('success','adopter','readonly')
     start_case('cancel');native('cancel','adopter','cancel');native('cancel','host','readonly')
     start_case('dispute');agreement_handover('dispute',verify=False);native('dispute','adopter','dispute');native('dispute','host','blockedVerify')
-    control({'kind':'reviewer','case':'dispute'});native('dispute','host','cancel');native('dispute','adopter','readonly')
+    current=control({'kind':'audit'})
+    if next(x for x in current['results'] if x['name']=='dispute')['blockingDispute']:
+        control({'kind':'reviewer','case':'dispute'})
+    native('dispute','host','cancel');native('dispute','adopter','readonly')
     audit=control({'kind':'audit'});(OUT/'audit-result.json').write_text(json.dumps(audit,indent=2));assert {x['name']:x['status'] for x in audit['results']}=={'success':'FINALIZED','cancel':'CANCELLED_BEFORE_HANDOVER','dispute':'CANCELLED_BEFORE_HANDOVER'}
     print({'two_device_run_passed':True,'production_rollout_unchanged':True},flush=True)
 

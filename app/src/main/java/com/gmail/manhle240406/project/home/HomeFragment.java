@@ -38,7 +38,6 @@ public final class HomeFragment extends Fragment {
   actions.changes.observe(getViewLifecycleOwner(),ignored->{if(posts==null)return;if(actions.committed&&!Objects.equals(lastReactionCommit,actions.lastCommittedSocial)){lastReactionCommit=actions.lastCommittedSocial;likes.remove(actions.postId);reactionFailures.remove(actions.postId);}posts.reactionsChanged();
    if(!actions.busy&&(actions.pending!=null||"local_failed".equals(actions.notice))&&!actions.notice.equals(actionNotice)&&getView()!=null){actionNotice=actions.notice;com.google.android.material.snackbar.Snackbar.make(requireView(),DailyCopy.notice(requireContext(),actions.notice),com.google.android.material.snackbar.Snackbar.LENGTH_LONG).setAction(R.string.social_retry,v->actions.retry()).show();}
   });
-  com.google.android.material.button.MaterialButton chat=SocialSurface.quiet(requireContext(),"",()->((MainActivity)requireActivity()).navigate("chat"));chat.setIconResource(R.drawable.ic_nav_chat);chat.setContentDescription(getString(R.string.nav_chat));chat.setMinWidth(SocialViews.dp(requireContext(),48));chat.setMinimumHeight(SocialViews.dp(requireContext(),48));((android.view.ViewGroup)header).addView(chat,1);
   View.OnClickListener compose=v->composer.launch(new Intent(requireContext(),SocialComposerActivity.class));
   header.findViewById(R.id.home_create_post_card).setOnClickListener(compose);
   header.findViewById(R.id.home_post_status_btn).setOnClickListener(compose);

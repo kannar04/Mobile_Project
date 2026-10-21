@@ -51,6 +51,7 @@
             app:tint="@color/anilove_primary" />
 
         <TextView
+            android:id="@+id/map_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -60,6 +61,7 @@
             android:textSize="14sp" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/map_scan"
             style="@style/AniLovePrimaryButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
