@@ -17,5 +17,7 @@
     <item name="favorite_library" type="id"/>
     <item name="liked_posts_list" type="id"/>
     <item name="post_type_picker" type="id"/>
+    <item name="own_posts_footer" type="id"/>
+    <item name="own_new_post_action" type="id"/>
     <item name="adoption_listing_action" type="id"/>
 </resources>

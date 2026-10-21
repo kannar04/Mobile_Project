@@ -170,55 +170,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
+            android:fillViewport="true"
             android:scrollbars="none">
 
-            <LinearLayout
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/home_species_group"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:background="@drawable/anilove_chip_bg"
-                    android:backgroundTint="?attr/colorPrimary"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="8dp"
-                    android:text="Tất cả"
-                    android:textColor="?attr/colorOnPrimary"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:background="@drawable/anilove_chip_bg"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="8dp"
-                    android:text="Chó"
-                    android:textColor="@color/anilove_text_dark" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:background="@drawable/anilove_chip_bg"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="8dp"
-                    android:text="Mèo"
-                    android:textColor="@color/anilove_text_dark" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:background="@drawable/anilove_chip_bg"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="8dp"
-                    android:text="Thỏ"
-                    android:textColor="@color/anilove_text_dark" />
-            </LinearLayout>
+                app:selectionRequired="true"
+                app:singleSelection="true" />
         </HorizontalScrollView>
 
         <!-- Section Title -->

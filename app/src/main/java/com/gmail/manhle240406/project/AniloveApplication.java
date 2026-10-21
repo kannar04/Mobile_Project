@@ -11,6 +11,7 @@ public final class AniloveApplication extends Application {
     private com.gmail.manhle240406.project.community.CommunityOutbox communityOutbox;
     private com.gmail.manhle240406.project.wiring.AppServices services;
     private com.gmail.manhle240406.project.listing.LocalListingDraftStore listingDrafts;
+    private com.gmail.manhle240406.project.adoption.SpeciesCatalogStore speciesCatalog;
     @Override public void onCreate() {
         super.onCreate();
         registerActivityLifecycleCallbacks(new com.gmail.manhle240406.project.wiring.MainNavigation());
@@ -22,6 +23,7 @@ public final class AniloveApplication extends Application {
         listingDrafts.clearOnSignedOutStartup();
         auth = new AuthCoordinator(this, foundation);
         services = new com.gmail.manhle240406.project.wiring.AppServices(this, foundation);
+        speciesCatalog = new com.gmail.manhle240406.project.adoption.SpeciesCatalogStore(this, com.google.firebase.firestore.FirebaseFirestore.getInstance(), foundation.sessions);
     }
     @Override public void onTrimMemory(int level) { super.onTrimMemory(level); com.gmail.manhle240406.project.media.SessionImageCache.clear(); com.gmail.manhle240406.project.community.SessionAliases.clear(); }
     public FirebaseEnvironment foundation() { return foundation; }
@@ -29,4 +31,5 @@ public final class AniloveApplication extends Application {
     public com.gmail.manhle240406.project.community.CommunityOutbox communityOutbox() { return communityOutbox; }
     public com.gmail.manhle240406.project.wiring.AppServices services() { return services; }
     public com.gmail.manhle240406.project.listing.LocalListingDraftStore listingDrafts() { return listingDrafts; }
+    public com.gmail.manhle240406.project.adoption.SpeciesCatalogStore speciesCatalog() { return speciesCatalog; }
 }

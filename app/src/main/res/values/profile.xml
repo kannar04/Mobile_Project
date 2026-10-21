@@ -60,6 +60,6 @@
     <string name="profile_pending">Bản cũ đã gửi duyệt · chưa công khai</string>
     <string name="profile_compare">%1$s\nBản gốc:\n%2$s\nMáy chủ hiện tại:\n%3$s\nBản đang sửa:\n%4$s\nKhông tự ghi đè hay hợp nhất. Giữ bản sửa rồi áp dụng lại thủ công sau khi tải lại.</string>
     <string name="profile_none">Chưa có</string>
-    <string-array name="profile_avatar_labels"><item>Mặc định</item><item>Mèo</item><item>Chó</item></string-array>
+    <string-array name="profile_avatar_labels"><item>Ảnh mặc định</item></string-array>
     <string-array name="profile_region_labels"><item>Không chọn</item><item>Miền Bắc</item><item>Miền Trung</item><item>Miền Nam</item></string-array>
 </resources>

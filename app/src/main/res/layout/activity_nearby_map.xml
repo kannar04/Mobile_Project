@@ -16,16 +16,14 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/map_back"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:minWidth="48dp"
-            android:minHeight="48dp"
-            android:text="@string/auth_back"
-            android:textColor="@color/anilove_text_dark" />
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            app:icon="@drawable/ic_social_back"
+            app:iconTint="@color/anilove_text_dark"
+            android:contentDescription="@string/auth_back" />
 
         <TextView
-            android:id="@+id/map_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
@@ -57,16 +55,15 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:gravity="center"
-            android:text="Thú cưng và dịch vụ gần đây\n\nHiển thị vị trí của thú cưng, trạm cứu hộ, phòng khám thú y và cửa hàng gần bạn."
+            android:text="Bản đồ Thú cưng &amp; Cửa hàng Quanh đây (F35)\n\nHiển thị vị trí GPS của các bé thú cưng, trạm cứu hộ và phòng khám thú y gần bạn."
             android:textColor="@color/anilove_text_muted"
             android:textSize="14sp" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/map_scan"
             style="@style/AniLovePrimaryButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="@string/review_gps_scan" />
+            android:text="Quét vị trí GPS quanh đây" />
     </LinearLayout>
 </LinearLayout>

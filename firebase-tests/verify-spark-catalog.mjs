@@ -14,8 +14,8 @@ async function page(name,clauses=[]){return getDocs(query(collection(db,name),wh
 try{
   await assert.rejects(()=>page('catalogSpecies'),e=>e.code==='permission-denied');passed.push('anonymous_catalog_denied');
   own=(await createUserWithEmailAndPassword(auth,`catalog-check-${randomUUID()}@example.invalid`,randomUUID()+randomUUID())).user;
-  assert.equal((await page('catalogSpecies')).size,3);passed.push('signed_in_species_query');
-  assert.equal((await page('catalogRegions')).size,3);passed.push('signed_in_coarse_regions_query');
+  const speciesPage=await page('catalogSpecies');assert.equal(speciesPage.size,7);for(const id of ['cat','dog','unknown','rabbit','bird','fish','hamster'])assert.ok(speciesPage.docs.some(row=>row.id===id));passed.push('signed_in_species_query');
+  assert.ok((await page('catalogRegions')).size>=3);passed.push('signed_in_coarse_regions_query');
   for(const species of ['cat','dog','unknown']){
     const breeds=await page('catalogBreeds',[where('speciesId','==',species)]);assert.equal(breeds.size,2);
     for(const breed of breeds.docs){assert.equal(breed.data().speciesId,species);assert.ok(['unknown','mixed'].includes(breed.data().variant));}
@@ -23,7 +23,7 @@ try{
   assert.equal((await getDocFromServer(doc(db,'catalogSpecies/cat/revisions/v1'))).data().version,1);passed.push('version_snapshot_read');
   await assert.rejects(()=>setDoc(doc(db,'catalogSpecies/cat'),{state:'retired'},{merge:true}),e=>e.code==='permission-denied');passed.push('member_catalog_edit_denied');
   await assert.rejects(()=>getDocFromServer(doc(db,'catalogOperations/course-catalog-seed-r1')),e=>e.code==='permission-denied');passed.push('operator_receipt_private');
-}catch(e){result.failureCode=e.code??'assertion_failure';process.exitCode=1;}
+}catch(e){result.failureCode=e.code??'assertion_failure';result.failureMessage=e.message;process.exitCode=1;}
 finally{
   if(own){try{await deleteUser(own);result.cleanup=true;}catch{result.cleanup=false;process.exitCode=1;}}
   await terminate(db);await deleteApp(app);

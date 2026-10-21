@@ -15,19 +15,18 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/community_feed_back"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:minWidth="48dp"
-            android:minHeight="48dp"
-            android:text="@string/auth_back"
-            android:textColor="@color/anilove_text_dark" />
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            app:icon="@drawable/ic_social_back"
+            app:iconTint="@color/anilove_text_dark"
+            android:contentDescription="@string/auth_back" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            android:text="Bản tin cộng đồng"
+            android:text="Bản tin Cộng đồng (F31)"
             android:textColor="@color/anilove_text_dark"
             android:textSize="18sp"
             android:textStyle="bold" />

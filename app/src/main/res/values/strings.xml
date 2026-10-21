@@ -53,6 +53,13 @@
     <string name="f23_title">Theo dõi 90 ngày sau nhận nuôi</string>
     <string name="f24_title">Gia hạn lịch cập nhật</string>
     <string name="f25_title">Báo cáo phúc lợi khẩn cấp</string>
+    <string name="welfare_form_title">Gửi thông tin phúc lợi thú cưng</string>
+    <string name="welfare_form_supporting_text">Thông tin và ảnh được lưu riêng tư để quản trị viên được phân công xem xét. Nếu có nguy hiểm tức thời, hãy liên hệ cơ quan hỗ trợ tại địa phương.</string>
+    <string name="welfare_problem_type">Loại vấn đề</string>
+    <string name="welfare_description_hint">Mô tả tình huống</string>
+    <string name="welfare_evidence_title">Ảnh minh chứng (bắt buộc ít nhất 1 ảnh)</string>
+    <string name="welfare_submit">Gửi báo cáo</string>
+    <string name="home_species_selected">đang chọn</string>
     <string name="f26_title">Hỗ trợ trả lại thú cưng</string>
     <string name="f27_title">Kháng nghị quyết định</string>
     <string name="f28_title">Đánh giá sau nhận nuôi hoặc trao đổi</string>

@@ -23,10 +23,11 @@ public final class FlowHubActivity extends AppCompatActivity {
         if(group<0){for(int i=0;i<FlowRoutes.GROUPS.length;i++){
             final int selected=i;
             FlowGrid.add(grid,getString(FlowRoutes.GROUPS[i]),FlowGrid.groupIcon(i),()->startActivity(new Intent(this,FlowHubActivity.class).putExtra("group",selected)),"flow_group_"+i);
-        }}else for(FlowRoutes.Route route:FlowRoutes.ALL)if(route.group==group){
+        }}else for(FlowRoutes.Route route:FlowRoutes.ALL)if(route.group==group&&!hiddenShortcut(route.feature)){
             FlowGrid.add(grid,getString(route.title).replaceAll("\\s*\\(F[0-9]+\\)",""),FlowGrid.featureIcon(route.feature,route.group),()->open(route),"flow_"+route.feature);
         }
     }
+    private boolean hiddenShortcut(String feature){return java.util.Arrays.asList("F12","F13","F14","F15","F16","F17","F18","F19","F20","F21","F22","F28","F32","F34","F35","F37","F41").contains(feature);}
     private void open(FlowRoutes.Route route){
         if(!route.contextual){Intent intent=new Intent(this,route.activity);if(route.feature.equals("F01")||route.feature.equals("F42"))intent.putExtra("account",true);if(route.feature.equals("F13"))intent.putExtra("filters",true);startActivity(intent);return;}
         int message=route.feature.equals("F05")?R.string.flow_admin_accounts_help:route.feature.equals("F15")?R.string.flow_share_unavailable:route.feature.equals("F37")?R.string.flow_recommendation_help:R.string.flow_context_required;

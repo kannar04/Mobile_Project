@@ -155,7 +155,7 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
     private TextInputLayout field(int id){return findViewById(id);}
     private String value(TextInputEditText v){return v.getText()==null?"":v.getText().toString();}
     private void capture(){if(rendering || model==null)return;model.name=value(name);model.bio=value(bio);model.avatar=Math.max(0,avatar.getSelectedItemPosition());model.region=Math.max(0,region.getSelectedItemPosition());}
-    private void updateAvatar(){if(avatarControl!=null&&avatarControl.model.assetId!=null){com.gmail.manhle240406.project.media.MediaGrid.load(findViewById(R.id.profile_avatar_image),avatarControl.model.assetId,"thumbnail");return;}((ImageView)findViewById(R.id.profile_avatar_image)).setImageResource(model.avatar==1?R.drawable.profile_avatar_cat:model.avatar==2?R.drawable.profile_avatar_dog:R.drawable.profile_avatar_default);}
+    private void updateAvatar(){if(avatarControl!=null&&avatarControl.model.assetId!=null){com.gmail.manhle240406.project.media.MediaGrid.load(findViewById(R.id.profile_avatar_image),avatarControl.model.assetId,"thumbnail");return;}((ImageView)findViewById(R.id.profile_avatar_image)).setImageResource(R.drawable.profile_avatar_default);}
     private boolean validateContent(){
         field(R.id.profile_name_layout).setError(null);field(R.id.profile_bio_layout).setError(null);
         int length=ProfileSchema.length(model.name.trim());

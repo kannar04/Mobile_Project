@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/photo_gallery_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/anilove_bg"
@@ -16,13 +15,12 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/photo_gallery_back"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:minWidth="48dp"
-            android:minHeight="48dp"
-            android:text="@string/auth_back"
-            android:textColor="@color/anilove_text_dark" />
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            app:icon="@drawable/ic_social_back"
+            app:iconTint="@color/anilove_text_dark"
+            android:contentDescription="@string/auth_back" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -34,47 +32,8 @@
             android:textStyle="bold" />
     </RelativeLayout>
 
-    <!-- Upload Progress Card / Bar -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"
-        android:background="@drawable/anilove_card_bg"
-        android:orientation="vertical"
-        android:padding="12dp">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Đang tải lên (60%)"
-            android:textColor="@color/anilove_primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <ProgressBar
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="6dp"
-            android:layout_marginTop="6dp"
-            android:indeterminate="false"
-            android:progress="60" />
-    </LinearLayout>
-
-    <!-- Photos Grid/List Container -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/photo_recycler"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-        app:spanCount="2" />
-
-    <!-- Add Photo Button -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/photo_add_btn"
-        style="@style/AniLovePrimaryButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/photo_add" />
+        android:layout_height="match_parent" />
 </LinearLayout>

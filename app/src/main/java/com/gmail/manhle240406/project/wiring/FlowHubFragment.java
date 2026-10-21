@@ -27,16 +27,13 @@ public final class FlowHubFragment extends MainPageFragment {
             FlowGrid.add(grid,getString(R.string.discovery_title),R.drawable.ic_shell_search,()->((com.gmail.manhle240406.project.MainActivity)requireActivity()).discovery("",false),"explore_discovery");
             FlowGrid.add(grid,getString(R.string.feedback_my_posts),R.drawable.ic_shell_photo,()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.community.SocialComposerActivity.class).putExtra("own",true)),"explore_listings");
             FlowGrid.add(grid,getString(R.string.oc2_adoption_manager),R.drawable.ic_pet_paw_vector,()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.adoption.LifecycleActivity.class)),"explore_adoption_history");
-            FlowGrid.add(grid,getString(R.string.f32_title),R.drawable.ic_flow_notifications,()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.adoption.LostAndFoundActivity.class)),"explore_lost");
-            FlowGrid.add(grid,getString(R.string.f35_title),R.drawable.ic_shell_search,()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.adoption.NearbyMapActivity.class)),"explore_nearby");
-            FlowGrid.add(grid,getString(R.string.flow_placement),R.drawable.ic_placement_group,()->((com.gmail.manhle240406.project.MainActivity)requireActivity()).navigate("tools:2"),"flow_group_placement");
             FlowGrid.add(grid,getString(R.string.flow_care),FlowGrid.groupIcon(3),()->((com.gmail.manhle240406.project.MainActivity)requireActivity()).navigate("tools:3"),"flow_group_care");
             FlowGrid.add(grid,getString(R.string.nav_profile),R.drawable.ic_nav_profile,()->((com.gmail.manhle240406.project.MainActivity)requireActivity()).navigate("profile"),"flow_profile");
         }else for(FlowRoutes.Route route:FlowRoutes.ALL)if(route.group==group&&!hiddenShortcut(route.feature)){
             FlowGrid.add(grid,getString(route.title).replaceAll("\\s*\\(F[0-9]+\\)",""),FlowGrid.featureIcon(route.feature,route.group),()->open(route),"flow_"+route.feature);
         }
     }
-    private boolean hiddenShortcut(String feature){return java.util.Arrays.asList("F12","F13","F14","F15","F19","F22","F37","F41").contains(feature);}
+    private boolean hiddenShortcut(String feature){return java.util.Arrays.asList("F12","F13","F14","F15","F16","F17","F18","F19","F20","F21","F22","F28","F32","F34","F35","F37","F41").contains(feature);}
     private void open(FlowRoutes.Route route){
         if(!route.contextual&&route.activity==com.gmail.manhle240406.project.adoption.DiscoveryActivity.class){((com.gmail.manhle240406.project.MainActivity)requireActivity()).discovery("",route.feature.equals("F13"));return;}
         if(!route.contextual){Intent intent=new Intent(requireActivity(),route.activity);if(route.feature.equals("F01")||route.feature.equals("F42"))intent.putExtra("account",true);if(route.feature.equals("F13"))intent.putExtra("filters",true);startActivity(intent);return;}
