@@ -62,4 +62,6 @@
     <string name="profile_none">Chưa có</string>
     <string-array name="profile_avatar_labels"><item>Ảnh mặc định</item></string-array>
     <string-array name="profile_region_labels"><item>Không chọn</item><item>Miền Bắc</item><item>Miền Trung</item><item>Miền Nam</item></string-array>
+    <string name="profile_making_public">Đang đặt hồ sơ ở chế độ công khai…</string>
+    <string name="profile_making_private">Đang đặt hồ sơ ở chế độ riêng tư…</string>
 </resources>
