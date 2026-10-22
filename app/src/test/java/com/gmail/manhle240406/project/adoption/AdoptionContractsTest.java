@@ -63,4 +63,8 @@ public class AdoptionContractsTest {
     @Test public void discoveryWhitelistRejectsPrivateExtrasEvenBeforeParsingMissingFields(){
         Map<String,Object> invalid=new HashMap<>();invalid.put("phone","synthetic-private");assertThrows(IllegalArgumentException.class,()->DiscoveryProjection.validate(invalid,id));
     }
+    @Test public void discoveryAcceptsReviewedAndCoursePublicationSourcesOnly(){
+        Map<String,Object> row=PetSchema.map("schemaVersion",2L,"sourceSchemaVersion",2L,"careDigest",String.join("",Collections.nCopies(64,"a")),"listingId",id,"petId",id,"ownerUid","owner","contentVersion",1L,"publicationVersion",1L,"audience","signed_in","state","visible","firstPublishedAt",new com.google.firebase.Timestamp(1,0),"updatedAt",new com.google.firebase.Timestamp(1,0),"title","Safe adoption title","petName","Pet","nameKey","pet","speciesId","cat","breedId",null,"regionId",null,"regionLabel","Unknown","sex","unknown","ageBand","unknown","offerType","adoption","availability","available","careCues",PetSchema.map("source","owner_report","healthState","unknown"),"bundledIllustrationKey","cat","mediaDescriptors",Collections.emptyList());
+        DiscoveryProjection.validate(row,id);row.put("sourceSchemaVersion",3L);DiscoveryProjection.validate(row,id);row.put("sourceSchemaVersion",4L);assertThrows(IllegalArgumentException.class,()->DiscoveryProjection.validate(row,id));
+    }
 }
