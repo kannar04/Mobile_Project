@@ -20,7 +20,7 @@
     <string name="photo_uploading">Đang tải lên</string>
     <string name="catalog_title">Danh mục Loài &amp; Khu vực</string>
     <string name="pet_care_title">Chi tiết Chăm sóc &amp; Sức khỏe</string>
-    <string name="listing_review_title">Phê duyệt Tin đăng</string>
+    <string name="listing_review_title">Duyệt hồ sơ và tin nhận nuôi</string>
     <string name="discovery_title">Khám phá &amp; Tìm kiếm</string>
     <string name="favorites_title">Yêu thích đã lưu</string>
     <string name="share_title">Chia sẻ (Facebook, Zalo)</string>
@@ -92,6 +92,8 @@
     <string name="f36_title">Nhắc lịch tiêm phòng và tẩy giun</string>
     <string name="f37_title">Gợi ý thú cưng phù hợp</string>
     <string name="f40_title">Thống kê quản trị</string>
+    <string name="admin_dashboard_summary">Tổng quan thống kê quản trị</string>
+    <string name="admin_dashboard_data_notice">Chỉ số chỉ hiển thị khi nguồn thống kê đã hoàn tất đồng bộ. Ứng dụng không sử dụng số liệu mẫu.</string>
     <string name="f41_title">Dữ liệu ngoại tuyến và đồng bộ</string>
 
     <string name="test_f32">Test Thú cưng Thất lạc (F32)</string>

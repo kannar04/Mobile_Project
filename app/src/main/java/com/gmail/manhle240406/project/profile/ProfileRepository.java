@@ -169,9 +169,10 @@ public final class ProfileRepository {
     public Task<Result<Map<String,Object>>> operation(SessionEpoch.Ticket ticket,String op){return wrap(Tasks.withTimeout(db.document("users/"+ticket.uid+"/profileOperations/"+op).get(Source.SERVER).continueWith(t->{if(!t.isSuccessful())throw Objects.requireNonNull(t.getException());Map<String,Object> r=t.getResult().getData();if(r!=null && (!ticket.uid.equals(r.get("ownerUid")) || !op.equals(r.get("operationId")) || !Long.valueOf(1).equals(r.get("schemaVersion")) || !(r.get("committedAt") instanceof Timestamp) || r.size()!=9))throw new IllegalStateException("malformed");return r;}),15,TimeUnit.SECONDS),ticket,false);}
     public Task<Result<Map<String,Object>>> readPublic(SessionEpoch.Ticket ticket,String uid) {
         if(uid==null || uid.isEmpty() || uid.contains("/")) return Tasks.forResult(new Result<>(Code.DENIED,null));
-        Task<Map<String,Object>> task=db.document("publicProfiles/"+uid).get(Source.SERVER).continueWith(t->{
-            if(!t.isSuccessful()) throw Objects.requireNonNull(t.getException());
-            return checked(t.getResult(),ProfileSchema.PUBLIC,uid);
+        DocumentReference target=db.document("publicProfiles/"+uid);
+        Task<Map<String,Object>> task=target.get(Source.SERVER).continueWithTask(t->{
+            if(t.isSuccessful())return Tasks.forResult(checked(t.getResult(),ProfileSchema.PUBLIC,uid));
+            Exception server=t.getException();return target.get(Source.CACHE).continueWith(cached->{if(!cached.isSuccessful())throw server==null?Objects.requireNonNull(cached.getException()):server;return checked(cached.getResult(),ProfileSchema.PUBLIC,uid);});
         });
         return wrap(Tasks.withTimeout(task,15,TimeUnit.SECONDS),ticket,false);
     }

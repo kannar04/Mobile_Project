@@ -11,6 +11,17 @@ public final class ParticipantCommunicationRepository implements AutoCloseable {
  public ParticipantCommunicationRepository(FirebaseFirestore db,SessionGateway sessions){this.db=db;this.sessions=sessions;sessions.onInvalidated(invalidation);}
  private void current(SessionEpoch.Ticket t){if(t.uid==null||!sessions.current(t))throw new IllegalStateException("session_changed");}
  private <T> Task<T> scoped(SessionEpoch.Ticket t,Task<T> task){return Tasks.withTimeout(task,15,TimeUnit.SECONDS).continueWith(done->{current(t);if(!done.isSuccessful())throw Objects.requireNonNull(done.getException());return done.getResult();});}
+ private Task<QuerySnapshot> cachedPage(SessionEpoch.Ticket t,Query query){
+  return scoped(t,query.get(Source.SERVER)).continueWithTask(server->{
+   if(server.isSuccessful())return Tasks.forResult(server.getResult());
+   Exception failure=server.getException();
+   return scoped(t,query.get(Source.CACHE)).continueWith(cached->{
+    if(cached.isSuccessful())return cached.getResult();
+    if(failure!=null)throw failure;
+    throw Objects.requireNonNull(cached.getException());
+   });
+  });
+ }
  private DocumentReference ref(String path){return db.document(path);}
  private Map<String,Object> record(DocumentSnapshot d){if(!d.exists())throw new IllegalStateException("record_unavailable");return Objects.requireNonNull(d.getData());}
  private static Map<String,Object> map(Object... args){Map<String,Object> m=new HashMap<>();for(int i=0;i<args.length;i+=2)m.put((String)args[i],args[i+1]);return m;}
@@ -31,10 +42,10 @@ public final class ParticipantCommunicationRepository implements AutoCloseable {
    tx.set(messageRef,map("schemaVersion",1L,"senderUid",t.uid,"reservationId",id,"messageId",mid,"sequence",sequence,"body",body,"source","participant_message","createdAt",now,"operationId",op));tx.set(counterRef,map("schemaVersion",1L,"reservationId",id,"nextSequence",sequence+1,"messageCount",count+1,"version",version+1));tx.set(rateRef,map("uid",t.uid,"lastSentAt",now,"version",rate.exists()?AdoptionValues.version(rate.getData(),"version")+1:1L,"operationId",op,"reservationId",id));tx.update(ownIndex,"updatedAt",now);tx.update(peerIndex,"updatedAt",now);tx.set(receipt,result);current(t);return Collections.unmodifiableMap(map("messageId",mid,"sequence",sequence));}));
  }
  private Query thread(String id){return db.collection("conversations/"+id+"/messages").orderBy("sequence",Query.Direction.DESCENDING).orderBy(FieldPath.documentId(),Query.Direction.DESCENDING).limit(20);}
- public Task<QuerySnapshot> messages(SessionEpoch.Ticket t,String reservation,DocumentSnapshot older){current(t);String id=AdoptionValues.listingId(reservation);Query q=thread(id);if(older!=null){if(!older.getReference().getParent().getPath().equals("conversations/"+id+"/messages"))throw new IllegalArgumentException("foreign_cursor");q=q.startAfter(older);}return scoped(t,q.get(Source.SERVER));}
+ public Task<QuerySnapshot> messages(SessionEpoch.Ticket t,String reservation,DocumentSnapshot older){current(t);String id=AdoptionValues.listingId(reservation);Query q=thread(id);if(older!=null){if(!older.getReference().getParent().getPath().equals("conversations/"+id+"/messages"))throw new IllegalArgumentException("foreign_cursor");q=q.startAfter(older);}return cachedPage(t,q);}
  public synchronized void listenInbox(SessionEpoch.Ticket t,com.google.firebase.firestore.EventListener<QuerySnapshot> callback){current(t);stop();listener=db.collection("users/"+t.uid+"/conversationIndex").orderBy("updatedAt",Query.Direction.DESCENDING).orderBy(FieldPath.documentId(),Query.Direction.DESCENDING).limit(20).addSnapshotListener(MetadataChanges.INCLUDE,(rows,error)->{if(sessions.current(t))callback.onEvent(rows,error);});}
  public synchronized void listen(SessionEpoch.Ticket t,String reservation,com.google.firebase.firestore.EventListener<QuerySnapshot> callback){current(t);stop();listener=thread(AdoptionValues.listingId(reservation)).addSnapshotListener(MetadataChanges.INCLUDE,(rows,error)->{if(sessions.current(t))callback.onEvent(rows,error);});}
- public Task<QuerySnapshot> inbox(SessionEpoch.Ticket t,DocumentSnapshot cursor){current(t);String path="users/"+t.uid+"/conversationIndex";Query q=db.collection(path).orderBy("updatedAt",Query.Direction.DESCENDING).orderBy(FieldPath.documentId(),Query.Direction.DESCENDING).limit(20);if(cursor!=null){if(!cursor.getReference().getParent().getPath().equals(path))throw new IllegalArgumentException("foreign_cursor");q=q.startAfter(cursor);}return scoped(t,q.get(Source.SERVER));}
+ public Task<QuerySnapshot> inbox(SessionEpoch.Ticket t,DocumentSnapshot cursor){current(t);String path="users/"+t.uid+"/conversationIndex";Query q=db.collection(path).orderBy("updatedAt",Query.Direction.DESCENDING).orderBy(FieldPath.documentId(),Query.Direction.DESCENDING).limit(20);if(cursor!=null){if(!cursor.getReference().getParent().getPath().equals(path))throw new IllegalArgumentException("foreign_cursor");q=q.startAfter(cursor);}return cachedPage(t,q);}
  public Task<Void> markRead(SessionEpoch.Ticket t,String reservation,long sequence){current(t);String id=AdoptionValues.listingId(reservation);DocumentReference index=ref("users/"+t.uid+"/conversationIndex/"+id);return scoped(t,db.runTransaction(tx->{current(t);Map<String,Object> row=record(tx.get(index)),counter=record(tx.get(ref("conversationCounters/"+id)));long old=AdoptionValues.version(row,"lastReadSequence");if(sequence<old||sequence>=AdoptionValues.version(counter,"nextSequence"))throw new IllegalArgumentException("read_marker");tx.update(index,"lastReadSequence",sequence);return null;}));}
  public synchronized void stop(){if(listener!=null){listener.remove();listener=null;}}
  @Override public synchronized void close(){stop();sessions.removeInvalidation(invalidation);}

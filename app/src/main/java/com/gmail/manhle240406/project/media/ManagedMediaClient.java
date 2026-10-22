@@ -23,7 +23,8 @@ public final class ManagedMediaClient {
         return request(operation,new JSONObject(body).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8),null).continueWith(WORK,t->{byte[] b=t.getResult();Map<String,Object> result=object(new JSONObject(new String(b,java.nio.charset.StandardCharsets.UTF_8)));if(java.util.Arrays.asList("avatar","google","remove","saveProfile","publishProfile","post").contains(operation)){SessionImageCache.clearAll();com.gmail.manhle240406.project.community.SessionAliases.clear();}return result;});
     }
     public static Task<Map<String,Object>> upload(String id,byte[] bytes){return request("receive",bytes,id).continueWith(WORK,t->object(new JSONObject(new String(t.getResult(),java.nio.charset.StandardCharsets.UTF_8))));}
-    public static Task<byte[]> image(String id,String variant){return request("read",new JSONObject(map("assetId",id,"variant",variant)).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8),null);}
+    public static Task<byte[]> image(String id,String variant){return image(id,variant,null);}
+    public static Task<byte[]> image(String id,String variant,String accessTarget){Map<String,Object> input=map("assetId",id,"variant",variant);if(accessTarget!=null)input.put("accessTarget",accessTarget);return request("read",new JSONObject(input).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8),null);}
     private static Task<byte[]> request(String operation,byte[] body,String id){
         if(com.gmail.manhle240406.project.BuildConfig.DEBUG&&debugTransport!=null)return debugTransport.request(operation,body,id);
         if(com.gmail.manhle240406.project.BuildConfig.FIREBASE_EMULATORS||!com.gmail.manhle240406.project.BuildConfig.MEDIA_UPLOADS_ENABLED)return Tasks.forException(new IllegalStateException("media_disabled"));

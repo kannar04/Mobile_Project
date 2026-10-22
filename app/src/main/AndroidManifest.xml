@@ -33,7 +33,7 @@
             android:name="com.google.firebase.provider.FirebaseInitProvider"
             android:authorities="${applicationId}.firebaseinitprovider"
             tools:node="remove" />
-        <activity android:name=".community.SocialFeedActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".community.CommunityFeedActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".community.SocialComposerActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".community.SocialDetailActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".community.MyReportsActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
@@ -82,7 +82,6 @@
         <activity android:name=".profile.PhoneVerificationActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".auth.PasswordRecoveryActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".profile.EnhancedSettingsActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".community.CommunityFeedActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".media.RefinedPhotoActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".auth.AuthActivity"
@@ -105,6 +104,7 @@
         <meta-data android:name="firebase_messaging_auto_init_enabled" android:value="false" />
         <service android:name=".notifications.AdoptionPushService" android:exported="false"><intent-filter><action android:name="com.google.firebase.MESSAGING_EVENT" /></intent-filter></service>
         <activity android:name=".adoption.CourseAdminActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".adoption.AdminAccountActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
     <activity android:name=".adoption.CourseNoticesActivity" android:exported="false" android:theme="@style/Theme.Project.Auth" android:windowSoftInputMode="adjustResize" />
     </application>
 

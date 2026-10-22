@@ -37,11 +37,18 @@ public final class MainNavigationDeviceTest {
   try(FileOutputStream out=new FileOutputStream(new File(dir,name+".png"))){image.compress(Bitmap.CompressFormat.PNG,100,out);}image.recycle();
  }
  @Test public void mainBrowsingSurfacesKeepOneBarAndCanReturnHome()throws Exception{
-  Class<?>[] pages={DiscoveryActivity.class,FavoritesActivity.class,InboxActivity.class,SocialFeedActivity.class,FlowHubActivity.class,EnhancedSettingsActivity.class,ProfileActivity.class};
+  Class<?>[] pages={DiscoveryActivity.class,FavoritesActivity.class,InboxActivity.class,CommunityFeedActivity.class,FlowHubActivity.class,EnhancedSettingsActivity.class,ProfileActivity.class};
   for(Class<?> page:pages)try(ActivityScenario<?> screen=ActivityScenario.launch(new Intent(app(),page))){
    onView(withId(R.id.bottom_navigation)).check(matches(isDisplayed()));
    screen.onActivity(a->{View bar=a.findViewById(R.id.bottom_navigation);assertTrue(bar.getHeight()>0);View root=a.findViewById(android.R.id.content);assertTrue(bar.getBottom()<=root.getHeight());});
    capture(page.getSimpleName());
+   onView(withId(R.id.nav_home)).perform(click());onView(withId(R.id.home_filter_btn)).check(matches(isDisplayed()));
+  }
+ }
+ @Test public void canonicalCommunityFeedKeepsOneBarAndReturnsHome(){
+  try(ActivityScenario<CommunityFeedActivity> screen=ActivityScenario.launch(CommunityFeedActivity.class)){
+   onView(withId(R.id.bottom_navigation)).check(matches(isDisplayed()));
+   screen.onActivity(a->{View bar=a.findViewById(R.id.bottom_navigation);assertNotNull(bar);assertTrue(bar.getHeight()>0);});
    onView(withId(R.id.nav_home)).perform(click());onView(withId(R.id.home_filter_btn)).check(matches(isDisplayed()));
   }
  }

@@ -86,8 +86,12 @@ export class MediaService {
    await this.db.runTransaction(async tx=>{const a=await this.read(tx,`mediaAssets/${id}`);if(a?.lease===lease)tx.set(this.ref(`mediaAssets/${id}`),{...a,writerActive:writeUncertain,leaseUntil:null,...(writeUncertain?{writerOutcome:'unknown'}:{})});});
   }
  }
- async sourceAllowed(tx,actor,a){
+ async sourceAllowed(tx,actor,a,accessTarget=null){
   if(a.ownerUid===actor?.uid)return true;
+  if(accessTarget?.startsWith('post:')){
+   const id=accessTarget.slice(5),p=await this.read(tx,`communityPosts/${id}`),f=await this.read(tx,`communityFeed/${id}`),access=await this.read(tx,`mediaAccess/post:${id}`);
+   if(uuid(id)&&p?.lifecycle==='active'&&p.visibility==='visible'&&p.moderatorHold==='clear'&&p.mediaAssetIds?.includes(a.assetId)&&f?.contentVersion===p.contentVersion&&access?.assetIds?.includes(a.assetId)&&access.sourceContentVersion===p.contentVersion){const policy=await this.read(tx,'system/communityPolicy');if(policy?.enabled!==true)return false;if(actor?.uid)return true;const pub=await this.read(tx,'system/communityPublicPolicy');return p.audience==='everyone'&&pub?.enabled===true;}
+  }
   if(!a.targetId)return false;
   if(a.targetId.startsWith('flow:')&&actor?.uid){
    const id=a.targetId.slice(5);if(!uuid(id))return false;const d=await this.read(tx,'adoptions/'+id);if(d?.schemaVersion!==2||!Array.isArray(d.participantUids))return false;
@@ -111,8 +115,8 @@ export class MediaService {
   return false;
  }
  async bytes(actor,input){
-  exact(input,['assetId','variant']);ensure(uuid(input.assetId)&&['display','thumbnail'].includes(input.variant));
-  const v=await this.db.runTransaction(async tx=>{const a=await this.read(tx,`mediaAssets/${input.assetId}`);ensure(a&&['ready','attached'].includes(a.state),'unavailable');ensure(a.state==='attached'||ms(a.expiresAt)>this.clock(),'expired');ensure(await this.sourceAllowed(tx,actor,a),'denied');const v=a.variants[input.variant];ensure(v?.path===`final/${a.ownerUid}/${a.assetId}/${input.variant}.jpg`,'unavailable');return v;});
+  ensure(input&&Object.keys(input).every(k=>['assetId','variant','accessTarget'].includes(k)));ensure(uuid(input.assetId)&&['display','thumbnail'].includes(input.variant)&&(input.accessTarget==null||/^post:[0-9a-f-]{36}$/.test(input.accessTarget)));
+  const v=await this.db.runTransaction(async tx=>{const a=await this.read(tx,`mediaAssets/${input.assetId}`);ensure(a&&['ready','attached'].includes(a.state),'unavailable');ensure(a.state==='attached'||ms(a.expiresAt)>this.clock(),'expired');ensure(await this.sourceAllowed(tx,actor,a,input.accessTarget??null),'denied');const v=a.variants[input.variant];ensure(v?.path===`final/${a.ownerUid}/${a.assetId}/${input.variant}.jpg`,'unavailable');return v;});
   const file=this.bucket.file(v.path,{generation:v.generation});const [b]=await file.download({validation:'crc32c'});ensure(b.length<=DISPLAY,'invalid_image');return b;
  }
  async post(actor,c){

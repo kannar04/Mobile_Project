@@ -56,4 +56,15 @@
     <string-array name="permissions_notice_types"><item>Nội dung của bạn</item><item>Tài khoản</item></string-array>
     <string name="permissions_account_unavailable">Tài khoản này chưa sẵn sàng. Hãy đăng nhập lại hoặc liên hệ hỗ trợ nếu lỗi vẫn còn.</string>
     <string name="permissions_not_participant">Bạn không thuộc hồ sơ nhận nuôi này.</string>
+    <string name="permissions_account_search_hint">Email, UID hoặc tên hiển thị</string>
+    <string name="permissions_account_search">Tìm tài khoản</string>
+    <string name="permissions_account_search_error">Nhập ít nhất 2 ký tự.</string>
+    <string name="permissions_account_empty">Không tìm thấy tài khoản phù hợp.</string>
+    <string name="permissions_account_unknown">Tài khoản chưa có tên</string>
+    <string name="permissions_admin_badge">Quản trị viên</string>
+    <string name="permissions_promote_admin">Nâng thành quản trị viên</string>
+    <string name="permissions_demote_admin">Gỡ quyền quản trị viên</string>
+    <string name="permissions_promote_confirm">Tài khoản này sẽ có quyền quản lý nội dung, báo cáo và tài khoản. Bạn muốn tiếp tục?</string>
+    <string name="permissions_demote_confirm">Tài khoản này sẽ mất quyền quản trị ngay sau khi cập nhật. Bạn muốn tiếp tục?</string>
+    <string name="permissions_confirm">Xác nhận</string>
 </resources>

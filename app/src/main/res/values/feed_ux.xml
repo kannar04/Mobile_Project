@@ -9,6 +9,7 @@
     <string name="feed_adoption">Tìm người nhận nuôi</string>
     <string name="feed_choose_listing">Chọn tin nhận nuôi của bạn</string>
     <string name="feed_listing_unavailable">Tin nhận nuôi hiện không khả dụng.</string>
+    <string name="feed_listing_adopted">Đã có người nhận nuôi</string>
     <string name="feed_no_eligible_listing">Bạn chưa có tin nhận nuôi đang hiển thị. Hãy hoàn tất tin nhận nuôi trước.</string>
     <string name="feed_open_listing">Xem tin nhận nuôi</string>
     <string name="feed_listing_selected">Tin nhận nuôi: %1$s</string>

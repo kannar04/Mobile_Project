@@ -9,7 +9,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.*;
 import com.gmail.manhle240406.project.*;
 import com.gmail.manhle240406.project.adoption.*;
-import com.gmail.manhle240406.project.community.SocialFeedActivity;
+import com.gmail.manhle240406.project.community.CommunityFeedActivity;
 import com.gmail.manhle240406.project.notifications.InboxActivity;
 import com.gmail.manhle240406.project.profile.*;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -19,7 +19,7 @@ import com.google.android.material.color.MaterialColors;
 public final class MainNavigation implements Application.ActivityLifecycleCallbacks {
     private static boolean browsing(Activity a) {
         return a instanceof ProfileActivity || a instanceof DiscoveryActivity || a instanceof FavoritesActivity
-            || a instanceof InboxActivity || a instanceof SocialFeedActivity || a instanceof FlowHubActivity
+            || a instanceof InboxActivity || a instanceof CommunityFeedActivity || a instanceof FlowHubActivity
             || a instanceof EnhancedSettingsActivity || a instanceof com.gmail.manhle240406.project.community.GuestStoriesActivity;
     }
     @Override public void onActivityPostCreated(Activity a, Bundle state) {

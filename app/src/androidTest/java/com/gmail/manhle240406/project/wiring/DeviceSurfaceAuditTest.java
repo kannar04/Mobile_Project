@@ -65,7 +65,7 @@ public final class DeviceSurfaceAuditTest {
   }
  }
  @Test public void composerIsReachableFromFeedAndKeepsDraftOnRotation()throws Exception{
-  try(ActivityScenario<SocialFeedActivity> screen=ActivityScenario.launch(SocialFeedActivity.class)){
+  try(ActivityScenario<CommunityFeedActivity> screen=ActivityScenario.launch(CommunityFeedActivity.class)){
    onView(androidx.test.espresso.matcher.ViewMatchers.withText(R.string.social_compose)).perform(androidx.test.espresso.action.ViewActions.click());
    onView(androidx.test.espresso.matcher.ViewMatchers.withId(R.id.social_body_input)).perform(androidx.test.espresso.action.ViewActions.scrollTo(),androidx.test.espresso.action.ViewActions.replaceText("Synthetic unsent story draft"),androidx.test.espresso.action.ViewActions.closeSoftKeyboard());
    final Activity[] composer={null};InstrumentationRegistry.getInstrumentation().runOnMainSync(()->{for(Activity a:androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(androidx.test.runner.lifecycle.Stage.RESUMED))if(a instanceof SocialComposerActivity)composer[0]=a;});

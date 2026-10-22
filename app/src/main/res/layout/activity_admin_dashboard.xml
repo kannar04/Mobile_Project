@@ -6,27 +6,23 @@
     android:layout_height="match_parent"
     android:background="@color/anilove_bg"
     android:fillViewport="true">
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp">
-
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp">
-
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/admin_dashboard_back"
                 style="@style/Widget.Material3.Button.IconButton"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
+                android:contentDescription="@string/auth_back"
                 app:icon="@drawable/ic_social_back"
-                app:iconTint="@color/anilove_text_dark"
-                android:contentDescription="@string/auth_back" />
-
+                app:iconTint="@color/anilove_text_dark" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -36,43 +32,24 @@
                 android:textSize="18sp"
                 android:textStyle="bold" />
         </RelativeLayout>
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/anilove_card_bg"
             android:orientation="vertical"
             android:padding="20dp">
-
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Thống kê Hệ thống &amp; Biểu đồ Hoạt động (F40)"
+                android:text="@string/admin_dashboard_summary"
                 android:textColor="@color/anilove_text_dark"
                 android:textSize="16sp"
                 android:textStyle="bold" />
-
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="📊 Tổng số người dùng: 1,560"
-                android:textColor="@color/anilove_text_dark"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="🐾 Tổng số thú cưng: 420"
-                android:textColor="@color/anilove_text_dark"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="🏡 Lượt nhận nuôi hàng tháng: 84 ca"
+                android:text="@string/admin_dashboard_data_notice"
                 android:textColor="@color/anilove_text_dark"
                 android:textSize="14sp" />
         </LinearLayout>
