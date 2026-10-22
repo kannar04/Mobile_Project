@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {initializeApp,deleteApp} from 'firebase-admin/app';
 import {getFirestore} from 'firebase-admin/firestore';
-import {dispatchAdoptionPush} from '../adoption-flow-push.mjs';
+import {dispatchAdoptionPush,dispatchAdoptionPushDocument} from '../adoption-flow-push.mjs';
 
 const enabled=!!process.env.FIRESTORE_EMULATOR_HOST;
 
@@ -20,5 +20,16 @@ test('adoption push scans only pending work and retires undeliverable jobs',{ski
   for(let n=1;n<10;n++)await dispatchAdoptionPush(db,{clock:()=>now+n,sender:{send:async()=>assert.fail('no installation')}});
   assert.equal((await db.doc('adoptionFlowOutbox/pending').get()).get('state'),'expired');
   assert.deepEqual(await dispatchAdoptionPush(db,{clock:()=>now+11,sender:{send:async()=>assert.fail('no installation')}}),{scanned:0});
+ }finally{await db.terminate();await deleteApp(app);}
+});
+
+test('new adoption push delivery processes its document without scanning the outbox',{skip:!enabled},async()=>{
+ const app=initializeApp({projectId:'demo-adoption-push-'+randomUUID().slice(0,8)},randomUUID()),db=getFirestore(app),now=Date.now();
+ try{
+  await db.doc('adoptionLifecyclePolicy/current').set({enabled:true,pushEnabled:true});
+  await db.doc('adoptionFlowOutbox/new').set({state:'pending',uid:'member',eventId:'event',createdAt:new Date(now)});
+  const doc=await db.doc('adoptionFlowOutbox/new').get();
+  assert.deepEqual(await dispatchAdoptionPushDocument(db,doc,{clock:()=>now,sender:{send:async()=>assert.fail('no installation')}}),{scanned:1});
+  assert.equal((await doc.ref.get()).get('attempts'),1);
  }finally{await db.terminate();await deleteApp(app);}
 });

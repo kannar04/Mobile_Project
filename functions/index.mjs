@@ -1,8 +1,8 @@
 import {onCall,HttpsError,onRequest} from 'firebase-functions/v2/https';
 import {onSchedule} from 'firebase-functions/v2/scheduler';
-import {onDocumentWritten} from 'firebase-functions/v2/firestore';
+import {onDocumentCreated,onDocumentWritten} from 'firebase-functions/v2/firestore';
 import {activitySource,dispatchActivity,mirrorAdoptionNotice} from './activity-notifications.mjs';
-import {dispatchAdoptionPush} from './adoption-flow-push.mjs';
+import {dispatchAdoptionPush,dispatchAdoptionPushDocument} from './adoption-flow-push.mjs';
 import {adoptionFlowTick} from './adoption-flow-jobs.mjs';
 import {initializeApp} from 'firebase-admin/app';
 import {getAuth} from 'firebase-admin/auth';
@@ -18,7 +18,9 @@ export const messageActivity=onDocumentWritten({...activityOptions,document:'dir
 export const adoptionChatActivity=onDocumentWritten({...activityOptions,document:'adoptionFlowConversations/{conversation}/messages/{message}'},async event=>{if(event.data?.after.exists&&!event.data.before.exists)await activitySource(getFirestore(),'adoption_chat',event.params);});
 export const adoptionNoticeActivity=onDocumentWritten({...activityOptions,document:'users/{uid}/adoptionFlowNotices/{notice}'},async event=>{if(event.data?.after.exists&&!event.data.before.exists)await mirrorAdoptionNotice(getFirestore(),event.params.uid,event.params.notice);});
 export const activityDelivery=onSchedule({...activityOptions,schedule:'every 1 minutes',maxInstances:1},async()=>{await dispatchActivity(getFirestore());});
-export const adoptionDelivery=onSchedule({...activityOptions,schedule:'every 1 minutes',maxInstances:1},async()=>{await dispatchAdoptionPush(getFirestore());});
+export const adoptionDeliveryNow=onDocumentCreated({...activityOptions,document:'adoptionFlowOutbox/{job}'},async event=>{if(event.data)await dispatchAdoptionPushDocument(getFirestore(),event.data);});
+// Recovery only. New notices are delivered by adoptionDeliveryNow without scanning the collection.
+export const adoptionDelivery=onSchedule({...activityOptions,schedule:'every 60 minutes',maxInstances:1},async()=>{await dispatchAdoptionPush(getFirestore());});
 export const adoptionFollowup=onSchedule({schedule:'every 15 minutes',region:'asia-east2',serviceAccount:'anilove-adoption-runtime@aniloveproject.iam.gserviceaccount.com',memory:'256MiB',timeoutSeconds:120,maxInstances:1},async()=>{await adoptionFlowTick(getFirestore());});
 const service=new MediaService({db:getFirestore(),auth:getAuth(),bucket:getStorage().bucket('aniloveproject.firebasestorage.app')});
 export const mediaApi=onRequest({region:'asia-east2',serviceAccount:'anilove-media-runtime@aniloveproject.iam.gserviceaccount.com',memory:'512MiB',timeoutSeconds:60,minInstances:0,maxInstances:2,concurrency:1,cors:false,invoker:'public'},async(req,res)=>{

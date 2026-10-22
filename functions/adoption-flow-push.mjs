@@ -5,13 +5,21 @@ const DAY=86400000;
 /** Bounded per-event/per-installation push attempts using existing challenge-proven bindings. */
 export async function dispatchAdoptionPush(db,{clock=Date.now,sender=getMessaging()}={}){
  const p=(await db.doc('adoptionLifecyclePolicy/current').get()).data();if(!p?.enabled||!p.pushEnabled)return {disabled:true};const docs=await db.collection('adoptionFlowOutbox').where('state','==','pending').limit(20).get();
- for(const doc of docs.docs){const job=doc.data(),bindings=(await db.doc('pushUserBindings/'+job.uid).get()).get('ids')??[];let delivered=false;for(const id of bindings.slice(0,5)){
+ for(const doc of docs.docs)await deliver(db,doc,{clock,sender});
+ return {scanned:docs.size};
+}
+/** Delivers a newly-created outbox row without a collection query. The scheduled worker is only a recovery path. */
+export async function dispatchAdoptionPushDocument(db,doc,{clock=Date.now,sender=getMessaging()}={}){
+ const p=(await db.doc('adoptionLifecyclePolicy/current').get()).data();if(!p?.enabled||!p.pushEnabled)return {disabled:true};
+ if(!doc?.exists||doc.get('state')!=='pending')return {scanned:0};await deliver(db,doc,{clock,sender});return {scanned:1};
+}
+async function deliver(db,doc,{clock,sender}){
+ const job=doc.data(),bindings=(await db.doc('pushUserBindings/'+job.uid).get()).get('ids')??[];let delivered=false;for(const id of bindings.slice(0,5)){
   const lease=await db.runTransaction(async tx=>{const current=(await tx.get(doc.ref)).data(),bindingRef=db.doc('pushInstallations/'+id),binding=(await tx.get(bindingRef)).data(),tokenOwner=binding?(await tx.get(db.doc('pushTokenOwners/'+binding.tokenHash))).data():null,policy=(await tx.get(db.doc('notificationPolicy/current'))).data(),prefs=(await tx.get(db.doc('users/'+job.uid+'/notificationPreferences/main'))).data(),subject=(await tx.get(db.doc('securitySubjects/'+job.uid))).data(),notice=(await tx.get(db.doc('users/'+job.uid+'/adoptionFlowNotices/'+job.eventId))).data(),attemptRef=db.doc('adoptionFlowPushAttempts/'+doc.id+'_'+id),attempt=(await tx.get(attemptRef)).data(),day=new Date(clock()).toISOString().slice(0,10),quotaRef=db.doc('notificationQuota/'+job.uid+'/days/'+day),quota=(await tx.get(quotaRef)).data()??{inboxNewCount:0,pushAttemptCount:0};
    const course=await courseParticipation(tx,db),member=(await tx.get(db.doc('communityMemberships/'+job.uid))).data();
    if(current?.state!=='pending'||binding?.uid!==job.uid||binding.state!=='active'||ms(binding.expiresAt)<=clock()||tokenOwner?.uid!==job.uid||tokenOwner.installationId!==id||tokenOwner.bindingEpoch!==binding.bindingEpoch||(subject?subject.status!=='active':!course)||member?.status!=='active'||!policy?.enabled||!policy.pushEnabled||prefs?.pushEnabled!==true||notice?.read!==false||attempt?.state==='sent'||attempt?.count>=3||ms(attempt?.leaseUntil)>clock()||ms(binding.sendLeaseUntil)>clock()||quota.pushAttemptCount>=20)return null;
    const next={count:(attempt?.count??0)+1,state:'leased',leaseUntil:new Date(clock()+60000),bindingEpoch:binding.bindingEpoch};tx.set(attemptRef,next);tx.set(bindingRef,{...binding,sendLeaseJob:doc.id,sendLeaseUntil:next.leaseUntil});tx.set(quotaRef,{...quota,pushAttemptCount:quota.pushAttemptCount+1});return {token:binding.token,epoch:binding.bindingEpoch,attempt:next.count,attemptRef,bindingRef};});if(!lease)continue;
   let sent=false;try{await sender.send({token:lease.token,data:{schemaVersion:'2',kind:'adoption_flow',uid:job.uid,installationId:id,bindingEpoch:String(lease.epoch),eventId:job.eventId},android:{priority:'normal',ttl:3600000}});sent=true;delivered=true;}catch{/* Retry bounded by attempt count; no private content or token is logged. */}
   await db.runTransaction(async tx=>{const attempt=(await tx.get(lease.attemptRef)).data(),binding=(await tx.get(lease.bindingRef)).data();if(attempt?.count!==lease.attempt)return;tx.set(lease.attemptRef,{...attempt,state:sent?'sent':'retry',leaseUntil:null});if(binding?.bindingEpoch===lease.epoch&&binding.sendLeaseJob===doc.id)tx.set(lease.bindingRef,{...binding,sendLeaseJob:null,sendLeaseUntil:null});});
- }const attempts=(job.attempts??0)+1,state=delivered?'sent':clock()-ms(job.createdAt)>DAY||attempts>=10?'expired':'pending';await doc.ref.update({attempts,state,updatedAt:new Date(clock())});}
- return {scanned:docs.size};
+ }const attempts=(job.attempts??0)+1,state=delivered?'sent':clock()-ms(job.createdAt)>DAY||attempts>=10?'expired':'pending';await doc.ref.update({attempts,state,updatedAt:new Date(clock())});
 }

@@ -29,4 +29,21 @@
     <color name="anilove_badge_orange_text">#EF6C00</color>
     <color name="anilove_badge_red_bg">#FFEBEE</color>
     <color name="anilove_badge_red_text">#C62828</color>
+    <color name="adoption_timeline_progress">#3F7D44</color>
+    <color name="adoption_timeline_track">#D7DDD7</color>
+    <color name="adoption_timeline_current_bg">#F1F8D7</color>
+    <color name="adoption_timeline_current_border">#91B83D</color>
+    <color name="adoption_timeline_done_bg">#E3F2E5</color>
+    <color name="adoption_timeline_done_text">#285F2D</color>
+    <color name="adoption_timeline_current_badge_text">#17200F</color>
+    <color name="followup_available_bg">#FFFFFFFF</color>
+    <color name="followup_available_stroke">#D5CCC4</color>
+    <color name="followup_waiting_bg">#FFFFF2C6</color>
+    <color name="followup_waiting_stroke">#D79B20</color>
+    <color name="followup_approved_bg">#FFE5F5E7</color>
+    <color name="followup_approved_stroke">#3F7D44</color>
+    <color name="followup_overdue_bg">#FFFFE7E7</color>
+    <color name="followup_overdue_stroke">#B3261E</color>
+    <color name="followup_locked_bg">#FFF1ECE7</color>
+    <color name="followup_locked_stroke">#8A7E75</color>
 </resources>
