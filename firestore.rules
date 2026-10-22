@@ -1437,6 +1437,41 @@ service cloud.firestore {
     match /reminderScheduleIntents/{uid}/items/{id} {allow get: if profileOwner(uid);allow list,write: if false;}
     // Dashboard sources/contributions/aggregates, private transfer terms, review
     // decisions and source adapters have no raw SDK access, even for Admin.
+    // Bounded realtime invalidation signals. Message bodies and workflow writes remain callable-only.
+    match /directConversations/{id} {
+      allow get: if request.auth != null && resource.data.participants is list
+        && request.auth.uid in resource.data.participants;
+      allow list, write: if false;
+      match /messages/{message} {
+        allow get: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/directConversations/$(id)).data.participants;
+        allow list: if request.auth != null && request.query.limit != null && request.query.limit <= 20
+          && request.auth.uid in get(/databases/$(database)/documents/directConversations/$(id)).data.participants;
+        allow write: if false;
+      }
+    }
+    match /adoptionFlowConversations/{id} {
+      allow get: if request.auth != null && resource.data.participantUids is list
+        && request.auth.uid in resource.data.participantUids;
+      allow list, write: if false;
+      match /messages/{message} {
+        allow get: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/adoptionFlowConversations/$(id)).data.participantUids;
+        allow list: if request.auth != null && request.query.limit != null && request.query.limit <= 20
+          && request.auth.uid in get(/databases/$(database)/documents/adoptionFlowConversations/$(id)).data.participantUids;
+        allow write: if false;
+      }
+    }
+    match /adoptions/{id} {
+      allow get: if request.auth != null && ((resource.data.participantUids is list
+        && request.auth.uid in resource.data.participantUids) || operatorCan('adoption_lifecycle'));
+      allow list, write: if false;
+    }
+    match /adoptionRequests/{id} {
+      allow get: if request.auth != null
+        && (request.auth.uid == resource.data.adopterUid || request.auth.uid == resource.data.hostUid || operatorCan('adoption_lifecycle'));
+      allow list, write: if false;
+    }
     match /{document=**} { allow read, write: if false; }
   }
 }

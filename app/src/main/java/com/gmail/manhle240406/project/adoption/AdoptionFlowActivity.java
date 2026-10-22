@@ -1,19 +1,45 @@
 package com.gmail.manhle240406.project.adoption;
+
+import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.map;
+import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.number;
+import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.object;
+import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.rows;
+
 import android.os.Bundle;
-import android.view.*;
-import android.widget.*;
-import android.text.*;
-import androidx.activity.*;
+import android.text.Editable;
+import android.text.InputFilter;
+import android.text.TextWatcher;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.Spinner;
+import android.widget.TextView;
+
+import androidx.activity.EdgeToEdge;
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
-import com.google.android.material.textfield.*;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.button.MaterialButton;
-import com.gmail.manhle240406.project.R;
+
 import com.gmail.manhle240406.project.AniloveApplication;
-import com.gmail.manhle240406.project.community.*;
-import java.util.*;
-import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.*;
+import com.gmail.manhle240406.project.R;
+import com.gmail.manhle240406.project.community.SocialComposerActivity;
+import com.gmail.manhle240406.project.community.SocialSurface;
+import com.gmail.manhle240406.project.community.SocialViews;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /** Existing task routes share one native stateful flow; no sample records or simulated commits. */
 public class AdoptionFlowActivity extends AppCompatActivity {

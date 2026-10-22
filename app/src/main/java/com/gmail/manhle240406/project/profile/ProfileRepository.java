@@ -67,7 +67,7 @@ public final class ProfileRepository {
                 Task<DocumentSnapshot> read=reads.get(positions[i]);
                 if(!read.isSuccessful()){safe.add(null);issue=Code.UNAVAILABLE;continue;}
                 try{safe.add(checked(read.getResult(),shapes.get(i),uid));}
-                catch(IllegalStateException malformed){safe.add(null);issue=Code.MALFORMED;}
+                catch(IllegalStateException malformed){safe.add(null);if(shapes.get(i)!=ProfileSchema.CONTACT)issue=Code.MALFORMED;}
             }
             // Valid owner controls remain usable to hide even when content cannot be rendered.
             Snapshot result=new Snapshot(safe.get(0),safe.get(1),controls,safe.get(2),issue);
@@ -79,8 +79,11 @@ public final class ProfileRepository {
     /** Exact own private draft only; onboarding never queries contact or public profiles. */
     public Task<Result<Map<String,Object>>> ownDraft(SessionEpoch.Ticket ticket) {
         if(ticket.uid==null || !sessions.current(ticket))return Tasks.forResult(new Result<>(Code.SESSION_CHANGED,null));
-        Task<Map<String,Object>> read=ref(ticket.uid,ProfileCommand.Kind.DRAFT).get(Source.SERVER)
-            .continueWith(done->{if(!done.isSuccessful())throw Objects.requireNonNull(done.getException());return checked(done.getResult(),ProfileSchema.DRAFT,ticket.uid);});
+        DocumentReference target=ref(ticket.uid,ProfileCommand.Kind.DRAFT);
+        Task<Map<String,Object>> read=target.get(Source.CACHE).continueWithTask(cached->{
+            if(cached.isSuccessful())try{Map<String,Object> value=checked(cached.getResult(),ProfileSchema.DRAFT,ticket.uid);if(value!=null)return Tasks.forResult(value);}catch(IllegalStateException ignored){}
+            return target.get(Source.SERVER).continueWith(done->{if(!done.isSuccessful())throw Objects.requireNonNull(done.getException());return checked(done.getResult(),ProfileSchema.DRAFT,ticket.uid);});
+        });
         return wrap(Tasks.withTimeout(read,15,TimeUnit.SECONDS),ticket,false);
     }
     public Task<Result<Map<String,Object>>> execute(SessionEpoch.Ticket ticket,ProfileCommand command) {

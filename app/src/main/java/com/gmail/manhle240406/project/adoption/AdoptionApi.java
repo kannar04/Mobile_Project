@@ -1,5 +1,13 @@
 package com.gmail.manhle240406.project.adoption;
-import com.google.android.gms.tasks.*;import com.google.firebase.functions.*;import java.util.*;import java.util.concurrent.TimeUnit;
+
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.functions.FirebaseFunctions;
+import com.google.firebase.functions.HttpsCallableReference;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 /** Firebase Auth context supplies identity; no client actor/role or privileged credentials. */
 public final class AdoptionApi {
  static java.util.function.BiFunction<String,Map<String,Object>,Task<Map<String,Object>>> testTransport;
@@ -7,5 +15,5 @@ public final class AdoptionApi {
  static EnvelopeTransport testEnvelopeTransport;
  private AdoptionApi(){}
  public static Task<Map<String,Object>> call(String operation,Map<String,Object> input){return call(operation,input,null);}
- @SuppressWarnings("unchecked") public static Task<Map<String,Object>> call(String operation,Map<String,Object> input,Map<String,Object> consent){if(com.gmail.manhle240406.project.BuildConfig.DEBUG&&testEnvelopeTransport!=null)return testEnvelopeTransport.call(operation,input,consent);if(com.gmail.manhle240406.project.BuildConfig.DEBUG&&testTransport!=null)return testTransport.apply(operation,input);HttpsCallableReference ref=FirebaseFunctions.getInstance("asia-east2").getHttpsCallable("adoptionOperations");ref.setTimeout(15,TimeUnit.SECONDS);Map<String,Object> body=new HashMap<>();body.put("operation",operation);body.put("input",input);if(consent!=null)body.put("participationConsent",consent);return ref.call(body).continueWith(t->{Object result=t.getResult().getData();if(!(result instanceof Map))throw new IllegalStateException("invalid_response");return (Map<String,Object>)result;});}
+ @SuppressWarnings("unchecked") public static Task<Map<String,Object>> call(String operation,Map<String,Object> input,Map<String,Object> consent){if(com.gmail.manhle240406.project.BuildConfig.DEBUG&&testEnvelopeTransport!=null)return testEnvelopeTransport.call(operation,input,consent);if(com.gmail.manhle240406.project.BuildConfig.DEBUG&&testTransport!=null)return testTransport.apply(operation,input);HttpsCallableReference ref=FirebaseFunctions.getInstance("asia-east2").getHttpsCallable("adoptionOperations");ref.setTimeout(30,TimeUnit.SECONDS);Map<String,Object> body=new HashMap<>();body.put("operation",operation);body.put("input",input);if(consent!=null)body.put("participationConsent",consent);return ref.call(body).continueWith(t->{Object result=t.getResult().getData();if(!(result instanceof Map))throw new IllegalStateException("invalid_response");return (Map<String,Object>)result;});}
 }

@@ -24,7 +24,7 @@ public final class FlowRoutes {
         page("F01",4,R.string.auth_account_title,AuthActivity.class),
         page("F02",4,R.string.flow_change_password,PasswordChangeActivity.class),
         page("F03",4,R.string.profile_title,ProfileActivity.class),
-        sheet("F05",5,R.string.flow_admin_accounts),
+        page("F05",5,R.string.flow_admin_accounts,CourseAdminActivity.class),
         page("F06",0,R.string.pet_title,com.gmail.manhle240406.project.pet.PetActivity.class),
         page("F07",0,R.string.listing_title,com.gmail.manhle240406.project.listing.ListingActivity.class),
         sheet("F08",3,R.string.flow_care_fields),
@@ -62,7 +62,6 @@ public final class FlowRoutes {
         page("F40",5,R.string.f40_title,AdminDashboardActivity.class),
         page("F41",4,R.string.f41_title,OfflineSyncActivity.class),
         page("F42",4,R.string.flow_readiness,AuthActivity.class),
-        page("F43",4,R.string.flow_delete_account,AccountDeletionActivity.class),
         page("F44",3,R.string.f44_title,SupportCenterActivity.class)
     ));
     public static Route find(String feature){for(Route r:ALL)if(r.feature.equals(feature))return r;throw new IllegalArgumentException("unknown_feature");}

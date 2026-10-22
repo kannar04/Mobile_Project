@@ -58,7 +58,10 @@ public final class AuthCoordinator {
             else refreshReadiness();
         });
         if (gate.visitor()) environment.sessions.logout();
-        if (!gate.visitor() && user() != null) refreshVerification(); else refreshReadiness();
+        // Firebase Auth restores the last signed-in identity locally. Do not block cached reading on
+        // reload/token traffic; protected writes still perform their normal online authorization.
+        if (!gate.visitor() && user() != null) { verificationKnown=true; refreshReadiness(); }
+        else refreshReadiness();
     }
     public LiveData<AuthState> state() { return state; }
     public boolean busy() { return gate.busy(); }
@@ -206,6 +209,7 @@ public final class AuthCoordinator {
             setupReady = task.isSuccessful() && Boolean.TRUE.equals(task.getResult());
             membership=MembershipRepository.State.UNKNOWN;
             if(setupReady) {
+                publish();
                 new MembershipRepository(FirebaseFirestore.getInstance(),environment.sessions).ensureBasicMembership(ticket).addOnCompleteListener(m->{
                     if(!environment.sessions.current(ticket) || generation!=readinessGeneration || gate.visitor())return;
                     membership=m.isSuccessful()?m.getResult():MembershipRepository.State.UNKNOWN;completeReadinessPart();

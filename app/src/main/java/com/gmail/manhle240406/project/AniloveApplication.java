@@ -16,8 +16,9 @@ public final class AniloveApplication extends Application {
         super.onCreate();
         registerActivityLifecycleCallbacks(new com.gmail.manhle240406.project.wiring.MainNavigation());
         foundation = FirebaseEnvironment.initialize(this);
+        com.gmail.manhle240406.project.media.SessionImageCache.initialize(this);
         com.gmail.manhle240406.project.media.ManagedMediaClient.configure(foundation.sessions);
-        if(foundation.sessions!=null)foundation.sessions.onInvalidated(com.gmail.manhle240406.project.community.SessionAliases::clear);
+        if(foundation.sessions!=null)foundation.sessions.onInvalidated(()->{com.gmail.manhle240406.project.community.SessionAliases.clear();com.gmail.manhle240406.project.media.SessionImageCache.clearAll();});
         communityOutbox = new com.gmail.manhle240406.project.community.CommunityOutbox(this, foundation.sessions);
         listingDrafts = new com.gmail.manhle240406.project.listing.LocalListingDraftStore(this, foundation.sessions);
         listingDrafts.clearOnSignedOutStartup();

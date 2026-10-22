@@ -1,6 +1,9 @@
 package com.gmail.manhle240406.project.adoption;
-import com.gmail.manhle240406.project.foundation.*;
+
+import com.gmail.manhle240406.project.foundation.SessionEpoch;
+import com.gmail.manhle240406.project.foundation.SessionGateway;
 import com.google.firebase.firestore.FirebaseFirestore;
+
 /** account data interface; not wired to app presentation or privileged runtime. */
 public final class AccountAdminRepository extends SafetyRepository {
  public AccountAdminRepository(FirebaseFirestore db,SessionGateway sessions,Commands commands){super(db,sessions,commands,"account");}
