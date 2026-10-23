@@ -36,13 +36,12 @@ public final class MainNavigationDeviceTest {
   Bitmap image=InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();assertNotNull(image);
   try(FileOutputStream out=new FileOutputStream(new File(dir,name+".png"))){image.compress(Bitmap.CompressFormat.PNG,100,out);}image.recycle();
  }
- @Test public void mainBrowsingSurfacesKeepOneBarAndCanReturnHome()throws Exception{
-  Class<?>[] pages={DiscoveryActivity.class,FavoritesActivity.class,InboxActivity.class,CommunityFeedActivity.class,FlowHubActivity.class,EnhancedSettingsActivity.class,ProfileActivity.class};
-  for(Class<?> page:pages)try(ActivityScenario<?> screen=ActivityScenario.launch(new Intent(app(),page))){
+ @Test public void mainBrowsingSurfacesRenderInCanonicalMainActivity()throws Exception{
+  String[] pages={"discovery","favorites","notifications","chat","tools","profile","home"};
+  for(String page:pages)try(ActivityScenario<MainActivity> screen=ActivityScenario.launch(new Intent(app(),MainActivity.class).putExtra(MainActivity.PAGE,page))){
    onView(withId(R.id.bottom_navigation)).check(matches(isDisplayed()));
-   screen.onActivity(a->{View bar=a.findViewById(R.id.bottom_navigation);assertTrue(bar.getHeight()>0);View root=a.findViewById(android.R.id.content);assertTrue(bar.getBottom()<=root.getHeight());});
-   capture(page.getSimpleName());
-   onView(withId(R.id.nav_home)).perform(click());onView(withId(R.id.home_filter_btn)).check(matches(isDisplayed()));
+   screen.onActivity(a->{assertEquals(page,a.destination());View bar=a.findViewById(R.id.bottom_navigation);assertTrue(bar.getHeight()>0);View root=a.findViewById(android.R.id.content);assertTrue(bar.getBottom()<=root.getHeight());});
+   capture("MainActivity-"+page);
   }
  }
  @Test public void canonicalCommunityFeedKeepsOneBarAndReturnsHome(){
