@@ -1,0 +1,34 @@
+// Isolated compilation only: does not bypass/claim the broken full-app resource/build checks.
+gradle.projectsEvaluated {
+    def p = gradle.rootProject.project(':app')
+    def root = 'com/gmail/manhle240406/project/'
+    def sources = ['security/AccountSecurityRepository.java', 'security/FirebaseAccountSecurityProvider.java',
+        'security/AccountClosureRepository.java', 'security/ClosurePolicy.java',
+        'preferences/AppearanceRepository.java', 'preferences/AndroidAppearanceStore.java',
+        'community/CommunityOfflineContract.java', 'community/SocialSchema.java',
+        'community/SocialCommand.java', 'community/SocialRepository.java', 'community/CommunitySchema.java',
+        'community/ReportCommand.java', 'pet/PetSchema.java', 'foundation/SessionGateway.java', 'foundation/SessionEpoch.java']
+    def tests = ['security/AccountSecurityTest.java', 'security/ClosurePolicyTest.java',
+        'preferences/AppearanceRepositoryTest.java', 'community/CommunityOfflineContractTest.java']
+    def output = p.layout.buildDirectory.dir('account-batch/classes')
+    def junit = p.configurations.create('accountBatchJunit')
+    p.dependencies.add('accountBatchJunit', 'junit:junit:4.13.2')
+    def libraries = p.configurations.debugCompileClasspath.incoming.artifactView {
+        attributes { attribute(org.gradle.api.artifacts.type.ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, 'android-classes-jar') }
+    }.files
+    def compile = p.tasks.register('compileAccountBatch', JavaCompile) {
+        source(sources.collect { p.file('src/main/java/' + root + it) })
+        source(tests.collect { p.file('src/test/java/' + root + it) })
+        classpath = libraries + junit + p.files(p.extensions.getByName("androidComponents").sdkComponents.bootClasspath.get())
+        destinationDirectory = output
+        sourceCompatibility = '11'; targetCompatibility = '11'
+        options.encoding = 'UTF-8'
+    }
+    p.tasks.register('verifyAccountBatch', JavaExec) {
+        dependsOn compile
+        classpath = p.files(output) + libraries + junit + p.files(p.extensions.getByName("androidComponents").sdkComponents.bootClasspath.get())
+        mainClass = 'org.junit.runner.JUnitCore'
+        args tests.collect { (root + it).replace('/', '.').replace('.java', '') }
+    }
+}
+
