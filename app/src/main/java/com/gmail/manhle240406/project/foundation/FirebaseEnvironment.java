@@ -43,8 +43,8 @@ public final class FirebaseEnvironment {
                             .setSizeBytes(100L * 1024L * 1024L).build()).build());
             if (BuildConfig.FIREBASE_EMULATORS) {
                 // Android emulator reaches host loopback via this fixed alias; no user-supplied endpoints.
-                auth.useEmulator("10.0.2.2", 9199);
-                db.useEmulator("10.0.2.2", 8180);
+                auth.useEmulator(BuildConfig.FIREBASE_EMULATOR_HOST, BuildConfig.AUTH_EMULATOR_PORT);
+                db.useEmulator(BuildConfig.FIREBASE_EMULATOR_HOST, BuildConfig.FIRESTORE_EMULATOR_PORT);
             }
             SessionGateway sessions = new SessionGateway(auth);
             return new FirebaseEnvironment(FoundationResult.Status.READY, alias, sessions,

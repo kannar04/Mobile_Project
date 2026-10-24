@@ -49,9 +49,8 @@ export async function activitySource(db,kind,ids,{clock=Date.now}={}){
   tx.create(db.doc('activityPushOutbox/'+eventId),{uid,eventId,kind,ids,writer,state:'pending',createdAt:new Date(now),attempts:0});return {created:true,eventId};
  });
 }
-export async function dispatchActivity(db,{sender=getMessaging(),clock=Date.now}={}){
- const docs=await db.collection('activityPushOutbox').where('state','==','pending').limit(20).get();
- for(const doc of docs.docs){const job=doc.data(),ids=(await db.doc('pushUserBindings/'+job.uid).get()).get('ids')??[];let delivered=false;
+async function dispatchActivityDocuments(db,docs,{sender=getMessaging(),clock=Date.now}={}){
+ for(const doc of docs){const job=doc.data(),ids=(await db.doc('pushUserBindings/'+job.uid).get()).get('ids')??[];let delivered=false;
   for(const id of ids.slice(0,5)){
    const lease=await db.runTransaction(async tx=>{
     const read=async p=>(await tx.get(db.doc(p))).data(),j=await read(doc.ref.path),binding=await read('pushInstallations/'+id),owner=binding?await read('pushTokenOwners/'+binding.tokenHash):null,policy=await read('notificationPolicy/current'),prefs=await read(`users/${job.uid}/notificationPreferences/main`),notice=await read(`users/${job.uid}/notificationInbox/${job.eventId}`),subject=await read('securitySubjects/'+job.uid),member=await read('communityMemberships/'+job.uid),attemptRef=db.doc(`activityPushAttempts/${doc.id}_${id}`),attempt=(await tx.get(attemptRef)).data(),qref=db.doc(`notificationQuota/${job.uid}/days/${new Date(clock()).toISOString().slice(0,10)}`),quota=(await tx.get(qref)).data()??{inboxNewCount:0,pushAttemptCount:0};
@@ -63,6 +62,8 @@ export async function dispatchActivity(db,{sender=getMessaging(),clock=Date.now}
    let sent=false;try{await sender.send({token:lease.token,data:{kind:'activity',schemaVersion:'2',uid:job.uid,installationId:id,bindingEpoch:String(lease.epoch),eventId:job.eventId},android:{priority:'high',ttl:3600000}});sent=true;delivered=true;}catch{/* No tokens or private content in logs. */}
    await db.runTransaction(async tx=>{const a=await tx.get(lease.attemptRef),ref=db.doc('pushInstallations/'+id),b=await tx.get(ref);if(a.get('count')!==lease.count)return;tx.set(lease.attemptRef,{...a.data(),sent,leaseUntil:null});if(b.get('bindingEpoch')===lease.epoch&&b.get('sendLeaseJob')===doc.id)tx.update(ref,{sendLeaseUntil:null,sendLeaseJob:null});});
   }
-  await doc.ref.update({attempts:(job.attempts??0)+1,state:delivered?'sent':clock()-ms(job.createdAt)>DAY||(job.attempts??0)>=9?'expired':'pending'});
- }return {scanned:docs.size};
+  await db.runTransaction(async tx=>{const current=await tx.get(doc.ref);if(!current.exists||current.get('state')!=='pending')return;const attempts=(current.get('attempts')??0)+1;tx.update(doc.ref,{attempts,state:delivered?'sent':clock()-ms(current.get('createdAt'))>DAY||attempts>=10?'expired':'pending'});});
+ }return {scanned:docs.length};
 }
+export async function dispatchActivity(db,options={}){const snapshot=await db.collection('activityPushOutbox').where('state','==','pending').limit(20).get();return dispatchActivityDocuments(db,snapshot.docs,options);}
+export async function dispatchActivityDocument(db,snapshot,options={}){if(!snapshot?.exists||snapshot.get('state')!=='pending')return {scanned:0};return dispatchActivityDocuments(db,[snapshot],options);}
