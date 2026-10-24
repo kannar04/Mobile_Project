@@ -1,0 +1,44 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function ticket(uid,assetId) {
+      return firestore.get(/databases/(default)/documents/mediaTickets/$(assetId)).data;
+    }
+    function member(uid) {
+      return firestore.get(/databases/(default)/documents/communityMemberships/$(uid)).data;
+    }
+    function validUpload(uid,assetId) {
+      let t=ticket(uid,assetId);
+      let m=member(uid);
+      return t.uid==uid && t.assetId==assetId && t.purpose=='community_private'
+        && t.stagingPath=='staging/'+uid+'/'+assetId+'/candidate' && t.state=='issued'
+        && t.expiresAt>request.time && t.maxBytes<=5*1024*1024
+        && m.uid==uid && m.schemaVersion==1 && m.status=='active'
+        && request.resource.size>0 && request.resource.size<=t.maxBytes
+        && request.resource.contentType in ['image/jpeg','image/png']
+        && request.resource.metadata.size()==0;
+    }
+    match /staging/{uid}/{assetId}/candidate {
+      // CLOSED: Firebase upload API mints bearer download tokens. A reviewed,
+      // verified no-token transport is required before private staging is safe.
+      // Keep the candidate predicate as a draft, never as a deployment permission.
+      allow create: if false && resource==null && request.auth!=null && request.auth.uid==uid && request.auth.token.email_verified==true && validUpload(uid,assetId);
+      allow read,update,delete: if false;
+    }
+    function ownerVariant(uid,assetId,variant) {
+      let a=firestore.get(/databases/(default)/documents/mediaAssets/$(assetId)).data;
+      return a.schemaVersion==1 && a.ownerUid==uid && a.assetId==assetId && a.state=='ready'
+        && a.expiresAt>request.time && variant in ['display','thumbnail']
+        && a.variants[variant].path=='final/'+uid+'/'+assetId+'/'+variant+'.jpg'
+        && a.variants[variant].generation==string(resource.generation)
+        && resource.contentType=='image/jpeg' && resource.size<=5*1024*1024;
+    }
+    match /final/{uid}/{assetId}/{file} {
+      allow get: if request.auth!=null && request.auth.uid==uid && file in ['display.jpg','thumbnail.jpg']
+        && ownerVariant(uid,assetId,file=='display.jpg'?'display':'thumbnail');
+      allow list,write: if false;
+    }
+    // Shared/evidence/listing consumers remain closed; no permanent bearer download URLs.
+    match /{path=**} { allow read,write: if false; }
+  }
+}
