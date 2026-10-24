@@ -1,0 +1,8 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // All byte access is mediated by the authenticated, audience-aware media function.
+    // No SDK download tokens, direct uploads, directory listing or client metadata writes.
+    match /{path=**} { allow read, write: if false; }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "firestore": { "rules": "firestore.spark.rules" },
+  "emulators": {
+    "firestore": { "host": "127.0.0.1", "port": 8186 },
+    "hub": { "host": "127.0.0.1", "port": 4416 },
+    "ui": { "enabled": false },
+    "singleProjectMode": false
+  }
+}

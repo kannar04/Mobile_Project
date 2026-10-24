@@ -21,3 +21,6 @@ Thumbs.db
 Desktop.ini
 node_modules/
 
+firebase-tests/__pycache__/run-two-device.cpython-310.pyc
+MONKEY_TEST_REPORT_2026-10-24.md
+firebase-tests/__pycache__/run-two-device-notifications.cpython-310.pyc
