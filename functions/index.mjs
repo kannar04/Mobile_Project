@@ -1,7 +1,7 @@
 import {onCall,HttpsError,onRequest} from 'firebase-functions/v2/https';
 import {onSchedule} from 'firebase-functions/v2/scheduler';
 import {onDocumentCreated,onDocumentWritten} from 'firebase-functions/v2/firestore';
-import {activitySource,dispatchActivity,mirrorAdoptionNotice} from './activity-notifications.mjs';
+import {activitySource,dispatchActivity,dispatchActivityDocument,mirrorAdoptionNotice} from './activity-notifications.mjs';
 import {dispatchAdoptionPush,dispatchAdoptionPushDocument} from './adoption-flow-push.mjs';
 import {adoptionFlowTick} from './adoption-flow-jobs.mjs';
 import {initializeApp} from 'firebase-admin/app';
@@ -17,7 +17,9 @@ export const likeActivity=onDocumentWritten({...activityOptions,document:'commun
 export const messageActivity=onDocumentWritten({...activityOptions,document:'directConversations/{conversation}/messages/{message}'},async event=>{if(event.data?.after.exists&&!event.data.before.exists)await activitySource(getFirestore(),'message',event.params);});
 export const adoptionChatActivity=onDocumentWritten({...activityOptions,document:'adoptionFlowConversations/{conversation}/messages/{message}'},async event=>{if(event.data?.after.exists&&!event.data.before.exists)await activitySource(getFirestore(),'adoption_chat',event.params);});
 export const adoptionNoticeActivity=onDocumentWritten({...activityOptions,document:'users/{uid}/adoptionFlowNotices/{notice}'},async event=>{if(event.data?.after.exists&&!event.data.before.exists)await mirrorAdoptionNotice(getFirestore(),event.params.uid,event.params.notice);});
-export const activityDelivery=onSchedule({...activityOptions,schedule:'every 1 minutes',maxInstances:1},async()=>{await dispatchActivity(getFirestore());});
+export const activityDeliveryNow=onDocumentCreated({...activityOptions,document:'activityPushOutbox/{job}'},async event=>{if(event.data)await dispatchActivityDocument(getFirestore(),event.data);});
+// Recovery only. New activity is delivered by activityDeliveryNow; idle projects no longer scan every minute.
+export const activityDelivery=onSchedule({...activityOptions,schedule:'every 60 minutes',maxInstances:1},async()=>{await dispatchActivity(getFirestore());});
 export const adoptionDeliveryNow=onDocumentCreated({...activityOptions,document:'adoptionFlowOutbox/{job}'},async event=>{if(event.data)await dispatchAdoptionPushDocument(getFirestore(),event.data);});
 // Recovery only. New notices are delivered by adoptionDeliveryNow without scanning the collection.
 export const adoptionDelivery=onSchedule({...activityOptions,schedule:'every 60 minutes',maxInstances:1},async()=>{await dispatchAdoptionPush(getFirestore());});

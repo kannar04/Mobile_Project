@@ -98,6 +98,7 @@ public final class FavoritesFragment extends com.gmail.manhle240406.project.wiri
     public void onStart() {
         super.onStart();
         BrowsePulse.add(refreshSources);
+        refreshSources.run();
     }
 
     @Override
