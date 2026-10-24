@@ -58,7 +58,7 @@ public final class FlowRoutes {
         page("F36",3,R.string.f36_title,RemindersActivity.class),
         sheet("F37",0,R.string.flow_recommendations),
         page("F38",4,R.string.wiring_settings_title,EnhancedSettingsActivity.class),
-        page("F39",5,R.string.f39_title,AdminCaseToolsActivity.class),
+        page("F39",5,R.string.f39_title,CourseAdminActivity.class),
         page("F40",5,R.string.f40_title,AdminDashboardActivity.class),
         page("F41",4,R.string.f41_title,OfflineSyncActivity.class),
         page("F42",4,R.string.flow_readiness,AuthActivity.class),
