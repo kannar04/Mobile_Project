@@ -1,36 +1,19 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<androidx.core.widget.NestedScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/auth_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="@color/anilove_bg"
->
-    <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
-        <LinearLayout
-            android:id="@+id/auth_startup_loading"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:minHeight="300dp"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="24dp"
-        >
-            <ProgressBar
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:importantForAccessibility="no"
-            />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/profile_loading"
-                android:textAppearance="?attr/textAppearanceBodyLarge"
-                android:accessibilityLiveRegion="polite"
-            />
+    android:background="@color/anilove_bg">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout android:id="@+id/auth_startup_loading" android:layout_width="match_parent" android:layout_height="match_parent" android:minHeight="300dp" android:gravity="center" android:orientation="vertical" android:padding="24dp">
+            <ProgressBar android:layout_width="wrap_content" android:layout_height="wrap_content" android:importantForAccessibility="no" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="@string/profile_loading" android:textAppearance="?attr/textAppearanceBodyLarge" android:accessibilityLiveRegion="polite" />
         </LinearLayout>
         <com.gmail.manhle240406.project.auth.BoundedFormLayout
             android:id="@+id/auth_form"
@@ -39,18 +22,16 @@
             android:layout_height="wrap_content"
             android:layout_gravity="top|center_horizontal"
             android:orientation="vertical"
-            android:padding="24dp"
-        >
+            android:padding="24dp">
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/auth_back"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minWidth="48dp"
-                android:minHeight="48dp"
-                android:textColor="@color/anilove_text_dark"
-                android:text="@string/auth_back"
-            />
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                app:icon="@drawable/ic_social_back"
+                app:iconTint="@color/anilove_text_dark"
+                android:contentDescription="@string/auth_back" />
 
             <!-- AniLove Header & Logo -->
             <ImageView
@@ -59,8 +40,7 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="16dp"
                 android:contentDescription="@string/app_name"
-                android:src="@drawable/ic_anilove_logo"
-            />
+                android:src="@drawable/ic_anilove_logo" />
 
             <TextView
                 android:id="@+id/auth_title"
@@ -71,8 +51,7 @@
                 android:text="@string/auth_app_title"
                 android:textColor="@color/anilove_text_dark"
                 android:textSize="28sp"
-                android:textStyle="bold"
-            />
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/auth_body"
@@ -82,8 +61,7 @@
                 android:gravity="center"
                 android:text="@string/auth_app_subtitle"
                 android:textColor="@color/anilove_text_muted"
-                android:textSize="14sp"
-            />
+                android:textSize="14sp" />
 
             <!-- Input Fields Container -->
             <LinearLayout
@@ -91,15 +69,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:layout_marginTop="24dp"
-            >
+                android:layout_marginTop="24dp">
+
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/auth_email_layout"
                     style="@style/AniLoveOutlinedField"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/auth_email"
-                >
+                    android:hint="@string/auth_email">
+
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/auth_email"
                         android:layout_width="match_parent"
@@ -108,8 +86,7 @@
                         android:autofillHints="username"
                         android:imeOptions="actionNext"
                         android:inputType="textEmailAddress"
-                        android:singleLine="true"
-                    />
+                        android:singleLine="true" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -118,8 +95,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/auth_password"
-                    app:endIconMode="password_toggle"
-                >
+                    app:endIconMode="password_toggle">
+
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/auth_password"
                         android:layout_width="match_parent"
@@ -129,8 +106,7 @@
                         android:imeOptions="actionDone"
                         android:inputType="textPassword"
                         android:saveEnabled="false"
-                        android:singleLine="true"
-                    />
+                        android:singleLine="true" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -140,8 +116,8 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/auth_confirm"
                     android:visibility="gone"
-                    app:endIconMode="password_toggle"
-                >
+                    app:endIconMode="password_toggle">
+
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/auth_confirm"
                         android:layout_width="match_parent"
@@ -151,8 +127,7 @@
                         android:imeOptions="actionDone"
                         android:inputType="textPassword"
                         android:saveEnabled="false"
-                        android:singleLine="true"
-                    />
+                        android:singleLine="true" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
@@ -163,8 +138,7 @@
                 android:layout_marginTop="16dp"
                 android:accessibilityLiveRegion="polite"
                 android:textColor="@color/anilove_text_dark"
-                android:textSize="14sp"
-            />
+                android:textSize="14sp" />
 
             <com.google.android.material.progressindicator.CircularProgressIndicator
                 android:id="@+id/auth_progress"
@@ -174,8 +148,7 @@
                 android:layout_marginTop="12dp"
                 android:importantForAccessibility="no"
                 android:indeterminate="true"
-                android:visibility="gone"
-            />
+                android:visibility="gone" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/auth_submit"
@@ -183,8 +156,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="@string/auth_signin"
-            />
+                android:text="@string/auth_signin" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/auth_google"
@@ -192,8 +164,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="@string/auth_google"
-            />
+                android:text="@string/auth_google" />
 
             <TextView
                 android:id="@+id/auth_google_help"
@@ -202,8 +173,7 @@
                 android:layout_marginTop="8dp"
                 android:text="@string/auth_google_unavailable"
                 android:textColor="@color/anilove_text_muted"
-                android:textSize="12sp"
-            />
+                android:textSize="12sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/auth_switch"
@@ -212,8 +182,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:textColor="@color/anilove_primary"
-                android:text="@string/auth_switch_signin"
-            />
+                android:text="@string/auth_switch_signin" />
 
             <!-- Extended Actions Container -->
             <LinearLayout
@@ -221,63 +190,56 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone"
-            >
+                android:visibility="gone">
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/auth_verify"
                     style="@style/AniLovePrimaryButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/auth_verify"
-                />
+                    android:text="@string/auth_verify" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/auth_refresh"
                     style="@style/AniLoveOutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/auth_refresh"
-                />
+                    android:text="@string/auth_refresh" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/auth_retry_setup"
                     style="@style/AniLoveOutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/auth_retry_setup"
-                />
+                    android:text="@string/auth_retry_setup" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/auth_profile"
                     style="@style/AniLoveOutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/profile_title"
-                />
+                    android:text="@string/profile_title" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/auth_pets"
                     style="@style/AniLoveOutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/pet_title"
-                />
+                    android:text="@string/pet_title" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/auth_listings"
                     style="@style/AniLoveOutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/listing_title"
-                />
+                    android:text="@string/listing_title" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/auth_community"
                     style="@style/AniLoveOutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/community_title"
-                />
+                    android:text="@string/community_title" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/auth_proof_layout"
@@ -285,8 +247,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/auth_proof"
-                    app:endIconMode="password_toggle"
-                >
+                    app:endIconMode="password_toggle">
+
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/auth_proof"
                         android:layout_width="match_parent"
@@ -296,8 +258,7 @@
                         android:imeOptions="actionDone"
                         android:inputType="textPassword"
                         android:saveEnabled="false"
-                        android:singleLine="true"
-                    />
+                        android:singleLine="true" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.button.MaterialButton
@@ -305,8 +266,7 @@
                     style="@style/AniLoveOutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/auth_google_link"
-                />
+                    android:text="@string/auth_google_link" />
             </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
@@ -315,18 +275,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/auth_logout"
-                android:visibility="gone"
-            />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/auth_visitor"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textColor="@color/anilove_text_muted"
-                android:text="@string/auth_visitor"
-            />
+                android:visibility="gone" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -335,8 +284,7 @@
                 android:gravity="center"
                 android:text="@string/auth_disclosure"
                 android:textColor="@color/anilove_text_muted"
-                android:textSize="11sp"
-            />
+                android:textSize="11sp" />
         </com.gmail.manhle240406.project.auth.BoundedFormLayout>
     </FrameLayout>
 </androidx.core.widget.NestedScrollView>
