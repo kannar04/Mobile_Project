@@ -1,34 +1,32 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
     android:background="@drawable/anilove_card_bg"
     android:orientation="vertical"
-    android:padding="16dp"
->
+    android:padding="16dp">
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        android:orientation="horizontal"
-    >
+        android:orientation="horizontal">
+
         <ImageView
             android:id="@+id/review_pet_image"
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:scaleType="centerCrop"
-            android:src="@drawable/profile_avatar_dog"
-        />
+            android:src="@drawable/profile_avatar_dog" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:orientation="vertical"
-        >
+            android:orientation="vertical">
+
             <TextView
                 android:id="@+id/review_title"
                 android:layout_width="match_parent"
@@ -36,8 +34,7 @@
                 android:text="Bông - Chó Poodle"
                 android:textColor="@color/anilove_text_dark"
                 android:textSize="16sp"
-                android:textStyle="bold"
-            />
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/review_subtitle"
@@ -46,8 +43,7 @@
                 android:layout_marginTop="2dp"
                 android:text="Đăng bởi Nguyễn Văn A · 2 giờ trước"
                 android:textColor="@color/anilove_text_muted"
-                android:textSize="12sp"
-            />
+                android:textSize="12sp" />
         </LinearLayout>
 
         <!-- Status Badge -->
@@ -61,16 +57,15 @@
             android:text="Đang chờ"
             android:textColor="@color/anilove_badge_orange_text"
             android:textSize="11sp"
-            android:textStyle="bold"
-        />
+            android:textStyle="bold" />
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:orientation="horizontal"
-    >
+        android:orientation="horizontal">
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_reject"
             style="@style/AniLoveOutlinedButton"
@@ -78,8 +73,7 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="6dp"
             android:layout_weight="1"
-            android:text="Từ chối"
-        />
+            android:text="Từ chối" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_approve"
@@ -88,7 +82,6 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="6dp"
             android:layout_weight="1"
-            android:text="Duyệt tin"
-        />
+            android:text="Duyệt tin" />
     </LinearLayout>
 </LinearLayout>
