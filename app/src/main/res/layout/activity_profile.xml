@@ -1,31 +1,31 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<androidx.core.widget.NestedScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/profile_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="@color/anilove_bg"
->
+    android:background="@color/anilove_bg">
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp"
-    >
+        android:padding="20dp">
+
         <!-- Top Navigation Header -->
-        <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/profile_back"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minWidth="48dp"
-                android:minHeight="48dp"
-                android:textColor="@color/anilove_text_dark"
-                android:text="@string/auth_back"
-            />
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                app:icon="@drawable/ic_social_back"
+                app:iconTint="@color/anilove_text_dark"
+                android:contentDescription="@string/auth_back" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -37,9 +37,12 @@
                 android:text="@string/profile_title"
                 android:textColor="@color/anilove_text_dark"
                 android:textSize="18sp"
-                android:textStyle="bold"
-            />
+                android:textStyle="bold" />
         </RelativeLayout>
+
+
+
+
 
         <!-- User Profile Card -->
         <LinearLayout
@@ -49,16 +52,15 @@
             android:background="@drawable/anilove_card_bg"
             android:gravity="center_horizontal"
             android:orientation="vertical"
-            android:padding="20dp"
-        >
+            android:padding="20dp">
+
             <ImageView
                 android:id="@+id/profile_avatar_image"
                 android:layout_width="80dp"
                 android:layout_height="80dp"
                 android:contentDescription="Avatar"
                 android:src="@drawable/profile_avatar_default"
-                app:tint="?attr/colorOnSurface"
-            />
+                app:tint="?attr/colorOnSurface" />
 
             <TextView
                 android:id="@+id/profile_summary"
@@ -68,16 +70,17 @@
                 android:text="@string/profile_none"
                 android:textColor="@color/anilove_text_dark"
                 android:textSize="20sp"
-                android:textStyle="bold"
-            />
+                android:textStyle="bold" />
+
+
 
             <!-- Profile Action Buttons -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:orientation="horizontal"
-            >
+                android:orientation="horizontal">
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/profile_edit"
                     style="@style/AniLovePrimaryButton"
@@ -85,8 +88,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
                     android:layout_weight="1"
-                    android:text="@string/social_edit"
-                />
+                    android:text="@string/social_edit" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/profile_options"
@@ -94,8 +96,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/social_menu"
-                />
+                    android:text="@string/social_menu" />
             </LinearLayout>
         </LinearLayout>
 
@@ -105,8 +106,7 @@
             android:layout_width="match_parent"
             android:layout_height="4dp"
             android:layout_marginTop="12dp"
-            android:indeterminate="true"
-        />
+            android:indeterminate="true" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/profile_tools"
@@ -114,16 +114,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="@string/flow_explore"
-        />
+            android:text="@string/flow_explore" />
         <com.google.android.material.button.MaterialButton
             android:id="@+id/profile_settings"
             style="@style/AniLoveOutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="@string/wiring_settings_title"
-        />
+            android:text="@string/wiring_settings_title" />
 
         <TextView
             android:id="@+id/profile_status"
@@ -131,8 +129,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:textColor="@color/anilove_text_dark"
-            android:textSize="13sp"
-        />
+            android:textSize="13sp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/profile_retry"
@@ -140,8 +137,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/profile_retry_operation"
-            android:visibility="gone"
-        />
+            android:visibility="gone" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/profile_resolve"
@@ -149,8 +145,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/profile_resolve_conflict"
-            android:visibility="gone"
-        />
+            android:visibility="gone" />
 
         <!-- Form Section -->
         <LinearLayout
@@ -158,27 +153,26 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:saveEnabled="false"
-        >
+            android:saveEnabled="false">
+
             <LinearLayout
                 android:id="@+id/profile_public_fields"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-            >
+                android:orientation="vertical">
+
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/profile_name_layout"
                     style="@style/AniLoveOutlinedField"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/profile_name"
-                >
+                    android:hint="@string/profile_name">
+
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/profile_name"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:minHeight="52dp"
-                    />
+                        android:minHeight="52dp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <Spinner
@@ -187,38 +181,35 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:minHeight="48dp"
-                />
+                    android:visibility="gone" />
 
                 <Spinner
                     android:id="@+id/profile_region"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:minHeight="48dp"
-                />
+                    android:minHeight="48dp" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/profile_bio_layout"
                     style="@style/AniLoveOutlinedField"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/profile_bio"
-                >
+                    android:hint="@string/profile_bio">
+
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/profile_bio"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="top"
-                        android:minLines="3"
-                    />
+                        android:minLines="3" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <TextView
                     android:id="@+id/profile_draft_status"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                />
+                    android:layout_marginTop="8dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/profile_save"
@@ -226,16 +217,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="@string/profile_save"
-                />
+                    android:text="@string/profile_save" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/profile_preview"
                     style="@style/AniLoveOutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/profile_preview"
-                />
+                    android:text="@string/profile_preview" />
             </LinearLayout>
 
             <!-- Contact Section -->
@@ -244,21 +233,20 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone"
-            >
+                android:visibility="gone">
+
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/profile_phone_layout"
                     style="@style/AniLoveOutlinedField"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/profile_phone"
-                >
+                    android:hint="@string/profile_phone">
+
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/profile_phone"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:minHeight="52dp"
-                    />
+                        android:minHeight="52dp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.button.MaterialButton
@@ -266,8 +254,7 @@
                     style="@style/AniLoveOutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/profile_save_contact"
-                />
+                    android:text="@string/profile_save_contact" />
             </LinearLayout>
 
             <!-- Visibility Section -->
@@ -276,38 +263,34 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone"
-            >
+                android:visibility="gone">
+
                 <TextView
                     android:id="@+id/profile_visibility_state"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                />
+                    android:layout_marginTop="8dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/profile_hide"
                     style="@style/AniLoveOutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/profile_hide"
-                />
+                    android:text="@string/profile_hide" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/profile_show"
                     style="@style/AniLoveOutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/profile_show"
-                />
+                    android:text="@string/profile_show" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/profile_reviews"
                     style="@style/AniLoveOutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/profile_reviews"
-                />
+                    android:text="@string/profile_reviews" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/profile_more"
@@ -315,15 +298,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/profile_more_reviews"
-                    android:visibility="gone"
-                />
+                    android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/profile_review_text"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                />
+                    android:layout_marginTop="8dp" />
             </LinearLayout>
         </LinearLayout>
 
@@ -333,8 +314,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/profile_reload"
-            android:visibility="gone"
-        />
+            android:visibility="gone" />
 
         <!-- Management & Settings -->
         <com.google.android.material.button.MaterialButton
@@ -343,8 +323,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="@string/pet_title"
-        />
+            android:text="@string/pet_title" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/profile_listings"
@@ -352,8 +331,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="@string/listing_title"
-        />
+            android:text="@string/listing_title" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/profile_notifications"
@@ -361,8 +339,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="@string/notification_settings"
-        />
+            android:text="@string/notification_settings" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/profile_catalogs"
@@ -370,8 +347,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="@string/catalog_title"
-        />
+            android:text="@string/catalog_title" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/profile_review"
@@ -379,8 +355,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="@string/listing_review_title"
-        />
+            android:text="@string/listing_review_title" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/profile_discovery"
@@ -388,8 +363,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="@string/discovery_title"
-        />
+            android:text="@string/discovery_title" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/profile_pet_care"
@@ -397,8 +371,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="@string/pet_care_title"
-        />
+            android:text="@string/pet_care_title" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/profile_logout"
@@ -406,7 +379,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="@string/listing_logout_now"
-        />
+            android:text="@string/listing_logout_now" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
