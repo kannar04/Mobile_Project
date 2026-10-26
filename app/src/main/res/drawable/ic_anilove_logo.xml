@@ -1,30 +1,23 @@
-<vector
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="72dp"
     android:height="72dp"
     android:viewportWidth="72"
-    android:viewportHeight="72"
->
+    android:viewportHeight="72">
     <!-- Main Paw Pad -->
     <path
         android:fillColor="#FFE87A5D"
-        android:pathData="M36,36m-16,0a16,16 0 1,0 32,0a16,16 0 1,0 -32,0"
-    />
+        android:pathData="M36,36m-16,0a16,16 0 1,0 32,0a16,16 0 1,0 -32,0" />
     <!-- Paw Toes -->
     <path
         android:fillColor="#FFE87A5D"
-        android:pathData="M22,16m-6,0a6,6 0 1,0 12,0a6,6 0 1,0 -12,0"
-    />
+        android:pathData="M22,16m-6,0a6,6 0 1,0 12,0a6,6 0 1,0 -12,0" />
     <path
         android:fillColor="#FFE87A5D"
-        android:pathData="M32,10m-6,0a6,6 0 1,0 12,0a6,6 0 1,0 -12,0"
-    />
+        android:pathData="M32,10m-6,0a6,6 0 1,0 12,0a6,6 0 1,0 -12,0" />
     <path
         android:fillColor="#FFE87A5D"
-        android:pathData="M42,10m-6,0a6,6 0 1,0 12,0a6,6 0 1,0 -12,0"
-    />
+        android:pathData="M42,10m-6,0a6,6 0 1,0 12,0a6,6 0 1,0 -12,0" />
     <path
         android:fillColor="#FFE87A5D"
-        android:pathData="M52,16m-6,0a6,6 0 1,0 12,0a6,6 0 1,0 -12,0"
-    />
+        android:pathData="M52,16m-6,0a6,6 0 1,0 12,0a6,6 0 1,0 -12,0" />
 </vector>
