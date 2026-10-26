@@ -17,6 +17,12 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        val emulatorHost = providers.gradleProperty("firebaseEmulatorHost").orElse("10.0.2.2").get()
+        require(emulatorHost.matches(Regex("[A-Za-z0-9.-]+")))
+        buildConfigField("String", "FIREBASE_EMULATOR_HOST", "\"$emulatorHost\"")
+        buildConfigField("int", "FIRESTORE_EMULATOR_PORT", providers.gradleProperty("firebaseFirestoreEmulatorPort").orElse("8180").get())
+        buildConfigField("int", "AUTH_EMULATOR_PORT", providers.gradleProperty("firebaseAuthEmulatorPort").orElse("9199").get())
+        buildConfigField("int", "FUNCTIONS_EMULATOR_PORT", providers.gradleProperty("firebaseFunctionsEmulatorPort").orElse("5006").get())
     }
     testBuildType = providers.gradleProperty("androidTestBuildType").orElse("debug").get()
 
@@ -32,22 +38,14 @@ android {
             initWith(getByName("debug"))
             matchingFallbacks += listOf("debug")
             val projectId = providers.gradleProperty("firebaseSparkProject").orElse("aniloveproject").get()
-            require(
-                projectId.isEmpty() ||
-                    projectId.matches(Regex("[a-z][a-z0-9-]{4,28}[a-z0-9]")) &&
-                    !projectId.startsWith("demo-")
-            )
+            require(projectId.isEmpty() || projectId.matches(Regex("[a-z][a-z0-9-]{4,28}[a-z0-9]")) && !projectId.startsWith("demo-"))
             buildConfigField("boolean", "FIREBASE_EMULATORS", "false")
             buildConfigField("boolean", "COURSE_PROJECT_VERIFIED", projectId.isNotEmpty().toString())
             buildConfigField("String", "EXPECTED_FIREBASE_PROJECT", "\"$projectId\"")
             buildConfigField("boolean", "MEDIA_UPLOADS_ENABLED", "true")
             // 2026-10-17 read-only project inspection: password provider, enumeration protection,
             // authorized Firebase-hosted domain and default HTTPS action handler verified.
-            buildConfigField(
-                "boolean",
-                "PASSWORD_RESET_CONFIGURATION_VERIFIED",
-                (projectId == "aniloveproject").toString()
-            )
+            buildConfigField("boolean", "PASSWORD_RESET_CONFIGURATION_VERIFIED", (projectId == "aniloveproject").toString())
         }
         release {
             buildConfigField("boolean", "FIREBASE_EMULATORS", "false")
