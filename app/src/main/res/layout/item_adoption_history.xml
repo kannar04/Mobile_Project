@@ -1,30 +1,28 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
     android:background="@drawable/anilove_card_bg"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:padding="16dp"
->
+    android:padding="16dp">
+
     <ImageView
         android:id="@+id/history_pet_image"
         android:layout_width="52dp"
         android:layout_height="52dp"
         android:contentDescription="Pet image"
         android:scaleType="centerCrop"
-        android:src="@drawable/profile_avatar_dog"
-    />
+        android:src="@drawable/profile_avatar_dog" />
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
         android:layout_weight="1"
-        android:orientation="vertical"
-    >
+        android:orientation="vertical">
+
         <TextView
             android:id="@+id/history_title"
             android:layout_width="match_parent"
@@ -32,8 +30,7 @@
             android:text="Bé Bông (Poodle)"
             android:textColor="@color/anilove_text_dark"
             android:textSize="16sp"
-            android:textStyle="bold"
-        />
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/history_date"
@@ -42,8 +39,7 @@
             android:layout_marginTop="2dp"
             android:text="Hoàn tất nhận nuôi: 10/10/2026"
             android:textColor="@color/anilove_text_muted"
-            android:textSize="12sp"
-        />
+            android:textSize="12sp" />
     </LinearLayout>
 
     <TextView
@@ -55,6 +51,5 @@
         android:text="Hoàn tất"
         android:textColor="@color/anilove_badge_green_text"
         android:textSize="12sp"
-        android:textStyle="bold"
-    />
+        android:textStyle="bold" />
 </LinearLayout>
