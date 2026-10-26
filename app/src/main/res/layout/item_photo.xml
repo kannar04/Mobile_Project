@@ -1,20 +1,18 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="150dp"
     android:layout_margin="6dp"
     android:background="@drawable/anilove_card_bg"
     android:clickable="true"
-    android:focusable="true"
->
+    android:focusable="true">
+
     <ImageView
         android:id="@+id/photo_image"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="centerCrop"
-        android:src="@drawable/profile_avatar_dog"
-    />
+        android:src="@drawable/profile_avatar_dog" />
 
     <!-- Cover Badge -->
     <TextView
@@ -28,8 +26,7 @@
         android:text="Ảnh bìa"
         android:textColor="@color/anilove_badge_green_text"
         android:textSize="11sp"
-        android:textStyle="bold"
-    />
+        android:textStyle="bold" />
 
     <!-- Progress Overlay -->
     <LinearLayout
@@ -39,23 +36,21 @@
         android:layout_alignParentBottom="true"
         android:background="#99000000"
         android:orientation="vertical"
-        android:padding="8dp"
-    >
+        android:padding="8dp">
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
             android:text="Đang tải lên (60%)"
             android:textColor="@color/white"
-            android:textSize="11sp"
-        />
+            android:textSize="11sp" />
 
         <ProgressBar
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
             android:layout_height="4dp"
             android:layout_marginTop="4dp"
-            android:progress="60"
-        />
+            android:progress="60" />
     </LinearLayout>
 </RelativeLayout>
