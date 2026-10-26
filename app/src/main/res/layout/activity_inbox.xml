@@ -1,29 +1,26 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/inbox_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/anilove_bg"
-    android:orientation="vertical"
->
+    android:orientation="vertical">
+
     <!-- Top Header -->
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp"
-    >
+        android:padding="16dp">
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/inbox_back"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:minWidth="48dp"
-            android:minHeight="48dp"
-            android:text="@string/auth_back"
-            android:textColor="@color/anilove_text_dark"
-        />
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            app:icon="@drawable/ic_social_back"
+            app:iconTint="@color/anilove_text_dark"
+            android:contentDescription="@string/auth_back" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -35,114 +32,47 @@
             android:text="@string/inbox_title"
             android:textColor="@color/anilove_text_dark"
             android:textSize="18sp"
-            android:textStyle="bold"
-        />
+            android:textStyle="bold" />
 
         <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/inbox_settings_btn"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:padding="12dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/notification_settings"
-            android:src="@drawable/ic_shell_settings"
-            app:tint="?attr/colorPrimary"
-        />
+            android:src="@drawable/ic_social_more"
+            app:tint="@color/anilove_text_dark" />
     </RelativeLayout>
 
-    <!-- System Push Notification (Heads-up) simulated banner -->
-    <LinearLayout
-        android:id="@+id/inbox_push_banner"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="12dp"
-        android:background="@drawable/anilove_card_bg"
-        android:backgroundTint="#F8E5DF"
-        android:elevation="4dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="14dp"
-    >
-        <ImageView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:contentDescription="Notification Icon"
-            android:src="@drawable/ic_anilove_logo"
-        />
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_weight="1"
-            android:orientation="vertical"
-        >
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Yêu cầu nhận nuôi mới!"
-                android:textColor="@color/anilove_text_dark"
-                android:textSize="14sp"
-                android:textStyle="bold"
-            />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Sarah muốn gặp Bông!"
-                android:textColor="@color/anilove_text_muted"
-                android:textSize="12sp"
-            />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/inbox_toggle_empty"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/anilove_badge_bg"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="4dp"
-            android:text="Đổi view"
-            android:textColor="@color/anilove_primary"
-            android:textSize="11sp"
-            android:textStyle="bold"
-        />
-    </LinearLayout>
-
-    <!-- Content ViewSwitcher / Frame for Populated vs Empty -->
-    <ViewSwitcher
-        android:id="@+id/inbox_switcher"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:paddingHorizontal="16dp"
-    >
-        <!-- Populated State (S002 Populated) -->
+        android:layout_weight="1">
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/inbox_recycler"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        />
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
-        <!-- Empty State (S002 Empty) -->
         <LinearLayout
+            android:id="@+id/inbox_empty_view"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="32dp"
-        >
+            android:padding="24dp"
+            android:visibility="gone">
+
             <ImageView
                 android:layout_width="80dp"
                 android:layout_height="80dp"
                 android:contentDescription="@string/app_name"
-                android:src="@drawable/ic_anilove_logo"
-                app:tint="?attr/colorPrimary"
-            />
+                android:src="@drawable/ic_nav_chat"
+                app:tint="@color/anilove_text_muted" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -151,8 +81,7 @@
                 android:gravity="center"
                 android:text="@string/inbox_empty"
                 android:textColor="@color/anilove_text_muted"
-                android:textSize="15sp"
-            />
+                android:textSize="15sp" />
         </LinearLayout>
-    </ViewSwitcher>
+    </FrameLayout>
 </LinearLayout>
