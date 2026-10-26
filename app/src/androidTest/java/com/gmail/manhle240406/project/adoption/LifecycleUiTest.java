@@ -1,28 +1,596 @@
 package com.gmail.manhle240406.project.adoption;
-import android.content.*;import android.graphics.*;import android.net.Uri;import androidx.lifecycle.ViewModelProvider;import androidx.test.core.app.ActivityScenario;import androidx.test.ext.junit.runners.AndroidJUnit4;import androidx.test.platform.app.InstrumentationRegistry;import androidx.test.uiautomator.*;import com.gmail.manhle240406.project.R;import com.gmail.manhle240406.project.media.MediaDraftViewModel;import com.google.android.gms.tasks.Tasks;import com.google.firebase.auth.FirebaseAuth;import com.google.firebase.functions.FirebaseFunctionsException;import org.junit.*;import org.junit.runner.RunWith;import org.junit.runners.MethodSorters;import org.json.*;import java.util.*;import static org.junit.Assert.*;import static org.hamcrest.Matchers.*;import static androidx.test.espresso.Espresso.*;import static androidx.test.espresso.action.ViewActions.*;import static androidx.test.espresso.matcher.ViewMatchers.*;import static androidx.test.espresso.assertion.ViewAssertions.*;import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.*;
-@RunWith(AndroidJUnit4.class) @FixMethodOrder(MethodSorters.NAME_ASCENDING) public class LifecycleUiTest {
- private String uid;private Fixture f;private final Context c=InstrumentationRegistry.getInstrumentation().getTargetContext();private static String asset;private final String id="20000000-0000-0000-0000-000000000001";
- @Before public void setup(){uid=FirebaseAuth.getInstance().getUid();assertNotNull(uid);try(ActivityScenario<com.gmail.manhle240406.project.MainActivity> boot=ActivityScenario.launch(com.gmail.manhle240406.project.MainActivity.class)){assertTrue("Main session is ready before entering private adoption tasks",UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).wait(Until.hasObject(By.res(c.getPackageName(),"nav_home")),30000));boot.onActivity(a->assertEquals(uid,((com.gmail.manhle240406.project.AniloveApplication)a.getApplication()).foundation().sessions.capture().uid));}f=new Fixture();AdoptionApi.testTransport=(operation,input)->{try{return f.call(operation,input);}catch(Throwable e){return Tasks.forException(new IllegalStateException(e));}};}
- @After public void end(){AdoptionApi.testTransport=null;assertEquals(uid,FirebaseAuth.getInstance().getUid());}
- private void click(int label){onView(withTagValue(equalTo("lc_action_"+c.getResources().getResourceEntryName(label)))).perform(scrollTo(),androidx.test.espresso.action.ViewActions.click());}
- private void typed(String key,String value){onView(withTagValue(equalTo("lc_"+key))).perform(scrollTo(),replaceText(value),androidx.test.espresso.action.ViewActions.closeSoftKeyboard());}
- private void confirm(){onView(withText(android.R.string.ok)).perform(androidx.test.espresso.action.ViewActions.click());}
- private ActivityScenario<LifecycleActivity> detail(){return ActivityScenario.launch(new Intent(c,LifecycleActivity.class).putExtra("adoption",id));}
- @Test public void a_homeShowsTwoRoleHistoryWithoutRedundantControls(){try(ActivityScenario<LifecycleActivity> s=ActivityScenario.launch(LifecycleActivity.class)){onView(withText(R.string.oc4_history)).check(matches(isDisplayed()));onView(withTagValue(equalTo("lc_next"))).check(doesNotExist());onView(withText(R.string.oc4_old_history)).check(doesNotExist());onView(withText(R.string.lc_push_enable)).check(doesNotExist());onView(withText(R.string.lc_setup)).check(doesNotExist());assertTrue(f.commands.isEmpty());UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).takeScreenshot(new java.io.File(c.getExternalFilesDir(null),"oc4-history.png"));}}
- @Test public void b_adopterReadsExactContractAcknowledgesAndConfirmsOwnReceipt(){f.host=false;try(ActivityScenario<LifecycleActivity> s=detail()){click(R.string.lc_accept);confirm();assertEquals("test-sha256",f.commands.get(0).get("contractHash"));click(R.string.lc_ack);confirm();click(R.string.lc_received);confirm();assertEquals(Arrays.asList("acceptContract","ackBaseline","receive"),f.names());}}
- @Test public void c_hostUploadsPrivatePhotoAndCompletesNextActionJourney()throws Exception{f.host=true;f.status="CONTRACT_ACCEPTED";java.io.File photo=new java.io.File(c.getCacheDir(),"lifecycle-private-qa.jpg");Bitmap bitmap=Bitmap.createBitmap(96,96,Bitmap.Config.ARGB_8888);bitmap.eraseColor(Color.rgb(32,98,64));try(java.io.FileOutputStream out=new java.io.FileOutputStream(photo)){bitmap.compress(Bitmap.CompressFormat.JPEG,90,out);}bitmap.recycle();try(ActivityScenario<LifecycleActivity> s=detail()){click(R.string.lc_baseline);s.onActivity(a->{MediaDraftViewModel m=new ViewModelProvider(a).get(MediaDraftViewModel.class);m.add(Arrays.asList(Uri.fromFile(photo)));asset=m.ids().get(0);try{java.nio.file.Files.write(new java.io.File(c.getExternalFilesDir(null),"adoption-flow-native-media.json").toPath(),new JSONObject().put("uid",uid).put("assets",new JSONArray().put(asset)).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));}catch(Exception e){throw new AssertionError(e);}});onView(withTagValue(equalTo("lc_action_lc_save"))).perform(scrollTo());assertTrue("Real adoption_private upload completes",UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).wait(Until.hasObject(By.text(c.getString(R.string.feedback_cover_photo))),90000));click(R.string.lc_save);click(R.string.lc_ready);confirm();click(R.string.lc_verify);confirm();click(R.string.lc_finalize);confirm();assertEquals("FINALIZED",f.status);assertEquals(Arrays.asList("saveBaseline","ready","verify","finalize"),f.names());UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).takeScreenshot(new java.io.File(c.getExternalFilesDir(null),"adoption-flow-host-final.png"));}finally{photo.delete();}}
- @Test public void d_roleTabsAreTheOnlyHistoryNavigation(){try(ActivityScenario<LifecycleActivity> s=ActivityScenario.launch(LifecycleActivity.class)){onView(allOf(withText(R.string.oc3_rehoming),isDescendantOfA(withTagValue(equalTo("lc_role_tabs"))))).perform(scrollTo(),androidx.test.espresso.action.ViewActions.click());assertEquals("host",f.lastRead.get("role"));assertNull(f.lastRead.get("after"));onView(allOf(withText(R.string.oc3_adopting),isDescendantOfA(withTagValue(equalTo("lc_role_tabs"))))).perform(scrollTo(),androidx.test.espresso.action.ViewActions.click());assertEquals("adopter",f.lastRead.get("role"));assertNull(f.lastRead.get("after"));}}
- @Test public void e_unknownAcceptanceRetainsExactIntentAcrossRotation(){f.host=false;f.failOnce=true;try(ActivityScenario<LifecycleActivity> s=detail()){click(R.string.lc_accept);confirm();s.recreate();click(R.string.lc_retry);assertEquals(2,f.commands.size());assertEquals(f.commands.get(0),f.commands.get(1));}}
- @Test public void f_adopterReportAndCorrectionAreReachable(){f.host=false;f.status="MONITORING";try(ActivityScenario<LifecycleActivity> s=detail()){onView(withText(containsString("D03"))).perform(scrollTo(),androidx.test.espresso.action.ViewActions.click());typed("condition","Healthy course fixture");typed("care","Daily care");typed("shelter","Safe indoor home");typed("changes","No concerns");s.onActivity(a->new ViewModelProvider(a).get(MediaDraftViewModel.class).restore(Arrays.asList(asset==null?UUID.randomUUID().toString():asset)));click(R.string.lc_report_submit);assertEquals("report",f.names().get(0));onView(withText(containsString("D03"))).perform(scrollTo(),androidx.test.espresso.action.ViewActions.click());typed("note","Additional synthetic detail");click(R.string.lc_correction);assertEquals("correct",f.names().get(1));}}
- @Test public void g_timelineShowsCompleteCurrentAndUpcomingVisualStates(){f.host=false;try(ActivityScenario<LifecycleActivity> s=detail()){onView(withTagValue(equalTo("adoption_timeline"))).check(matches(isDisplayed()));onView(withTagValue(equalTo("adoption_timeline_complete"))).check(matches(isDisplayed()));onView(withTagValue(equalTo("adoption_timeline_current"))).check(matches(isDisplayed()));onView(withTagValue(equalTo("adoption_timeline_upcoming"))).perform(scrollTo()).check(matches(isDisplayed()));UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).takeScreenshot(new java.io.File(c.getExternalFilesDir(null),"adoption-timeline.png"));}}
- @Test public void h_futureFollowupCardIsRoundedLabelledAndReportFormStaysLocked(){f.host=false;f.status="MONITORING";f.reportOpenAt="2026-11-19T00:00:00Z";try(ActivityScenario<LifecycleActivity> s=detail()){onView(withTagValue(equalTo("followup_card_D03"))).perform(scrollTo()).check(matches(isDisplayed())).perform(androidx.test.espresso.action.ViewActions.click());onView(withTagValue(equalTo("lc_action_lc_report_submit"))).check(doesNotExist());UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).takeScreenshot(new java.io.File(c.getExternalFilesDir(null),"followup-locked-card.png"));}}
- @Test public void x_generalInboxUsesFullWidthTextAndStacksTimestamp(){AdoptionApi.testTransport=null;try(ActivityScenario<com.gmail.manhle240406.project.MainActivity> s=ActivityScenario.launch(new Intent(c,com.gmail.manhle240406.project.MainActivity.class).putExtra(com.gmail.manhle240406.project.MainActivity.PAGE,"notifications"))){assertTrue(UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).wait(Until.hasObject(By.res(c.getPackageName(),"inbox_title")),20000));onView(withId(R.id.inbox_recycler)).check(matches(isDisplayed()));s.onActivity(a->{androidx.recyclerview.widget.RecyclerView list=a.findViewById(R.id.inbox_recycler);android.view.View row=list.getChildAt(0),title=row.findViewById(R.id.inbox_title),time=row.findViewById(R.id.inbox_time);assertTrue("Timestamp is stacked below title",time.getTop()>title.getTop());assertTrue("Title receives most of the row width",title.getWidth()>row.getWidth()/2);});UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).takeScreenshot(new java.io.File(c.getExternalFilesDir(null),"oc4-inbox-final.png"));}}
- @Test public void y_realNotificationsDisplayAndOpenGeneralInbox()throws Exception{AdoptionApi.testTransport=null;android.app.NotificationManager manager=(android.app.NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);java.util.Set<String> texts=new java.util.HashSet<>();android.app.PendingIntent open=null;for(android.service.notification.StatusBarNotification n:manager.getActiveNotifications()){if(!c.getPackageName().equals(n.getPackageName()))continue;CharSequence text=n.getNotification().extras.getCharSequence(android.app.Notification.EXTRA_TEXT);if(text!=null)texts.add(text.toString());open=n.getNotification().contentIntent;}assertTrue("Real message notification displayed",texts.contains(c.getString(R.string.oc4_notification_message)));assertTrue("Real like notification displayed",texts.contains(c.getString(R.string.oc4_notification_like)));assertTrue("Real comment notification displayed",texts.contains(c.getString(R.string.wiring_inbox_comment)));assertNotNull(open);open.send();assertTrue("Notification tap opens the general inbox",UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).wait(Until.hasObject(By.res(c.getPackageName(),"inbox_root")),20000));UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).takeScreenshot(new java.io.File(c.getExternalFilesDir(null),"oc4-general-inbox.png"));assertEquals(uid,FirebaseAuth.getInstance().getUid());}
- @Test public void z_liveHistoryAndNotificationBinding()throws Exception{AdoptionApi.testTransport=null;Map<String,Object> ready=Tasks.await(AdoptionApi.call("flowRead",map("kind","readiness")),30,java.util.concurrent.TimeUnit.SECONDS);assertTrue(ready.containsKey("enabled"));Map<String,Object> history=Tasks.await(AdoptionApi.call("flowRead",map("kind","index","role","adopter","after",null)),30,java.util.concurrent.TimeUnit.SECONDS);assertNotNull(history.get("rows"));try(ActivityScenario<com.gmail.manhle240406.project.notifications.NotificationSettingsActivity> s=ActivityScenario.launch(com.gmail.manhle240406.project.notifications.NotificationSettingsActivity.class)){s.onActivity(a->{androidx.appcompat.widget.SwitchCompat enabled=a.findViewById(R.id.notification_enabled_switch);if(!enabled.isChecked())enabled.performClick();else com.gmail.manhle240406.project.notifications.AdoptionPushService.enable(a,new android.widget.TextView(a));});UiDevice device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());long end=android.os.SystemClock.elapsedRealtime()+45000;while(android.os.SystemClock.elapsedRealtime()<end&&c.getSharedPreferences("adoption_push",0).getString("epoch",null)==null)android.os.SystemClock.sleep(200);assertNotNull("FCM challenge confirmed for this installation",c.getSharedPreferences("adoption_push",0).getString("epoch",null));assertEquals(uid,FirebaseAuth.getInstance().getUid());}}
- private final class Fixture {boolean host,failOnce;String status="CONTRACT_PENDING",reportStatus="PENDING",reportOpenAt="2026-10-19T00:00:00Z";long version=1;Map<String,Object> lastRead=new HashMap<>();final List<Map<String,Object>> commands=new ArrayList<>();Map<String,Object> categories=map();
-  List<String> names(){List<String> names=new ArrayList<>();for(Map<String,Object> c:commands)names.add((String)c.get("command"));return names;}
-  com.google.android.gms.tasks.Task<Map<String,Object>> call(String op,Map<String,Object> input){if(op.equals("flowRead")){lastRead=new HashMap<>(input);switch(String.valueOf(input.get("kind"))){case "readiness":return Tasks.forResult(map("enabled",true,"phone",false,"profile",true,"terms",true,"caseReviewer",false));case "index":return Tasks.forResult(map("rows",Arrays.asList(map("requestId",id,"title",input.get("after")==null?"Synthetic request 1":"Synthetic request 2","role",input.get("role"),"status","SUBMITTED","adoptionId",null)),"next",input.get("after")==null?"20000000-0000-0000-0000-000000000090":null));case "request":return Tasks.forResult(map("request",map("requestId",id,"title","Synthetic request detail","hostUid","peer","adopterUid",uid,"status","SUBMITTED","version",1,"answers",map("introduction","Synthetic only"))));case "detail":case "report":return Tasks.forResult(detailData());case "receipt":return Tasks.forResult(map("receipt",null));default:return Tasks.forResult(map("rows",Collections.emptyList()));}}
-   if(op.equals("flow")){commands.add(new HashMap<>(input));assertEquals(version,number(input.get("expectedVersion")));if(failOnce){failOnce=false;return Tasks.forException(new FirebaseFunctionsException("unavailable",FirebaseFunctionsException.Code.UNAVAILABLE,null));}version++;switch(String.valueOf(input.get("command"))){case "acceptContract":status="BASELINE_PENDING";break;case "saveBaseline":categories=object(input.get("categories"));status="BASELINE_PENDING";break;case "ackBaseline":case "ready":status="HANDOVER_PENDING";break;case "receive":case "verify":status="MONITORING";break;case "report":reportStatus="SUBMITTED";break;case "finalize":status="FINALIZED";break;}return Tasks.forResult(map("adoptionId",id,"version",version,"status",status));}return Tasks.forResult(map());}
-  Map<String,Object> detailData(){Map<String,Object> d=map("schemaVersion",2,"adoptionId",id,"hostUid",host?uid:"peer","adopterUid",host?"peer":uid,"version",version,"status",status,"baselineVersion",1,"baselineAck",host?map("version",1):null,"blockingDispute",false,"verifiedHandoverAt",status.equals("MONITORING")||status.equals("FINALIZED")?"2026-10-19T00:00:00Z":null);return map("adoption",d,"contract",map("hash","test-sha256","readable","Synthetic private course agreement","acceptances",map()),"baseline",map("version",1,"categories",categories,"assetIds",Collections.emptyList()),"handover",map("status",host?"ADOPTER_CONFIRMED":"HOST_READY"),"reports",Arrays.asList(map("reportId","D03","status",host?"REVIEWED":reportStatus,"openAt",reportOpenAt,"current",map("answers",map(),"assetIds",Collections.emptyList()))),"serverTime",java.time.Instant.parse("2026-10-22T00:00:00Z").toEpochMilli());}
- }
+
+import static androidx.test.espresso.Espresso.*;
+import static androidx.test.espresso.action.ViewActions.*;
+import static androidx.test.espresso.assertion.ViewAssertions.*;
+import static androidx.test.espresso.matcher.ViewMatchers.*;
+
+import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.*;
+
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
+import android.content.*;
+import android.graphics.*;
+import android.net.Uri;
+
+import androidx.lifecycle.ViewModelProvider;
+import androidx.test.core.app.ActivityScenario;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.*;
+
+import com.gmail.manhle240406.project.R;
+import com.gmail.manhle240406.project.media.MediaDraftViewModel;
+import com.google.android.gms.tasks.Tasks;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.functions.FirebaseFunctionsException;
+
+import org.json.*;
+import org.junit.*;
+import org.junit.runner.RunWith;
+import org.junit.runners.MethodSorters;
+
+import java.util.*;
+
+@RunWith(AndroidJUnit4.class)
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+public class LifecycleUiTest {
+    private String uid;
+    private Fixture f;
+    private final Context c = InstrumentationRegistry.getInstrumentation().getTargetContext();
+    private static String asset;
+    private final String id = "20000000-0000-0000-0000-000000000001";
+
+    @Before
+    public void setup() {
+        uid = FirebaseAuth.getInstance().getUid();
+        assertNotNull(uid);
+        try (ActivityScenario<com.gmail.manhle240406.project.MainActivity> boot =
+                ActivityScenario.launch(com.gmail.manhle240406.project.MainActivity.class)) {
+            assertTrue(
+                    "Main session is ready before entering private adoption tasks",
+                    UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+                            .wait(Until.hasObject(By.res(c.getPackageName(), "nav_home")), 30000));
+            boot.onActivity(
+                    a ->
+                            assertEquals(
+                                    uid,
+                                    ((com.gmail.manhle240406.project.AniloveApplication)
+                                                    a.getApplication())
+                                            .foundation()
+                                            .sessions
+                                            .capture()
+                                            .uid));
+        }
+        f = new Fixture();
+        AdoptionApi.testTransport =
+                (operation, input) -> {
+                    try {
+                        return f.call(operation, input);
+                    } catch (Throwable e) {
+                        return Tasks.forException(new IllegalStateException(e));
+                    }
+                };
+    }
+
+    @After
+    public void end() {
+        AdoptionApi.testTransport = null;
+        assertEquals(uid, FirebaseAuth.getInstance().getUid());
+    }
+
+    private void click(int label) {
+        onView(withTagValue(equalTo("lc_action_" + c.getResources().getResourceEntryName(label))))
+                .perform(scrollTo(), androidx.test.espresso.action.ViewActions.click());
+    }
+
+    private void typed(String key, String value) {
+        onView(withTagValue(equalTo("lc_" + key)))
+                .perform(
+                        scrollTo(),
+                        replaceText(value),
+                        androidx.test.espresso.action.ViewActions.closeSoftKeyboard());
+    }
+
+    private void confirm() {
+        onView(withText(android.R.string.ok))
+                .perform(androidx.test.espresso.action.ViewActions.click());
+    }
+
+    private ActivityScenario<LifecycleActivity> detail() {
+        return ActivityScenario.launch(
+                new Intent(c, LifecycleActivity.class).putExtra("adoption", id));
+    }
+
+    @Test
+    public void a_homeShowsTwoRoleHistoryWithoutRedundantControls() {
+        try (ActivityScenario<LifecycleActivity> s =
+                ActivityScenario.launch(LifecycleActivity.class)) {
+            onView(withText(R.string.oc4_history)).check(matches(isDisplayed()));
+            onView(withTagValue(equalTo("lc_next"))).check(doesNotExist());
+            onView(withText(R.string.oc4_old_history)).check(doesNotExist());
+            onView(withText(R.string.lc_push_enable)).check(doesNotExist());
+            onView(withText(R.string.lc_setup)).check(doesNotExist());
+            assertTrue(f.commands.isEmpty());
+            UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+                    .takeScreenshot(
+                            new java.io.File(c.getExternalFilesDir(null), "oc4-history.png"));
+        }
+    }
+
+    @Test
+    public void b_adopterReadsExactContractAcknowledgesAndConfirmsOwnReceipt() {
+        f.host = false;
+        try (ActivityScenario<LifecycleActivity> s = detail()) {
+            click(R.string.lc_accept);
+            confirm();
+            assertEquals("test-sha256", f.commands.get(0).get("contractHash"));
+            click(R.string.lc_ack);
+            confirm();
+            click(R.string.lc_received);
+            confirm();
+            assertEquals(Arrays.asList("acceptContract", "ackBaseline", "receive"), f.names());
+        }
+    }
+
+    @Test
+    public void c_hostUploadsPrivatePhotoAndCompletesNextActionJourney() throws Exception {
+        f.host = true;
+        f.status = "CONTRACT_ACCEPTED";
+        java.io.File photo = new java.io.File(c.getCacheDir(), "lifecycle-private-qa.jpg");
+        Bitmap bitmap = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888);
+        bitmap.eraseColor(Color.rgb(32, 98, 64));
+        try (java.io.FileOutputStream out = new java.io.FileOutputStream(photo)) {
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+        }
+        bitmap.recycle();
+        try (ActivityScenario<LifecycleActivity> s = detail()) {
+            click(R.string.lc_baseline);
+            s.onActivity(
+                    a -> {
+                        MediaDraftViewModel m =
+                                new ViewModelProvider(a).get(MediaDraftViewModel.class);
+                        m.add(Arrays.asList(Uri.fromFile(photo)));
+                        asset = m.ids().get(0);
+                        try {
+                            java.nio.file.Files.write(
+                                    new java.io.File(
+                                                    c.getExternalFilesDir(null),
+                                                    "adoption-flow-native-media.json")
+                                            .toPath(),
+                                    new JSONObject()
+                                            .put("uid", uid)
+                                            .put("assets", new JSONArray().put(asset))
+                                            .toString()
+                                            .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                        } catch (Exception e) {
+                            throw new AssertionError(e);
+                        }
+                    });
+            onView(withTagValue(equalTo("lc_action_lc_save"))).perform(scrollTo());
+            assertTrue(
+                    "Real adoption_private upload completes",
+                    UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+                            .wait(
+                                    Until.hasObject(
+                                            By.text(c.getString(R.string.feedback_cover_photo))),
+                                    90000));
+            click(R.string.lc_save);
+            click(R.string.lc_ready);
+            confirm();
+            click(R.string.lc_verify);
+            confirm();
+            click(R.string.lc_finalize);
+            confirm();
+            assertEquals("FINALIZED", f.status);
+            assertEquals(Arrays.asList("saveBaseline", "ready", "verify", "finalize"), f.names());
+            UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+                    .takeScreenshot(
+                            new java.io.File(
+                                    c.getExternalFilesDir(null), "adoption-flow-host-final.png"));
+        } finally {
+            photo.delete();
+        }
+    }
+
+    @Test
+    public void d_roleTabsAreTheOnlyHistoryNavigation() {
+        try (ActivityScenario<LifecycleActivity> s =
+                ActivityScenario.launch(LifecycleActivity.class)) {
+            onView(
+                            allOf(
+                                    withText(R.string.oc3_rehoming),
+                                    isDescendantOfA(withTagValue(equalTo("lc_role_tabs")))))
+                    .perform(scrollTo(), androidx.test.espresso.action.ViewActions.click());
+            assertEquals("host", f.lastRead.get("role"));
+            assertNull(f.lastRead.get("after"));
+            onView(
+                            allOf(
+                                    withText(R.string.oc3_adopting),
+                                    isDescendantOfA(withTagValue(equalTo("lc_role_tabs")))))
+                    .perform(scrollTo(), androidx.test.espresso.action.ViewActions.click());
+            assertEquals("adopter", f.lastRead.get("role"));
+            assertNull(f.lastRead.get("after"));
+        }
+    }
+
+    @Test
+    public void e_unknownAcceptanceRetainsExactIntentAcrossRotation() {
+        f.host = false;
+        f.failOnce = true;
+        try (ActivityScenario<LifecycleActivity> s = detail()) {
+            click(R.string.lc_accept);
+            confirm();
+            s.recreate();
+            click(R.string.lc_retry);
+            assertEquals(2, f.commands.size());
+            assertEquals(f.commands.get(0), f.commands.get(1));
+        }
+    }
+
+    @Test
+    public void f_adopterReportAndCorrectionAreReachable() {
+        f.host = false;
+        f.status = "MONITORING";
+        try (ActivityScenario<LifecycleActivity> s = detail()) {
+            onView(withText(containsString("D03")))
+                    .perform(scrollTo(), androidx.test.espresso.action.ViewActions.click());
+            typed("condition", "Healthy course fixture");
+            typed("care", "Daily care");
+            typed("shelter", "Safe indoor home");
+            typed("changes", "No concerns");
+            s.onActivity(
+                    a ->
+                            new ViewModelProvider(a)
+                                    .get(MediaDraftViewModel.class)
+                                    .restore(
+                                            Arrays.asList(
+                                                    asset == null
+                                                            ? UUID.randomUUID().toString()
+                                                            : asset)));
+            click(R.string.lc_report_submit);
+            assertEquals("report", f.names().get(0));
+            onView(withText(containsString("D03")))
+                    .perform(scrollTo(), androidx.test.espresso.action.ViewActions.click());
+            typed("note", "Additional synthetic detail");
+            click(R.string.lc_correction);
+            assertEquals("correct", f.names().get(1));
+        }
+    }
+
+    @Test
+    public void g_timelineShowsCompleteCurrentAndUpcomingVisualStates() {
+        f.host = false;
+        try (ActivityScenario<LifecycleActivity> s = detail()) {
+            onView(withTagValue(equalTo("adoption_timeline"))).check(matches(isDisplayed()));
+            onView(withTagValue(equalTo("adoption_timeline_complete")))
+                    .check(matches(isDisplayed()));
+            onView(withTagValue(equalTo("adoption_timeline_current")))
+                    .check(matches(isDisplayed()));
+            onView(withTagValue(equalTo("adoption_timeline_upcoming")))
+                    .perform(scrollTo())
+                    .check(matches(isDisplayed()));
+            UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+                    .takeScreenshot(
+                            new java.io.File(c.getExternalFilesDir(null), "adoption-timeline.png"));
+        }
+    }
+
+    @Test
+    public void h_futureFollowupCardIsRoundedLabelledAndReportFormStaysLocked() {
+        f.host = false;
+        f.status = "MONITORING";
+        f.reportOpenAt = "2026-11-19T00:00:00Z";
+        try (ActivityScenario<LifecycleActivity> s = detail()) {
+            onView(withTagValue(equalTo("followup_card_D03")))
+                    .perform(scrollTo())
+                    .check(matches(isDisplayed()))
+                    .perform(androidx.test.espresso.action.ViewActions.click());
+            onView(withTagValue(equalTo("lc_action_lc_report_submit"))).check(doesNotExist());
+            UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+                    .takeScreenshot(
+                            new java.io.File(
+                                    c.getExternalFilesDir(null), "followup-locked-card.png"));
+        }
+    }
+
+    @Test
+    public void x_generalInboxUsesFullWidthTextAndStacksTimestamp() {
+        AdoptionApi.testTransport = null;
+        try (ActivityScenario<com.gmail.manhle240406.project.MainActivity> s =
+                ActivityScenario.launch(
+                        new Intent(c, com.gmail.manhle240406.project.MainActivity.class)
+                                .putExtra(
+                                        com.gmail.manhle240406.project.MainActivity.PAGE,
+                                        "notifications"))) {
+            assertTrue(
+                    UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+                            .wait(
+                                    Until.hasObject(By.res(c.getPackageName(), "inbox_title")),
+                                    20000));
+            onView(withId(R.id.inbox_recycler)).check(matches(isDisplayed()));
+            s.onActivity(
+                    a -> {
+                        androidx.recyclerview.widget.RecyclerView list =
+                                a.findViewById(R.id.inbox_recycler);
+                        android.view.View row = list.getChildAt(0),
+                                title = row.findViewById(R.id.inbox_title),
+                                time = row.findViewById(R.id.inbox_time);
+                        assertTrue(
+                                "Timestamp is stacked below title", time.getTop() > title.getTop());
+                        assertTrue(
+                                "Title receives most of the row width",
+                                title.getWidth() > row.getWidth() / 2);
+                    });
+            UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+                    .takeScreenshot(
+                            new java.io.File(c.getExternalFilesDir(null), "oc4-inbox-final.png"));
+        }
+    }
+
+    @Test
+    public void y_realNotificationsDisplayAndOpenGeneralInbox() throws Exception {
+        AdoptionApi.testTransport = null;
+        android.app.NotificationManager manager =
+                (android.app.NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
+        java.util.Set<String> texts = new java.util.HashSet<>();
+        android.app.PendingIntent open = null;
+        for (android.service.notification.StatusBarNotification n :
+                manager.getActiveNotifications()) {
+            if (!c.getPackageName().equals(n.getPackageName())) continue;
+            CharSequence text =
+                    n.getNotification().extras.getCharSequence(android.app.Notification.EXTRA_TEXT);
+            if (text != null) texts.add(text.toString());
+            open = n.getNotification().contentIntent;
+        }
+        assertTrue(
+                "Real message notification displayed",
+                texts.contains(c.getString(R.string.oc4_notification_message)));
+        assertTrue(
+                "Real like notification displayed",
+                texts.contains(c.getString(R.string.oc4_notification_like)));
+        assertTrue(
+                "Real comment notification displayed",
+                texts.contains(c.getString(R.string.wiring_inbox_comment)));
+        assertNotNull(open);
+        open.send();
+        assertTrue(
+                "Notification tap opens the general inbox",
+                UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+                        .wait(Until.hasObject(By.res(c.getPackageName(), "inbox_root")), 20000));
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+                .takeScreenshot(
+                        new java.io.File(c.getExternalFilesDir(null), "oc4-general-inbox.png"));
+        assertEquals(uid, FirebaseAuth.getInstance().getUid());
+    }
+
+    @Test
+    public void z_liveHistoryAndNotificationBinding() throws Exception {
+        AdoptionApi.testTransport = null;
+        Map<String, Object> ready =
+                Tasks.await(
+                        AdoptionApi.call("flowRead", map("kind", "readiness")),
+                        30,
+                        java.util.concurrent.TimeUnit.SECONDS);
+        assertTrue(ready.containsKey("enabled"));
+        Map<String, Object> history =
+                Tasks.await(
+                        AdoptionApi.call(
+                                "flowRead", map("kind", "index", "role", "adopter", "after", null)),
+                        30,
+                        java.util.concurrent.TimeUnit.SECONDS);
+        assertNotNull(history.get("rows"));
+        try (ActivityScenario<
+                        com.gmail.manhle240406.project.notifications.NotificationSettingsActivity>
+                s =
+                        ActivityScenario.launch(
+                                com.gmail.manhle240406.project.notifications
+                                        .NotificationSettingsActivity.class)) {
+            s.onActivity(
+                    a -> {
+                        androidx.appcompat.widget.SwitchCompat enabled =
+                                a.findViewById(R.id.notification_enabled_switch);
+                        if (!enabled.isChecked()) enabled.performClick();
+                        else
+                            com.gmail.manhle240406.project.notifications.AdoptionPushService.enable(
+                                    a, new android.widget.TextView(a));
+                    });
+            UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+            long end = android.os.SystemClock.elapsedRealtime() + 45000;
+            while (android.os.SystemClock.elapsedRealtime() < end
+                    && c.getSharedPreferences("adoption_push", 0).getString("epoch", null) == null)
+                android.os.SystemClock.sleep(200);
+            assertNotNull(
+                    "FCM challenge confirmed for this installation",
+                    c.getSharedPreferences("adoption_push", 0).getString("epoch", null));
+            assertEquals(uid, FirebaseAuth.getInstance().getUid());
+        }
+    }
+
+    private final class Fixture {
+        boolean host, failOnce;
+        String status = "CONTRACT_PENDING",
+                reportStatus = "PENDING",
+                reportOpenAt = "2026-10-19T00:00:00Z";
+        long version = 1;
+        Map<String, Object> lastRead = new HashMap<>();
+        final List<Map<String, Object>> commands = new ArrayList<>();
+        Map<String, Object> categories = map();
+
+        List<String> names() {
+            List<String> names = new ArrayList<>();
+            for (Map<String, Object> c : commands) names.add((String) c.get("command"));
+            return names;
+        }
+
+        com.google.android.gms.tasks.Task<Map<String, Object>> call(
+                String op, Map<String, Object> input) {
+            if (op.equals("flowRead")) {
+                lastRead = new HashMap<>(input);
+                switch (String.valueOf(input.get("kind"))) {
+                    case "readiness":
+                        return Tasks.forResult(
+                                map(
+                                        "enabled",
+                                        true,
+                                        "phone",
+                                        false,
+                                        "profile",
+                                        true,
+                                        "terms",
+                                        true,
+                                        "caseReviewer",
+                                        false));
+                    case "index":
+                        return Tasks.forResult(
+                                map(
+                                        "rows",
+                                        Arrays.asList(
+                                                map(
+                                                        "requestId",
+                                                        id,
+                                                        "title",
+                                                        input.get("after") == null
+                                                                ? "Synthetic request 1"
+                                                                : "Synthetic request 2",
+                                                        "role",
+                                                        input.get("role"),
+                                                        "status",
+                                                        "SUBMITTED",
+                                                        "adoptionId",
+                                                        null)),
+                                        "next",
+                                        input.get("after") == null
+                                                ? "20000000-0000-0000-0000-000000000090"
+                                                : null));
+                    case "request":
+                        return Tasks.forResult(
+                                map(
+                                        "request",
+                                        map(
+                                                "requestId",
+                                                id,
+                                                "title",
+                                                "Synthetic request detail",
+                                                "hostUid",
+                                                "peer",
+                                                "adopterUid",
+                                                uid,
+                                                "status",
+                                                "SUBMITTED",
+                                                "version",
+                                                1,
+                                                "answers",
+                                                map("introduction", "Synthetic only"))));
+                    case "detail":
+                    case "report":
+                        return Tasks.forResult(detailData());
+                    case "receipt":
+                        return Tasks.forResult(map("receipt", null));
+                    default:
+                        return Tasks.forResult(map("rows", Collections.emptyList()));
+                }
+            }
+            if (op.equals("flow")) {
+                commands.add(new HashMap<>(input));
+                assertEquals(version, number(input.get("expectedVersion")));
+                if (failOnce) {
+                    failOnce = false;
+                    return Tasks.forException(
+                            new FirebaseFunctionsException(
+                                    "unavailable",
+                                    FirebaseFunctionsException.Code.UNAVAILABLE,
+                                    null));
+                }
+                version++;
+                switch (String.valueOf(input.get("command"))) {
+                    case "acceptContract":
+                        status = "BASELINE_PENDING";
+                        break;
+                    case "saveBaseline":
+                        categories = object(input.get("categories"));
+                        status = "BASELINE_PENDING";
+                        break;
+                    case "ackBaseline":
+                    case "ready":
+                        status = "HANDOVER_PENDING";
+                        break;
+                    case "receive":
+                    case "verify":
+                        status = "MONITORING";
+                        break;
+                    case "report":
+                        reportStatus = "SUBMITTED";
+                        break;
+                    case "finalize":
+                        status = "FINALIZED";
+                        break;
+                }
+                return Tasks.forResult(map("adoptionId", id, "version", version, "status", status));
+            }
+            return Tasks.forResult(map());
+        }
+
+        Map<String, Object> detailData() {
+            Map<String, Object> d =
+                    map(
+                            "schemaVersion",
+                            2,
+                            "adoptionId",
+                            id,
+                            "hostUid",
+                            host ? uid : "peer",
+                            "adopterUid",
+                            host ? "peer" : uid,
+                            "version",
+                            version,
+                            "status",
+                            status,
+                            "baselineVersion",
+                            1,
+                            "baselineAck",
+                            host ? map("version", 1) : null,
+                            "blockingDispute",
+                            false,
+                            "verifiedHandoverAt",
+                            status.equals("MONITORING") || status.equals("FINALIZED")
+                                    ? "2026-10-19T00:00:00Z"
+                                    : null);
+            return map(
+                    "adoption",
+                    d,
+                    "contract",
+                    map(
+                            "hash",
+                            "test-sha256",
+                            "readable",
+                            "Synthetic private course agreement",
+                            "acceptances",
+                            map()),
+                    "baseline",
+                    map(
+                            "version",
+                            1,
+                            "categories",
+                            categories,
+                            "assetIds",
+                            Collections.emptyList()),
+                    "handover",
+                    map("status", host ? "ADOPTER_CONFIRMED" : "HOST_READY"),
+                    "reports",
+                    Arrays.asList(
+                            map(
+                                    "reportId",
+                                    "D03",
+                                    "status",
+                                    host ? "REVIEWED" : reportStatus,
+                                    "openAt",
+                                    reportOpenAt,
+                                    "current",
+                                    map("answers", map(), "assetIds", Collections.emptyList()))),
+                    "serverTime",
+                    java.time.Instant.parse("2026-10-22T00:00:00Z").toEpochMilli());
+        }
+    }
 }

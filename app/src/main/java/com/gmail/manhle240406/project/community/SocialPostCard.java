@@ -10,9 +10,7 @@ import com.gmail.manhle240406.project.media.MediaGrid;
 
 import java.util.*;
 
-/**
- * The existing Home item_post layout is the visual source for profiles, libraries and preview.
- */
+/** The existing Home item_post layout is the visual source for profiles, libraries and preview. */
 public final class SocialPostCard extends LinearLayout {
     private final View card;
     private String id;
@@ -28,28 +26,41 @@ public final class SocialPostCard extends LinearLayout {
         heart = card.findViewById(R.id.post_like_btn);
     }
 
-    public static void content(Context c, View card, Map<String, Object> post, String id, AuthorLookup authors, Map<String, Object> knownAuthor) {
+    public static void content(
+            Context c,
+            View card,
+            Map<String, Object> post,
+            String id,
+            AuthorLookup authors,
+            Map<String, Object> knownAuthor) {
         TextView name = card.findViewById(R.id.post_author_name);
         ImageView avatar = card.findViewById(R.id.post_author_avatar);
         if (knownAuthor != null) {
             AuthorIdentity.apply(knownAuthor, name, avatar);
             name.setOnClickListener(null);
         } else AuthorIdentity.bind(authors, (String) post.get("authorUid"), name, avatar);
-        ((TextView) card.findViewById(R.id.post_body)).setText(String.valueOf(post.getOrDefault("body", "")));
+        ((TextView) card.findViewById(R.id.post_body))
+                .setText(String.valueOf(post.getOrDefault("body", "")));
         ((TextView) card.findViewById(R.id.post_time)).setText(date(post.get("firstPublishedAt")));
         ImageView illustration = card.findViewById(R.id.post_image);
         Object art = post.get("bundledIllustrationKey");
         illustration.setVisibility(art == null ? GONE : VISIBLE);
-        illustration.setImageResource("cat".equals(art) ? R.drawable.profile_avatar_cat : R.drawable.profile_avatar_dog);
+        illustration.setImageResource(
+                "cat".equals(art) ? R.drawable.profile_avatar_cat : R.drawable.profile_avatar_dog);
         illustration.setImageTintList(null);
         ViewGroup parent = (ViewGroup) illustration.getParent();
         MediaGrid gallery = parent.findViewWithTag("post_media_gallery");
         if (gallery == null) {
             gallery = new MediaGrid(c);
             gallery.setTag("post_media_gallery");
-            parent.addView(gallery, parent.indexOfChild(illustration) + 1, new ViewGroup.LayoutParams(-1, -2));
+            parent.addView(
+                    gallery,
+                    parent.indexOfChild(illustration) + 1,
+                    new ViewGroup.LayoutParams(-1, -2));
         }
-        gallery.bind(post.get("mediaAssetIds"),post.get("postId") instanceof String?"post:"+post.get("postId"):null);
+        gallery.bind(
+                post.get("mediaAssetIds"),
+                post.get("postId") instanceof String ? "post:" + post.get("postId") : null);
         AdoptionPostCard adoption = parent.findViewWithTag("adoption_post_card");
         if (adoption == null) {
             adoption = new AdoptionPostCard(c);
@@ -59,79 +70,171 @@ public final class SocialPostCard extends LinearLayout {
         adoption.bind(post);
     }
 
-    public void bind(Map<String, Object> data, String postId, AuthorLookup authors, Map<String, Object> knownAuthor, DailyViewModel actions, boolean preview, Runnable open) {
+    public void bind(
+            Map<String, Object> data,
+            String postId,
+            AuthorLookup authors,
+            Map<String, Object> knownAuthor,
+            DailyViewModel actions,
+            boolean preview,
+            Runnable open) {
         post = data;
         id = postId;
         setTag(postId);
         content(getContext(), card, data, postId, authors, knownAuthor);
-        TextView comment = card.findViewById(R.id.post_comment_btn), share = card.findViewById(R.id.post_share_btn);
+        TextView comment = card.findViewById(R.id.post_comment_btn),
+                share = card.findViewById(R.id.post_share_btn);
         comment.setText(R.string.social_open);
         share.setText(R.string.flow_share);
-        for (TextView button : new TextView[]{heart, comment, share}) {
+        for (TextView button : new TextView[] {heart, comment, share}) {
             button.setMinHeight(SocialViews.dp(getContext(), 48));
             button.setGravity(Gravity.CENTER);
         }
         heart.setText(R.string.ui_like);
-        heart.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_flow_favorite_outline, 0, 0, 0);
+        heart.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                R.drawable.ic_flow_favorite_outline, 0, 0, 0);
         heart.setContentDescription(getContext().getString(R.string.ui_like));
-        heart.setCompoundDrawableTintList(android.content.res.ColorStateList.valueOf(androidx.core.content.ContextCompat.getColor(getContext(), R.color.anilove_text_muted)));
-        comment.setOnClickListener(v -> {
-            if (open != null) open.run();
-        });
-        card.setOnClickListener(v -> {
-            if (open != null) open.run();
-        });
-        share.setOnClickListener(v -> DemoSharing.open((android.app.Activity) getContext(), "p", id));
+        heart.setCompoundDrawableTintList(
+                android.content.res.ColorStateList.valueOf(
+                        androidx.core.content.ContextCompat.getColor(
+                                getContext(), R.color.anilove_text_muted)));
+        comment.setOnClickListener(
+                v -> {
+                    if (open != null) open.run();
+                });
+        card.setOnClickListener(
+                v -> {
+                    if (open != null) open.run();
+                });
+        share.setOnClickListener(
+                v -> DemoSharing.open((android.app.Activity) getContext(), "p", id));
         if (preview) {
             ((View) heart.getParent()).setVisibility(GONE);
             card.setOnClickListener(null);
             return;
         }
-        boolean visible = "visible".equals(data.get("state")) || "visible".equals(data.get("visibility"));
+        boolean visible =
+                "visible".equals(data.get("state")) || "visible".equals(data.get("visibility"));
         if (!visible) {
-            ((TextView) card.findViewById(R.id.post_time)).setText(data.get("firstPublishedAt") == null ? R.string.oc3_draft : R.string.social_only_me);
+            ((TextView) card.findViewById(R.id.post_time))
+                    .setText(
+                            data.get("firstPublishedAt") == null
+                                    ? R.string.oc3_draft
+                                    : R.string.social_only_me);
             heart.setVisibility(GONE);
             share.setVisibility(GONE);
             comment.setText(R.string.social_edit);
         }
-        heart.setOnClickListener(v -> {
-            if (busy || actions == null || !actions.current()) return;
-            busy = true;
-            heart.setEnabled(false);
-            String bound = id;
-            actions.social.read("communityPosts/" + id + "/likes/" + actions.ticket.uid).addOnCompleteListener(t -> {
-                if (!bound.equals(id) || !actions.current()) return;
-                busy = false;
-                heart.setEnabled(true);
-                if (!t.isSuccessful()) {
-                    com.google.android.material.snackbar.Snackbar.make(this, R.string.social_unavailable, com.google.android.material.snackbar.Snackbar.LENGTH_LONG).show();
-                    return;
-                }
-                Map<String, Object> old = t.getResult().getData();
-                boolean active = old == null || !Boolean.TRUE.equals(old.get("active"));
-                CommunityOutbox.Entry pending = ((AniloveApplication) getContext().getApplicationContext()).communityOutbox().pendingLike(id);
-                if (pending != null)
-                    active = !Boolean.TRUE.equals(pending.command.input.get("active"));
-                actions.send(new SocialCommand("set_like", id, null, SocialRepository.number(post, "contentVersion"), 0, SocialRepository.number(old, "likeVersion"), SocialRepository.map("active", active), UUID.randomUUID().toString()));
-                heart.setText(active ? R.string.ui_unlike : R.string.ui_like);
-                heart.setCompoundDrawablesRelativeWithIntrinsicBounds(active ? R.drawable.ic_nav_favorite : R.drawable.ic_flow_favorite_outline, 0, 0, 0);
-                heart.setCompoundDrawableTintList(android.content.res.ColorStateList.valueOf(androidx.core.content.ContextCompat.getColor(getContext(), active ? R.color.anilove_primary : R.color.anilove_text_muted)));
-                heart.setContentDescription(getContext().getString(active ? R.string.ui_unlike : R.string.ui_like));
-            });
-        });
+        heart.setOnClickListener(
+                v -> {
+                    if (busy || actions == null || !actions.current()) return;
+                    busy = true;
+                    heart.setEnabled(false);
+                    String bound = id;
+                    actions.social
+                            .read("communityPosts/" + id + "/likes/" + actions.ticket.uid)
+                            .addOnCompleteListener(
+                                    t -> {
+                                        if (!bound.equals(id) || !actions.current()) return;
+                                        busy = false;
+                                        heart.setEnabled(true);
+                                        if (!t.isSuccessful()) {
+                                            com.google.android.material.snackbar.Snackbar.make(
+                                                            this,
+                                                            R.string.social_unavailable,
+                                                            com.google.android.material.snackbar
+                                                                    .Snackbar.LENGTH_LONG)
+                                                    .show();
+                                            return;
+                                        }
+                                        Map<String, Object> old = t.getResult().getData();
+                                        boolean active =
+                                                old == null
+                                                        || !Boolean.TRUE.equals(old.get("active"));
+                                        CommunityOutbox.Entry pending =
+                                                ((AniloveApplication)
+                                                                getContext()
+                                                                        .getApplicationContext())
+                                                        .communityOutbox()
+                                                        .pendingLike(id);
+                                        if (pending != null)
+                                            active =
+                                                    !Boolean.TRUE.equals(
+                                                            pending.command.input.get("active"));
+                                        actions.send(
+                                                new SocialCommand(
+                                                        "set_like",
+                                                        id,
+                                                        null,
+                                                        SocialRepository.number(
+                                                                post, "contentVersion"),
+                                                        0,
+                                                        SocialRepository.number(old, "likeVersion"),
+                                                        SocialRepository.map("active", active),
+                                                        UUID.randomUUID().toString()));
+                                        heart.setText(
+                                                active ? R.string.ui_unlike : R.string.ui_like);
+                                        heart.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                                                active
+                                                        ? R.drawable.ic_nav_favorite
+                                                        : R.drawable.ic_flow_favorite_outline,
+                                                0,
+                                                0,
+                                                0);
+                                        heart.setCompoundDrawableTintList(
+                                                android.content.res.ColorStateList.valueOf(
+                                                        androidx.core.content.ContextCompat
+                                                                .getColor(
+                                                                        getContext(),
+                                                                        active
+                                                                                ? R.color
+                                                                                        .anilove_primary
+                                                                                : R.color
+                                                                                        .anilove_text_muted)));
+                                        heart.setContentDescription(
+                                                getContext()
+                                                        .getString(
+                                                                active
+                                                                        ? R.string.ui_unlike
+                                                                        : R.string.ui_like));
+                                    });
+                });
     }
 
     public void setLikeState(boolean active) {
         heart.setText(active ? R.string.ui_unlike : R.string.ui_like);
-        heart.setCompoundDrawablesRelativeWithIntrinsicBounds(active ? R.drawable.ic_nav_favorite : R.drawable.ic_flow_favorite_outline, 0, 0, 0);
-        heart.setCompoundDrawableTintList(android.content.res.ColorStateList.valueOf(androidx.core.content.ContextCompat.getColor(getContext(), active ? R.color.anilove_primary : R.color.anilove_text_muted)));
-        heart.setContentDescription(getContext().getString(active ? R.string.ui_unlike : R.string.ui_like));
+        heart.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                active ? R.drawable.ic_nav_favorite : R.drawable.ic_flow_favorite_outline, 0, 0, 0);
+        heart.setCompoundDrawableTintList(
+                android.content.res.ColorStateList.valueOf(
+                        androidx.core.content.ContextCompat.getColor(
+                                getContext(),
+                                active ? R.color.anilove_primary : R.color.anilove_text_muted)));
+        heart.setContentDescription(
+                getContext().getString(active ? R.string.ui_unlike : R.string.ui_like));
     }
 
     private static String date(Object value) {
         try {
-            java.util.Date d = value instanceof com.google.firebase.Timestamp ? ((com.google.firebase.Timestamp) value).toDate() : value instanceof Date ? (Date) value : value instanceof Map ? new Date(((Number) ((Map<?, ?>) value).get("_seconds")).longValue() * 1000) : value instanceof String ? Date.from(java.time.Instant.parse((String) value)) : null;
-            return d == null ? "" : java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT).format(d);
+            java.util.Date d =
+                    value instanceof com.google.firebase.Timestamp
+                            ? ((com.google.firebase.Timestamp) value).toDate()
+                            : value instanceof Date
+                                    ? (Date) value
+                                    : value instanceof Map
+                                            ? new Date(
+                                                    ((Number) ((Map<?, ?>) value).get("_seconds"))
+                                                                    .longValue()
+                                                            * 1000)
+                                            : value instanceof String
+                                                    ? Date.from(
+                                                            java.time.Instant.parse((String) value))
+                                                    : null;
+            return d == null
+                    ? ""
+                    : java.text.DateFormat.getDateTimeInstance(
+                                    java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT)
+                            .format(d);
         } catch (Exception ignored) {
             return "";
         }

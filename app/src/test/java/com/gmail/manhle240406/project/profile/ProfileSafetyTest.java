@@ -1,19 +1,129 @@
 package com.gmail.manhle240406.project.profile;
 
-import org.junit.Test;
-import java.util.*;
 import static org.junit.Assert.*;
 
+import org.junit.Test;
+
+import java.util.*;
+
 public class ProfileSafetyTest {
-    private Map<String,Object> content(){return ProfileSchema.content("An Nguyễn","cat",null,"Yêu thú cưng");}
-    private Map<String,Object> record(){Map<String,Object> m=new HashMap<>(content());m.put("ownerUid","a");m.put("schemaVersion",1L);m.put("version",2L);m.put("submission","draft");m.put("lastOperationId","12345678-1234-1234-1234-123456789abc");m.put("updatedAt",new Object());return m;}
-    @Test public void unicodeNameUsesCodePointsAndRetainsDiacritics(){assertTrue(ProfileSchema.validContent(content()));assertTrue(ProfileSchema.validContent(ProfileSchema.content("🐈🐕","dog",null,"")));assertFalse(ProfileSchema.validContent(ProfileSchema.content("a","dog",null,"")));assertFalse(ProfileSchema.validContent(ProfileSchema.content("a".repeat(41),"dog",null,"")));}
-    @Test public void whitelistPreviewPhysicallyExcludesContactAndMetadata(){Map<String,Object> m=record();m.put("phoneE164","+84912345678");m.put("email","synthetic@example.test");assertEquals(new HashSet<>(Arrays.asList("displayName","avatarKey","regionCode","bio")),ProfileSchema.publicContent(m).keySet());assertFalse(ProfileSchema.publicContent(m).containsKey("phoneE164"));}
-    @Test public void strictSchemasRejectPrivatePublicFieldsAndUnknownVersions(){Map<String,Object> m=record();assertTrue(ProfileSchema.validRecord(m,ProfileSchema.DRAFT,"a"));m.put("role","admin");assertFalse(ProfileSchema.validRecord(m,ProfileSchema.DRAFT,"a"));m.remove("role");m.put("schemaVersion",2L);assertFalse(ProfileSchema.validRecord(m,ProfileSchema.DRAFT,"a"));}
-    @Test public void avatarRegionAndBioAreBounded(){assertFalse(ProfileSchema.validContent(ProfileSchema.content("An","cloud-url",null,"")));assertFalse(ProfileSchema.validContent(ProfileSchema.content("An","cat","exact-address","")));assertFalse(ProfileSchema.validContent(ProfileSchema.content("An","cat",null,"x".repeat(501))));}
-    @Test public void vietnamesePhoneNormalizationAcceptsLocalAndInternationalInput(){assertNull(ProfileSchema.phone(" "));assertEquals("+84912345678",ProfileSchema.phone("0912 345 678"));assertEquals("+84912345678",ProfileSchema.phone("+84 (912) 345-678"));assertEquals("+84912345678",ProfileSchema.phone("84912345678"));assertTrue(ProfileSchema.validPhone(ProfileSchema.phone("0912345678")));assertFalse(ProfileSchema.validPhone(ProfileSchema.phone("+8484912345678")));assertFalse(ProfileSchema.validPhone("+1234567890123456"));}
-    @Test public void contactPatternWarnsOnObviousContactWithoutRejectingEveryNumber(){for(String bio:Arrays.asList("+84912345678","a@example.test","địa chỉ: 12 đường A","123 đường Hoa"))assertTrue(ProfileSchema.sensitive(ProfileSchema.content("An","cat",null,bio)));assertFalse(ProfileSchema.sensitive(ProfileSchema.content("An","cat",null,"Nuôi 2 chú mèo")));}
-    @Test public void retrySameOperationRequiresSamePayloadAndVersion(){Map<String,Object> m=record();Map<String,Object> p=new HashMap<>(content());p.put("submission","draft");ProfileCommand command=new ProfileCommand(ProfileCommand.Kind.DRAFT,1,(String)m.get("lastOperationId"),p);assertTrue(command.isPriorResult(m));assertFalse(command.conflicts(m));m.put("bio","Changed");assertFalse(command.isPriorResult(m));assertTrue(command.conflicts(m));}
-    @Test public void staleContactOrPrivacyWritesConflictEvenAfterOtherOperations(){Map<String,Object> m=record();ProfileCommand command=new ProfileCommand(ProfileCommand.Kind.DRAFT,1,UUID.randomUUID().toString(),content());assertTrue(command.conflicts(m));ProfileCommand newCommand=new ProfileCommand(ProfileCommand.Kind.DRAFT,2,UUID.randomUUID().toString(),content());assertFalse(newCommand.conflicts(m));}
-    @Test public void immutablePayloadPreventsEditingAQueuedRetry(){Map<String,Object> p=content();ProfileCommand command=new ProfileCommand(ProfileCommand.Kind.DRAFT,0,UUID.randomUUID().toString(),p);try{command.payload.put("bio","new");fail();}catch(UnsupportedOperationException expected){}assertFalse(command.conflicts(null));}
+    private Map<String, Object> content() {
+        return ProfileSchema.content("An Nguyễn", "cat", null, "Yêu thú cưng");
+    }
+
+    private Map<String, Object> record() {
+        Map<String, Object> m = new HashMap<>(content());
+        m.put("ownerUid", "a");
+        m.put("schemaVersion", 1L);
+        m.put("version", 2L);
+        m.put("submission", "draft");
+        m.put("lastOperationId", "12345678-1234-1234-1234-123456789abc");
+        m.put("updatedAt", new Object());
+        return m;
+    }
+
+    @Test
+    public void unicodeNameUsesCodePointsAndRetainsDiacritics() {
+        assertTrue(ProfileSchema.validContent(content()));
+        assertTrue(ProfileSchema.validContent(ProfileSchema.content("🐈🐕", "dog", null, "")));
+        assertFalse(ProfileSchema.validContent(ProfileSchema.content("a", "dog", null, "")));
+        assertFalse(
+                ProfileSchema.validContent(ProfileSchema.content("a".repeat(41), "dog", null, "")));
+    }
+
+    @Test
+    public void whitelistPreviewPhysicallyExcludesContactAndMetadata() {
+        Map<String, Object> m = record();
+        m.put("phoneE164", "+84912345678");
+        m.put("email", "synthetic@example.test");
+        assertEquals(
+                new HashSet<>(Arrays.asList("displayName", "avatarKey", "regionCode", "bio")),
+                ProfileSchema.publicContent(m).keySet());
+        assertFalse(ProfileSchema.publicContent(m).containsKey("phoneE164"));
+    }
+
+    @Test
+    public void strictSchemasRejectPrivatePublicFieldsAndUnknownVersions() {
+        Map<String, Object> m = record();
+        assertTrue(ProfileSchema.validRecord(m, ProfileSchema.DRAFT, "a"));
+        m.put("role", "admin");
+        assertFalse(ProfileSchema.validRecord(m, ProfileSchema.DRAFT, "a"));
+        m.remove("role");
+        m.put("schemaVersion", 2L);
+        assertFalse(ProfileSchema.validRecord(m, ProfileSchema.DRAFT, "a"));
+    }
+
+    @Test
+    public void avatarRegionAndBioAreBounded() {
+        assertFalse(ProfileSchema.validContent(ProfileSchema.content("An", "cloud-url", null, "")));
+        assertFalse(
+                ProfileSchema.validContent(
+                        ProfileSchema.content("An", "cat", "exact-address", "")));
+        assertFalse(
+                ProfileSchema.validContent(
+                        ProfileSchema.content("An", "cat", null, "x".repeat(501))));
+    }
+
+    @Test
+    public void vietnamesePhoneNormalizationAcceptsLocalAndInternationalInput() {
+        assertNull(ProfileSchema.phone(" "));
+        assertEquals("+84912345678", ProfileSchema.phone("0912 345 678"));
+        assertEquals("+84912345678", ProfileSchema.phone("+84 (912) 345-678"));
+        assertEquals("+84912345678", ProfileSchema.phone("84912345678"));
+        assertTrue(ProfileSchema.validPhone(ProfileSchema.phone("0912345678")));
+        assertFalse(ProfileSchema.validPhone(ProfileSchema.phone("+8484912345678")));
+        assertFalse(ProfileSchema.validPhone("+1234567890123456"));
+    }
+
+    @Test
+    public void contactPatternWarnsOnObviousContactWithoutRejectingEveryNumber() {
+        for (String bio :
+                Arrays.asList(
+                        "+84912345678", "a@example.test", "địa chỉ: 12 đường A", "123 đường Hoa"))
+            assertTrue(ProfileSchema.sensitive(ProfileSchema.content("An", "cat", null, bio)));
+        assertFalse(
+                ProfileSchema.sensitive(
+                        ProfileSchema.content("An", "cat", null, "Nuôi 2 chú mèo")));
+    }
+
+    @Test
+    public void retrySameOperationRequiresSamePayloadAndVersion() {
+        Map<String, Object> m = record();
+        Map<String, Object> p = new HashMap<>(content());
+        p.put("submission", "draft");
+        ProfileCommand command =
+                new ProfileCommand(
+                        ProfileCommand.Kind.DRAFT, 1, (String) m.get("lastOperationId"), p);
+        assertTrue(command.isPriorResult(m));
+        assertFalse(command.conflicts(m));
+        m.put("bio", "Changed");
+        assertFalse(command.isPriorResult(m));
+        assertTrue(command.conflicts(m));
+    }
+
+    @Test
+    public void staleContactOrPrivacyWritesConflictEvenAfterOtherOperations() {
+        Map<String, Object> m = record();
+        ProfileCommand command =
+                new ProfileCommand(
+                        ProfileCommand.Kind.DRAFT, 1, UUID.randomUUID().toString(), content());
+        assertTrue(command.conflicts(m));
+        ProfileCommand newCommand =
+                new ProfileCommand(
+                        ProfileCommand.Kind.DRAFT, 2, UUID.randomUUID().toString(), content());
+        assertFalse(newCommand.conflicts(m));
+    }
+
+    @Test
+    public void immutablePayloadPreventsEditingAQueuedRetry() {
+        Map<String, Object> p = content();
+        ProfileCommand command =
+                new ProfileCommand(ProfileCommand.Kind.DRAFT, 0, UUID.randomUUID().toString(), p);
+        try {
+            command.payload.put("bio", "new");
+            fail();
+        } catch (UnsupportedOperationException expected) {
+        }
+        assertFalse(command.conflicts(null));
+    }
 }
