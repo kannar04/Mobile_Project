@@ -1,11 +1,14 @@
 package com.gmail.manhle240406.project.notifications;
 
-import com.gmail.manhle240406.project.R;
-import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
+import com.gmail.manhle240406.project.R;
+
+import org.junit.Test;
+
 public class InboxPresentationTest {
-    @Test public void supportedKindsUseAssociatedIcons() {
+    @Test
+    public void supportedKindsUseAssociatedIcons() {
         assertEquals(R.drawable.ic_inbox_adoption, InboxPresentation.icon("adoption"));
         assertEquals(R.drawable.ic_nav_chat, InboxPresentation.icon("message"));
         assertEquals(R.drawable.ic_nav_favorite, InboxPresentation.icon("like"));

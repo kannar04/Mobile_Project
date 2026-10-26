@@ -43,108 +43,2115 @@ import java.util.UUID;
 
 /** Existing task routes share one native stateful flow; no sample records or simulated commits. */
 public class AdoptionFlowActivity extends AppCompatActivity {
- protected AdoptionFlowModel m; private SpeciesCatalogStore speciesCatalog;private LinearLayout body,footer;private androidx.appcompat.app.AlertDialog dialog;
- protected String entry(){return "workspace";}
- @Override public void onCreate(Bundle state){super.onCreate(state);if(this instanceof com.gmail.manhle240406.project.listing.ListingActivity){startActivity(new android.content.Intent(this,SocialComposerActivity.class).putExtra("adoption",true));finish();return;}EdgeToEdge.enable(this);speciesCatalog=((AniloveApplication)getApplication()).speciesCatalog();m=new ViewModelProvider(this).get(AdoptionFlowModel.class);m.changes.observe(this,x->render());getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){public void handleOnBackPressed(){back();}});
-  if(state==null){String mode=getIntent().getStringExtra("mode");if(mode==null)mode=entry();String id=getIntent().getStringExtra("listing");if("management".equals(mode)&&!getIntent().getBooleanExtra("legacy",false)){startActivity(new android.content.Intent(this,LifecycleActivity.class));finish();return;}if(("detail".equals(mode)||"apply".equals(mode))&&id!=null){m.listingId=id;m.load("detail".equals(mode)?"detail":"applicationForm","detail".equals(mode)?"publicDetail":"offerSource",map("listingId",id));}else if("management".equals(mode)){m.managementOrigin=true;loadManagement("applicant",0);}else if("review".equals(mode))m.load("reviewQueue","reviewQueue",map());else if("applications".equals(mode))m.load("applications","applications",map("role","applicant"));else if("hostApplications".equals(mode)){m.listingId=id;m.load("applications","applications",id==null?map("role","host"):map("role","host","listingId",id));}else if(getIntent().getStringExtra("reservation")!=null){m.reservationId=getIntent().getStringExtra("reservation");reservation();}else if("ownerOffer".equals(mode)&&id!=null)m.offer(id);else if("care".equals(mode)&&getIntent().getStringExtra("petId")!=null){m.extras.put("careOnly",true);m.choosePet(getIntent().getStringExtra("petId"));}else m.workspace();}
- }
- private final Runnable sourceRefresh=()->{if(m!=null&&!m.busy&&"detail".equals(m.page)&&m.listingId!=null){m.data.clear();m.load("detail","publicDetail",map("listingId",m.listingId));}};
- @Override protected void onStart(){super.onStart();BrowsePulse.add(sourceRefresh);sourceRefresh.run();}
- @Override protected void onStop(){BrowsePulse.remove(sourceRefresh);if(m!=null&&"detail".equals(m.page))m.data.clear();super.onStop();}
- private String s(int id){return getString(id);}private String str(Object v){return v==null?"":String.valueOf(v);}
- private void text(String value,boolean heading){TextView t=SocialViews.text(this,value,heading);if(heading)androidx.core.view.ViewCompat.setAccessibilityHeading(t,true);body.addView(t);SocialSurface.gap(body,8);}
- private MaterialButton action(String label,String tag,Runnable run,boolean primary){MaterialButton b=primary?SocialViews.primaryButton(this,label,()->safe(run)):SocialSurface.quiet(this,label,()->safe(run));b.setTag(tag);b.setEnabled(!m.busy&&!m.uncertain());if(primary&&m.uncertain()&&!m.busy)return b;(primary?footer:body).addView(b,new LinearLayout.LayoutParams(-1,-2));return b;}
- private void safe(Runnable run){try{run.run();}catch(IllegalArgumentException|java.time.DateTimeException e){m.error="invalid_fields";m.changed();}}
- private TextInputEditText field(int hint,String value,int limit,java.util.function.Consumer<String> change,boolean multi){TextInputLayout box=new TextInputLayout(this);box.setHint(s(hint));TextInputEditText input=new TextInputEditText(box.getContext());input.setTag(getResources().getResourceEntryName(hint));input.setSingleLine(!multi);input.setInputType(android.text.InputType.TYPE_CLASS_TEXT|(multi?android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE:android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES));input.setMinLines(multi?3:1);input.setFilters(new InputFilter[]{new InputFilter.LengthFilter(limit)});input.setText(value);input.setSaveEnabled(false);input.setEnabled(!m.busy&&!m.uncertain());box.addView(input,new LinearLayout.LayoutParams(-1,-2));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.topMargin=SocialViews.dp(this,12);body.addView(box,lp);input.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int f){}public void onTextChanged(CharSequence v,int a,int b,int c){change.accept(v.toString());}public void afterTextChanged(Editable e){}});return input;}
- private void choices(int label,String[] labels,String[] values,String selected,java.util.function.Consumer<String> change){TextView name=SocialSurface.muted(this,s(label));Spinner spinner=new Spinner(this);spinner.setId(View.generateViewId());spinner.setTag(getResources().getResourceEntryName(label));name.setLabelFor(spinner.getId());body.addView(name);spinner.setMinimumHeight(SocialViews.dp(this,48));spinner.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,labels));spinner.setSelection(Math.max(0,Arrays.asList(values).indexOf(selected)));spinner.setEnabled(!m.busy&&!m.uncertain());body.addView(spinner,new LinearLayout.LayoutParams(-1,-2));spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){public void onItemSelected(AdapterView<?> p,View v,int pos,long id){change.accept(values[pos]);}public void onNothingSelected(AdapterView<?> p){}});SocialSurface.gap(body,8);}
- private void speciesChoices(Map<String,Object> form){TextView name=SocialSurface.muted(this,s(R.string.ad_species));Spinner spinner=new Spinner(this);spinner.setId(View.generateViewId());spinner.setTag("ad_species");name.setLabelFor(spinner.getId());body.addView(name);spinner.setMinimumHeight(SocialViews.dp(this,48));spinner.setEnabled(!m.busy&&!m.uncertain());bindSpecies(spinner,form,speciesCatalog.snapshot());body.addView(spinner,new LinearLayout.LayoutParams(-1,-2));SocialSurface.gap(body,8);speciesCatalog.refresh(false,values->{if(!isFinishing()&&!isDestroyed()&&spinner.getParent()!=null)bindSpecies(spinner,form,values);});}
- private void bindSpecies(Spinner spinner,Map<String,Object> form,List<SpeciesCatalogStore.Entry> entries){String selected=str(form.get("species"));List<String> ids=new ArrayList<>(),labels=new ArrayList<>();for(SpeciesCatalogStore.Entry entry:entries){ids.add(entry.id);labels.add(entry.label(this));}if(!ids.contains(selected)){ids.add(selected);labels.add(speciesCatalog.label(selected));}spinner.setOnItemSelectedListener(null);spinner.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,labels));spinner.setSelection(Math.max(0,ids.indexOf(selected)));spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){public void onItemSelected(AdapterView<?> p,View v,int pos,long id){form.put("species",ids.get(pos));}public void onNothingSelected(AdapterView<?> p){}});}
- private void confirm(int title,int message,Runnable run){dialog=new MaterialAlertDialogBuilder(this).setTitle(title).setMessage(message).setNegativeButton(R.string.ad_stay,null).setPositiveButton(R.string.ad_continue,(d,w)->safe(run)).show();}
- private void render(){if(m.lost){finish();return;}if("careSaved".equals(m.page)){android.widget.Toast.makeText(this,R.string.permissions_care_saved,android.widget.Toast.LENGTH_SHORT).show();setResult(RESULT_OK);finish();return;}LinearLayout root=SocialSurface.page(this);SocialViews.privateView(root);SocialSurface.header(this,root,m.managementOrigin?("host".equals(m.managementRole)?R.string.oc3_rehoming:R.string.oc3_adopting):Boolean.TRUE.equals(m.extras.get("careOnly"))?R.string.permissions_care_title:R.string.ad_title,this::back);body=SocialSurface.content(this,root);footer=SocialViews.column(this);footer.setPadding(SocialViews.dp(this,16),0,SocialViews.dp(this,16),SocialViews.dp(this,12));root.addView(footer,new LinearLayout.LayoutParams(-1,-2));
-  if(m.busy){ProgressBar p=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);p.setIndeterminate(true);p.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);body.addView(p);text(s(R.string.ad_loading),false);}
-  if(m.uncertain()&&!m.busy){MaterialButton check=SocialViews.button(this,s(R.string.ad_check_result),m::reconcile);check.setEnabled(!m.busy);footer.addView(check);MaterialButton retry=SocialSurface.quiet(this,s(R.string.ad_retry_same),m::retrySame);retry.setEnabled(!m.busy);footer.addView(retry);}
-  switch(m.page){case "management":management();break;case "workspace":workspace();break;case "register":register();break;case "compose":compose();break;case "offerStatus":offerStatus();break;case "reviewQueue":reviewQueue();break;case "claimReview":claimReview();break;case "listingReview":listingReview();break;case "detail":detail();break;case "applicationForm":applicationForm();break;case "applications":applications();break;case "application":application();break;case "reservation":preparation();break;}feedback();
- }
- private void selfReviewNotice(){if(m.workspaceData.get("reviewer") instanceof List&&!((List<?>)m.workspaceData.get("reviewer")).isEmpty())text(s(Boolean.TRUE.equals(m.workspaceData.get("selfReviewAllowed"))?R.string.ad_demo_self_available:R.string.ad_claim_self_review),false);}
- private void feedback(){String message=m.error.isEmpty()?"":error(m.error);int notice="claim_submitted".equals(m.notice)?(Boolean.TRUE.equals(m.workspaceData.get("selfReviewAllowed"))?R.string.ad_claim_sent_self_feedback:R.string.ad_claim_sent_feedback):"listing_submitted".equals(m.notice)?R.string.ad_listing_sent_feedback:"saved_not_sent".equals(m.notice)?R.string.ad_saved_not_sent:0;if(notice!=0)message+=(message.isEmpty()?"":"\n")+s(notice);if(message.isEmpty()&&m.busy&&m.uncertain())message=s(R.string.ad_submit_in_progress);if(message.isEmpty())return;TextView v=SocialSurface.muted(this,message);v.setTag("adoption_feedback");v.setAccessibilityLiveRegion(m.error.isEmpty()?View.ACCESSIBILITY_LIVE_REGION_POLITE:View.ACCESSIBILITY_LIVE_REGION_ASSERTIVE);if(!m.error.isEmpty())v.setTextColor(com.google.android.material.color.MaterialColors.getColor(v,androidx.appcompat.R.attr.colorError));v.setPadding(0,SocialViews.dp(this,8),0,SocialViews.dp(this,8));footer.addView(v,0,new LinearLayout.LayoutParams(-1,-2));}
- private void workspace(){text(s(R.string.ad_owner_title),true);text(s(R.string.ad_owner_intro),false);action(s(R.string.ad_new),"adoption_new",()->{if(Boolean.TRUE.equals(m.workspaceData.get("simplified"))){startActivity(new android.content.Intent(this,SocialComposerActivity.class).putExtra("adoption",true));return;}m.notice="";m.error="";m.fields=map("title","","description","","regionCode",null,"offerType","adoption","mediaRefs",new ArrayList<>());m.listingId=null;m.contentVersion=0;m.controlVersion=0;m.draftId=UUID.randomUUID().toString();m.draftVersion=0;m.step=0;m.page="compose";m.changed();},true);
-  for(Map<String,Object> offer:rows(m.data.get("offers"))){text(str(object(object(offer.get("revision")).get("editableFields")).get("title")),true);text(status(offer,object(offer.get("review")),object(offer.get("publication"))),false);String id=str(offer.get("listingId"));action(s(R.string.ad_open),"adoption_offer_"+id,()->m.offer(id),false);}
-  for(Map<String,Object> draft:rows(m.data.get("drafts"))){text(str(object(draft.get("editableFields")).get("title")),true);text(s(R.string.ad_draft),false);action(s(R.string.ad_resume),"adoption_draft",()->{if(Boolean.TRUE.equals(m.workspaceData.get("simplified"))){startActivity(new android.content.Intent(this,SocialComposerActivity.class).putExtra("adoption",true).putExtra("initial_body",str(object(draft.get("editableFields")).get("description"))));return;}m.fields=new HashMap<>(object(draft.get("editableFields")));m.draftId=str(draft.get("documentId"));m.draftVersion=number(draft.get("draftVersion"));m.listingId=null;m.contentVersion=0;m.controlVersion=0;m.step=0;m.page="compose";m.changed();},false);}
-  if(m.data.get("nextOffers")!=null||m.data.get("nextPets")!=null)action(s(R.string.ad_next),"adoption_next_workspace",()->m.load("workspace","workspace",map("petsAfter",m.data.get("nextPets"),"offersAfter",m.data.get("nextOffers"))),false);if(rows(m.data.get("offers")).isEmpty()&&rows(m.data.get("drafts")).isEmpty())text(s(R.string.ad_no_offers),false);action(s(R.string.ad_my_applications),"adoption_my_applications",()->m.load("applications","applications",map("role","applicant")),false);if(m.data.get("reviewer") instanceof List&&!((List<?>)m.data.get("reviewer")).isEmpty())action(s(R.string.ad_review),"adoption_review",()->m.load("reviewQueue","reviewQueue",map()),false);action(s(R.string.ad_refresh),"adoption_refresh",()->m.workspace(true),false);
- }
- private void compose(){if(!Boolean.TRUE.equals(m.extras.get("careOnly"))&&!Boolean.TRUE.equals(m.extras.get("courseComposer")))text(getString(R.string.ad_step,m.step+1,4),false);
-  if(m.step==0){text(s(R.string.ad_choose_pet),true);for(Map<String,Object> p:rows(m.workspaceData.get("pets"))){String id=str(p.get("petId"));action(str(object(p.get("identity")).get("displayName")),"adoption_pet_"+id,()->m.choosePet(id),false);}action(s(R.string.ad_add_pet),"adoption_add_pet",()->{m.page="register";m.extras.put("registration",map("name","","species","cat","basis","claimed_owner","explanation",""));m.changed();},true);return;}
-  if(m.step==1){care();return;}
-  if(m.step==2){text(s(R.string.ad_offer_details),true);if(Boolean.TRUE.equals(m.extras.get("courseComposer"))){field(R.string.lc_temperament,str(m.extras.get("courseTemperament")),2000,v->m.extras.put("courseTemperament",v.trim()),true);field(R.string.lc_care,str(m.extras.get("courseCare")),2000,v->m.extras.put("courseCare",v.trim()),true);field(R.string.lc_requirements,str(m.extras.get("courseRequirements")),2000,v->m.extras.put("courseRequirements",v.trim()),true);}field(R.string.ad_offer_title,str(m.fields.get("title")),80,v->m.fields.put("title",v.trim()),false);field(R.string.ad_description,str(m.fields.get("description")),2000,v->m.fields.put("description",v.trim()),true);choices(R.string.ad_region,getResources().getStringArray(R.array.ad_regions),new String[]{"","north","central","south"},str(m.fields.get("regionCode")),v->m.fields.put("regionCode",v.isEmpty()?null:v));action(s(R.string.ad_preview),"adoption_preview",()->{if(str(m.fields.get("title")).length()<5)throw new IllegalArgumentException();m.step=3;m.changed();},true);action(s(R.string.ad_save_draft),"adoption_save_draft",()->m.write("saveDraft",map("draftId",m.draftId,"expectedVersion",m.draftVersion,"petId",m.petId,"fields",m.fields),m::workspace),false);return;}
-  if(Boolean.TRUE.equals(m.extras.get("courseComposer"))){text(str(m.fields.get("title")),true);text(str(m.fields.get("description")),false);text(s(R.string.permissions_self_declared),false);action(s(R.string.permissions_publish),"adoption_submit",()->{for(String key:new String[]{"courseTemperament","courseCare","courseRequirements"})if(str(m.extras.get(key)).isEmpty())throw new IllegalArgumentException();Map<String,Object> p=object(m.extras.get("courseParticipation"));if(Boolean.TRUE.equals(p.get("terms")))m.submitOffer();else dialog=new MaterialAlertDialogBuilder(this).setTitle(R.string.lc_terms).setMessage(str(p.get("termsText"))).setPositiveButton(R.string.permissions_agree_continue,(d,w)->{m.extras.put("participationConsent",map("termsVersion",p.get("termsVersion"),"termsHash",p.get("termsHash")));m.submitOffer();}).setNegativeButton(android.R.string.cancel,null).show();},true);return;}
-  text(s(R.string.ad_preview),true);text(str(object(m.pet.get("identity")).get("displayName")),true);text(str(m.fields.get("title")),true);text(str(m.fields.get("description")),false);careSummary(m.care);text(s(R.string.ad_private_excluded),false);text(s(R.string.ad_review_explain),false);if(!"accepted_for_demo".equals(object(m.pet.get("claim")).get("reviewState"))||m.error.contains("authority_pending")){text(s(R.string.ad_claim_waiting),false);selfReviewNotice();action(s(R.string.ad_check_claim),"adoption_check_claim",m::refreshClaim,true);action(s(R.string.ad_save_draft),"adoption_save_draft",()->m.write("saveDraft",map("draftId",m.draftId,"expectedVersion",m.draftVersion,"petId",m.petId,"fields",m.fields),m::workspace),false);}else action(s(R.string.ad_submit),"adoption_submit",m::submitOffer,true);
- }
- private void care(){text(s(R.string.ad_care),true);text(s(R.string.ad_owner_report),false);choices(R.string.ad_health,getResources().getStringArray(R.array.ad_health_states),new String[]{"unknown","no_concerns_reported","concerns_reported"},str(m.care.get("healthState")),v->m.care.put("healthState",v));choices(R.string.ad_sterilization,getResources().getStringArray(R.array.ad_tri_states),new String[]{"unknown","yes","no"},str(m.care.get("sterilization")),v->m.care.put("sterilization",v));field(R.string.ad_color,str(m.care.get("color")),120,v->m.care.put("color",v.trim()),false);field(R.string.ad_behavior,str(m.care.get("behaviorNotes")),1000,v->m.care.put("behaviorNotes",v.trim()),true);field(R.string.ad_needs,str(m.care.get("careNeeds")),1000,v->m.care.put("careNeeds",v.trim()),true);
-  List<Map<String,Object>> vaccines=new ArrayList<>(rows(m.care.get("vaccinations")));m.care.put("vaccinations",vaccines);for(Map<String,Object> v:vaccines){text(str(v.get("typeLabel"))+" · "+(v.get("reportedDate")==null?s(R.string.ad_unknown):str(v.get("reportedDate"))),false);action(s(R.string.ad_remove_record),"adoption_remove_vaccine",()->{vaccines.remove(v);m.changed();},false);}if(vaccines.size()<20)action(s(R.string.ad_add_vaccine),"adoption_add_vaccine",this::vaccination,false);text(s(R.string.ad_private_notes),true);field(R.string.ad_medication,m.medication,1000,v->m.medication=v.trim(),true);
-  Map<String,Object> claim=object(m.pet.get("claim"));if(!Boolean.TRUE.equals(m.extras.get("careOnly"))&&!Arrays.asList("accepted_for_demo","self_declared_for_demo").contains(claim.get("reviewState"))){text(s("submitted".equals(claim.get("reviewState"))?R.string.ad_claim_waiting:R.string.ad_authority_pending),false);selfReviewNotice();if(!"submitted".equals(claim.get("reviewState")))action(s(R.string.ad_submit_claim),"adoption_submit_claim",m::submitClaim,false);else action(s(R.string.ad_check_claim),"adoption_check_claim",m::refreshClaim,false);}action(s(Boolean.TRUE.equals(m.extras.get("careOnly"))?R.string.permissions_save_care:R.string.ad_save_continue),"adoption_save_care",m::saveCare,true);
- }
- private void vaccination(){LinearLayout form=SocialViews.column(this);TextInputLayout type=new TextInputLayout(this);type.setHint(s(R.string.ad_vaccine_type));TextInputEditText name=new TextInputEditText(type.getContext());name.setFilters(new InputFilter[]{new InputFilter.LengthFilter(80)});type.addView(name);form.addView(type);Spinner precision=new Spinner(this);precision.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,getResources().getStringArray(R.array.ad_precisions)));form.addView(precision);TextInputLayout dl=new TextInputLayout(this);dl.setHint(s(R.string.ad_vaccine_date));TextInputEditText date=new TextInputEditText(dl.getContext());date.setFilters(new InputFilter[]{new InputFilter.LengthFilter(10)});dl.addView(date);form.addView(dl);
-  dialog=new MaterialAlertDialogBuilder(this).setTitle(R.string.ad_add_vaccine).setView(form).setNegativeButton(android.R.string.cancel,null).setPositiveButton(R.string.ad_add,null).create();dialog.setOnShowListener(x->dialog.getButton(-1).setOnClickListener(v->{String label=str(name.getText()).trim(),d=str(date.getText()).trim();Map<String,Object> record=map("entryId",UUID.randomUUID().toString(),"typeLabel",label,"reportedDate",precision.getSelectedItemPosition()==0?null:d,"datePrecision",new String[]{"unknown","year","month","exact"}[precision.getSelectedItemPosition()],"provenance","owner_report");List<Map<String,Object>> records=new ArrayList<>(rows(m.care.get("vaccinations")));records.add(record);Map<String,Object> candidate=new HashMap<>(m.care);candidate.put("vaccinations",records);try{PetCareContract.validate(candidate,m.medication,java.time.LocalDate.now(java.time.ZoneOffset.UTC));m.care=candidate;dialog.dismiss();m.changed();}catch(IllegalArgumentException bad){type.setError(label.isEmpty()?s(R.string.ad_required):null);dl.setError(s(R.string.ad_invalid_date));}}));dialog.show();
- }
- private void register(){Map<String,Object> f=object(m.extras.get("registration"));text(s(R.string.ad_add_pet),true);field(R.string.ad_pet_name,str(f.get("name")),80,v->f.put("name",v.trim()),false);speciesChoices(f);choices(R.string.ad_claim_basis,getResources().getStringArray(R.array.ad_bases),new String[]{"claimed_owner","authorized_caregiver","other_permission"},str(f.get("basis")),v->f.put("basis",v));CheckBox declared=new CheckBox(this);declared.setText(R.string.ad_reported_care);declared.setMinHeight(SocialViews.dp(this,48));declared.setChecked(Boolean.TRUE.equals(f.get("reportedCare")));declared.setOnCheckedChangeListener((v,on)->f.put("reportedCare",on));body.addView(declared);field(R.string.ad_claim_explanation,str(f.get("explanation")),1000,v->f.put("explanation",v.trim()),true);text(s(R.string.ad_claim_notice),false);action(s(R.string.ad_save_pet),"adoption_register_pet",()->{if(str(f.get("name")).isEmpty())throw new IllegalArgumentException();String id=UUID.randomUUID().toString(),species=str(f.get("species")),illustration=("cat".equals(species)||"dog".equals(species))?species:"default";Map<String,Object> identity=map("displayName",f.get("name"),"species",species,"breed","","sex","unknown","ageMonths",null,"ageObservedAt",null,"marks","","marksUnknown",true,"illustrationKey",illustration);m.write("register",map("petId",id,"identity",identity,"claim",map("basis",f.get("basis"),"reportedCare",Boolean.TRUE.equals(f.get("reportedCare")),"explanation",f.get("explanation"))),()->m.choosePet(id));},true);}
- private String status(Map<String,Object> l,Map<String,Object> q,Map<String,Object> p){if("closed".equals(l.get("lifecycle")))return s(R.string.ad_closed);if("shown".equals(l.get("visibility")))return s(R.string.ad_visible);if("queued".equals(q.get("state"))||"assigned".equals(q.get("state")))return s(R.string.ad_pending);if(number(p.get("approvedContentVersion"))==number(l.get("contentVersion"))&&number(l.get("contentVersion"))>0)return s("course_self_declared".equals(p.get("reviewMode"))?R.string.permissions_self_declared:R.string.ad_approved);if("needs_changes".equals(p.get("blockedReasonCode")))return s(R.string.ad_needs_changes);return s(R.string.ad_draft);}
- private void offerStatus(){action(s(R.string.lc_prepare_listing),"lifecycle_requirements",()->LifecycleActivity.open(this,m.listingId),false);Map<String,Object> l=object(m.data.get("listing")),r=object(m.data.get("revision")),q=object(m.data.get("review")),p=object(m.data.get("publication"));if(l.isEmpty())return;if(Boolean.TRUE.equals(m.data.get("simplified")))action(s(R.string.permissions_update_offer),"adoption_update_course",()->{m.extras.put("courseComposer",true);m.extras.put("courseParticipation",m.data.get("participation"));Map<String,Object> req=object(object(m.data.get("requirements")).get("fields"));m.extras.put("courseTemperament",str(req.get("temperament")));m.extras.put("courseCare",str(req.get("careRequirements")));m.extras.put("courseRequirements",str(req.get("adoptionRequirements")));m.fields=new HashMap<>(object(r.get("editableFields")));m.petId=str(l.get("petId"));m.listingId=str(l.get("listingId"));m.contentVersion=number(l.get("contentVersion"));m.controlVersion=number(l.get("controlVersion"));m.step=2;m.page="compose";m.changed();},false);text(str(object(r.get("editableFields")).get("title")),true);text(status(l,q,p),true);if(m.data.get("decision")!=null)text(str(object(m.data.get("decision")).get("reason")),false);String id=str(l.get("listingId"));
-  if(Arrays.asList("pet_reviewed_owner_publication","course_self_declared").contains(p.get("reviewMode"))){action(s(R.string.feedback_received_requests),"adoption_applicants",()->m.load("applications","applications",map("role","host","listingId",id)),true);if("shown".equals(l.get("visibility")))action(s(R.string.ad_hide),"adoption_hide",()->m.write("hide",map("listingId",id,"expectedControlVersion",l.get("controlVersion")),()->m.offer(id)),false);else if(number(p.get("approvedContentVersion"))==number(l.get("contentVersion"))&&!"closed".equals(l.get("lifecycle")))action(s(R.string.ad_show),"adoption_show",()->m.write("show",map("listingId",id,"expectedControlVersion",l.get("controlVersion")),()->m.offer(id)),false);if(!"closed".equals(l.get("lifecycle")))action(s(R.string.ad_close),"adoption_close",()->confirm(R.string.ad_close,R.string.ad_close_notice,()->m.write("close",map("listingId",id,"expectedControlVersion",l.get("controlVersion")),()->m.offer(id))),false);return;}
-  if(number(p.get("approvedContentVersion"))==number(l.get("contentVersion"))&&!"shown".equals(l.get("visibility")))action(s(R.string.ad_show),"adoption_show",()->m.write("show",map("listingId",id,"expectedControlVersion",l.get("controlVersion")),()->m.offer(id)),true);else if(q.isEmpty()&&number(l.get("schemaVersion"))==2)action(s(R.string.ad_submit),"adoption_submit_existing",()->m.write("submitReview",map("listingId",id,"contentVersion",l.get("contentVersion"),"requestVersion",0),()->{m.notice="listing_submitted";m.offer(id);}),true);
-  if("shown".equals(l.get("visibility")))action(s(R.string.ad_applicants),"adoption_applicants",()->m.load("applications","applications",map("role","host","listingId",id)),true);
-  if(!"closed".equals(l.get("lifecycle")))action(s(R.string.ad_edit),"adoption_edit",()->{m.listingId=id;m.contentVersion=number(l.get("contentVersion"));m.controlVersion=number(l.get("controlVersion"));m.fields=new HashMap<>(object(r.get("editableFields")));m.choosePet(str(l.get("petId")));},false);
-  if("shown".equals(l.get("visibility")))action(s(R.string.ad_hide),"adoption_hide",()->m.write("hide",map("listingId",id,"expectedControlVersion",l.get("controlVersion")),()->m.offer(id)),false);
-  if(!"closed".equals(l.get("lifecycle")))action(s(R.string.ad_close),"adoption_close",()->confirm(R.string.ad_close,R.string.ad_close_notice,()->m.write("close",map("listingId",id,"expectedControlVersion",l.get("controlVersion")),()->m.offer(id))),false);
-  action(s(R.string.ad_refresh),"adoption_refresh_status",()->m.offer(id),false);
- }
- private void reviewQueue(){text(s(R.string.ad_review),true);text(s(Boolean.TRUE.equals(m.data.get("selfReviewAllowed"))?R.string.ad_demo_queue_note:R.string.ad_queue_self_note),false);for(Map<String,Object> q:rows(m.data.get("claims"))){String id=str(q.get("petId")),owner=str(q.get("claimantUid"));action(s(R.string.ad_claim_to_review)+" - "+str(q.get("displayName"))+(m.ticket.uid.equals(q.get("claimantUid"))?" - "+s(R.string.ad_demo_own_record):""),"adoption_review_claim_"+id,()->m.load("claimReview","claimCandidate",map("petId",id,"ownerUid",owner)),false);}for(Map<String,Object> q:rows(m.data.get("offers"))){String id=str(q.get("listingId"));action(s(R.string.ad_offer_to_review)+" - "+str(q.get("title"))+(m.ticket.uid.equals(q.get("ownerUid"))?" - "+s(R.string.ad_demo_own_record):""),"adoption_review_offer_"+id,()->{m.listingId=id;m.load("listingReview","candidate",map("listingId",id));},false);}if(rows(m.data.get("claims")).isEmpty()&&rows(m.data.get("offers")).isEmpty())text(s(R.string.ad_queue_empty),false);if(m.data.get("nextClaims")!=null||m.data.get("nextOffers")!=null)action(s(R.string.ad_next),"adoption_next_review",()->m.load("reviewQueue","reviewQueue",map("claimsAfter",m.data.get("nextClaims"),"offersAfter",m.data.get("nextOffers"))),false);action(s(R.string.ad_refresh),"adoption_review_refresh",()->m.load("reviewQueue","reviewQueue",map()),true);}
- private void claimReview(){Map<String,Object> p=object(m.data.get("pet")),q=object(m.data.get("claim"));if(q.isEmpty())return;com.gmail.manhle240406.project.media.MediaGrid photos=new com.gmail.manhle240406.project.media.MediaGrid(this);photos.bind(m.data.get("photoAssetIds"));body.addView(photos);text(str(object(m.data.get("identity")).get("displayName")),true);text(getResources().getStringArray(R.array.ad_bases)["authorized_caregiver".equals(q.get("basis"))?1:"other_permission".equals(q.get("basis"))?2:0],false);text(s(R.string.ad_reported_care)+": "+s(Boolean.TRUE.equals(q.get("reportedCare"))?R.string.ad_yes:R.string.ad_no),false);text(s(R.string.ad_claim_explanation),true);text(str(q.get("explanation")),false);reviewReason(decision->m.write("claimDecision",map("petId",p.get("petId"),"ownerUid",q.get("claimantUid"),"expectedClaimVersion",q.get("claimVersion"),"expectedIdentityVersion",p.get("identityVersion"),"decision",decision,"reason",m.extras.get("reviewReason")),()->m.load("reviewQueue","reviewQueue",map())));}
- private void listingReview(){Map<String,Object> l=object(m.data.get("listing")),r=object(m.data.get("revision")),q=object(m.data.get("review"));if(q.isEmpty())return;text(str(object(r.get("identitySnapshot")).get("displayName")),true);text(str(object(r.get("editableFields")).get("title")),true);text(str(object(r.get("editableFields")).get("description")),false);careSummary(object(r.get("careSnapshot")));if("queued".equals(q.get("state"))){action(s(R.string.ad_start_review),"adoption_assign",()->m.write("assignReview",map("listingId",l.get("listingId"),"contentVersion",l.get("contentVersion"),"requestVersion",q.get("requestVersion")),()->m.load("listingReview","candidate",map("listingId",l.get("listingId")))),true);return;}reviewReason(decision->m.write("decideReview",map("listingId",l.get("listingId"),"contentVersion",l.get("contentVersion"),"requestVersion",q.get("requestVersion"),"decision",decision,"reason",m.extras.get("reviewReason")),()->m.load("reviewQueue","reviewQueue",map())));}
- private void reviewReason(java.util.function.Consumer<String> done){if("demo_self_review".equals(m.data.get("reviewMode")))text(s(R.string.ad_demo_own_record),true);field(R.string.ad_review_reason,str(m.extras.get("reviewReason")),1000,v->m.extras.put("reviewReason",v.trim()),true);action(s(R.string.ad_approve),"adoption_approve",()->{if(str(m.extras.get("reviewReason")).isEmpty())throw new IllegalArgumentException();reviewDecision("approve",done);},true);action(s(R.string.ad_reject),"adoption_reject",()->{if(str(m.extras.get("reviewReason")).isEmpty())throw new IllegalArgumentException();reviewDecision("reject",done);},false);}
- private void reviewDecision(String decision,java.util.function.Consumer<String> done){if(!"demo_self_review".equals(m.data.get("reviewMode"))){done.accept(decision);return;}dialog=new MaterialAlertDialogBuilder(this).setTitle(R.string.ad_demo_review_title).setMessage(R.string.ad_demo_review_confirmation).setNegativeButton(android.R.string.cancel,null).setPositiveButton("approve".equals(decision)?R.string.ad_confirm_demo_approve:R.string.ad_confirm_demo_reject,(d,w)->safe(()->done.accept(decision))).show();}
- private void careSummary(Map<String,Object> c){text(s(R.string.ad_care),true);String state=str(c.get("healthState"));text(s(state.equals("concerns_reported")?R.string.ad_health_concerns:state.equals("no_concerns_reported")?R.string.ad_health_reported:R.string.ad_unknown),false);text(s(R.string.ad_owner_report),false);text(s(R.string.ad_sterilization)+": "+s("yes".equals(c.get("sterilization"))?R.string.ad_yes:"no".equals(c.get("sterilization"))?R.string.ad_no:R.string.ad_unknown),false);if(!str(c.get("color")).isEmpty())text(str(c.get("color")),false);for(Map<String,Object> vaccine:rows(c.get("vaccinations")))text(str(vaccine.get("typeLabel"))+" ? "+(vaccine.get("reportedDate")==null?s(R.string.ad_unknown):str(vaccine.get("reportedDate"))),false);if(!str(c.get("behaviorNotes")).isEmpty())text(str(c.get("behaviorNotes")),false);if(!str(c.get("careNeeds")).isEmpty())text(str(c.get("careNeeds")),false);}
- private void detail(){action(s(R.string.lc_start),"lifecycle_listing",()->LifecycleActivity.open(this,m.listingId,true),true);if(Boolean.FALSE.equals(m.data.get("applicationsEnabled")))text(s(R.string.ad_browse_only),false);Map<String,Object> d=object(m.data.get("detail"));if(d.isEmpty())return;com.gmail.manhle240406.project.media.MediaGrid petPhotos=new com.gmail.manhle240406.project.media.MediaGrid(this);petPhotos.bind(m.data.get("photoAssetIds"));body.addView(petPhotos);Map<String,Object> identity=object(d.get("identitySnapshot"));text(str(identity.get("displayName")),true);text(str(d.get("title")),true);text(str(d.get("description")),false);petDetail(R.string.contract_label_8,identity.get("species"));petDetail(R.string.contract_label_9,identity.get("breed"));petDetail(R.string.contract_label_10,identity.get("sex"));petDetail(R.string.contract_label_11,identity.get("ageMonths"));petDetail(R.string.contract_label_13,identity.get("marks"));if("demo_self_review".equals(m.data.get("reviewMode")))text(s(R.string.ad_demo_reader_notice),false);if("course_self_declared".equals(m.data.get("reviewMode")))text(s(R.string.permissions_self_declared),false);careSummary(object(d.get("careSnapshot")));text(s("reserved".equals(d.get("availability"))?R.string.ad_reserved:R.string.ad_available),false);if(Boolean.TRUE.equals(m.data.get("isOwner")))action(s(R.string.ad_manage),"adoption_manage",()->m.offer(m.listingId),true);else if("available".equals(d.get("availability")))if(!Boolean.FALSE.equals(m.data.get("applicationsEnabled")))action(s(R.string.ad_apply),"adoption_apply",()->LifecycleActivity.open(this,m.listingId,true),true);}
- private void petDetail(int label,Object value){String shown=str(value);if(!shown.isEmpty())text(s(label)+": "+shown,false);}
- private void applicationForm(){Map<String,Object> template=object(m.data.get("template"));if(template.isEmpty())return;text(s(R.string.ad_apply),true);Map<String,Object> answers=object(m.extras.get("answers"));m.extras.put("answers",answers);
-  for(Map<String,Object> q:rows(template.get("questions"))){String id=str(q.get("id")),label=str(object(q.get("labels")).get("vi"));text(label,false);if("tri_state".equals(q.get("type")))choices(R.string.ad_answer,getResources().getStringArray(R.array.ad_answer_options),new String[]{"needs_discussion","yes","no"},str(answers.getOrDefault(id,"needs_discussion")),v->answers.put(id,v));else field(R.string.ad_answer,str(answers.get(id)),400,v->answers.put(id,v.trim()),true);}
-  field(R.string.ad_message,str(m.extras.get("applicationMessage")),1000,v->m.extras.put("applicationMessage",v.trim()),true);action(s(R.string.ad_send_application),"adoption_send_application",()->{String id=UUID.randomUUID().toString();m.write("placement",map("command","submit","applicationId",id,"listingId",m.listingId,"expectedVersion",0,"sourceHash",m.data.get("sourceHash"),"templateHash",m.data.get("templateHash"),"answers",answers,"message",m.extras.getOrDefault("applicationMessage","")),()->{m.applicationId=id;m.load("application","application",map("applicationId",id));});},true);
- }
- private void management(){managementTabs();}
- private void managementTabs(){com.google.android.material.tabs.TabLayout tabs=new com.google.android.material.tabs.TabLayout(this);tabs.setTag("adoption_role_tabs");tabs.setTabMode(com.google.android.material.tabs.TabLayout.MODE_FIXED);tabs.addTab(tabs.newTab().setText(R.string.oc3_adopting));tabs.addTab(tabs.newTab().setText(R.string.oc3_rehoming));tabs.selectTab(tabs.getTabAt("host".equals(m.managementRole)?1:0));tabs.addOnTabSelectedListener(new com.google.android.material.tabs.TabLayout.OnTabSelectedListener(){public void onTabSelected(com.google.android.material.tabs.TabLayout.Tab tab){String role=tab.getPosition()==1?"host":"applicant";if(role.equals(m.managementRole))return;if(m.busy||m.uncertain()){tabs.selectTab(tabs.getTabAt("host".equals(m.managementRole)?1:0));return;}loadManagement(role,m.managementPages.getOrDefault(role,0));}public void onTabUnselected(com.google.android.material.tabs.TabLayout.Tab t){}public void onTabReselected(com.google.android.material.tabs.TabLayout.Tab t){}});body.addView(tabs);}
- private void loadManagement(String role,int page){if(m.busy||m.uncertain())return;m.managementOrigin=true;m.managementRole=role;ArrayList<String> cursors=m.managementCursors.computeIfAbsent(role,k->{ArrayList<String> c=new ArrayList<>();c.add(null);return c;});page=Math.max(0,Math.min(page,cursors.size()-1));m.managementPages.put(role,page);m.data=new HashMap<>();Map<String,Object> input=map("role",role);if(cursors.get(page)!=null)input.put("after",cursors.get(page));m.load("applications","applications",input);}
- private void applications(){
-  String role=m.lastReadInput.get("role")==null?m.managementRole:str(m.lastReadInput.get("role"));m.managementRole=role;if(m.managementOrigin)managementTabs();
-  text(s("host".equals(role)?R.string.oc3_received_requests:R.string.oc3_sent_requests),true);
-  if(m.busy)return;
-  for(Map<String,Object> a:rows(m.data.get("rows"))){String id=str(a.get("applicationId"));text(str(a.get("title")),true);text(applicationStatus(str(a.get("status"))),true);action(s(R.string.ad_open),"adoption_application_"+id,()->{m.applicationId=id;m.load("application","application",map("applicationId",id));},false);}
-  if(rows(m.data.get("rows")).isEmpty())text(s(R.string.ad_no_applications),false);
- }
- private String applicationStatus(String status){switch(status){case "selected":case "preparing":return s(R.string.ad_selected);case "completed":return s(R.string.ad_completed);case "withdrawn":case "cancelled":return s(R.string.ad_cancelled);case "rejected":case "closed_not_selected":return s(R.string.ad_not_selected);case "cancellation_requested":return s(R.string.ad_cancellation_requested);default:return s(R.string.ad_application_pending);}}
- private void application(){Map<String,Object> a=object(m.data.get("application"));if(a.isEmpty())return;Map<String,Object> snapshot=object(object(m.data.get("submission")).get("snapshot"));text(str(object(snapshot.get("offer")).get("title")),true);text(applicationStatus(str(a.get("status"))),true);
-  Map<String,Object> answers=object(object(m.data.get("answer")).get("answers"));for(Object value:answers.values())text(str(value),false);
-  if("pending".equals(a.get("status"))||"under_review".equals(a.get("status"))){boolean owner=m.ticket.uid.equals(a.get("hostUid"));if(owner){action(s(R.string.ad_select),"adoption_select",()->decisionApplication(a,true),true);action(s(R.string.ad_reject),"adoption_reject_application",()->decisionApplication(a,false),false);}else action(s(R.string.ad_withdraw),"adoption_withdraw",()->m.write("placement",map("command","withdraw","applicationId",a.get("applicationId"),"expectedVersion",a.get("applicationVersion")),()->m.load("application","application",map("applicationId",a.get("applicationId")))),true);}
-  if(a.get("selectedReservationId")!=null){m.reservationId=str(a.get("selectedReservationId"));action(s(R.string.ad_prepare),"adoption_prepare",this::reservation,true);}
- }
- private void decisionApplication(Map<String,Object> a,boolean select){TextInputLayout box=new TextInputLayout(this);box.setHint(s(R.string.ad_review_reason));TextInputEditText reason=new TextInputEditText(box.getContext());box.addView(reason);dialog=new MaterialAlertDialogBuilder(this).setTitle(select?R.string.ad_select:R.string.ad_reject).setView(box).setNegativeButton(android.R.string.cancel,null).setPositiveButton(R.string.ad_continue,null).create();dialog.setOnShowListener(x->dialog.getButton(-1).setOnClickListener(v->{String why=str(reason.getText()).trim();if(why.isEmpty()||why.length()>500){box.setError(s(R.string.ad_required));return;}Map<String,Object> input=map("command",select?"select":"reject","applicationId",a.get("applicationId"),"expectedVersion",a.get("applicationVersion"),"reason",why);if(select)input.put("reservationId",UUID.randomUUID().toString());dialog.dismiss();m.write("placement",input,()->m.load("application","application",map("applicationId",a.get("applicationId"))));}));dialog.show();}
- private void reservation(){m.load("reservation","reservation",map("reservationId",m.reservationId));}
- private void placement(Map<String,Object> r,String command,Map<String,Object> values){Map<String,Object> c=map("command",command,"reservationId",r.get("reservationId"),"expectedVersion",r.get("reservationVersion"));c.putAll(values);m.write("placement",c,this::reservation);}
- private void preparation(){Map<String,Object> r=object(m.data.get("reservation")),p=object(m.data.get("preparation")),meeting=object(m.data.get("meeting")),terms=object(m.data.get("terms")),consent=object(m.data.get("ownConsent"));if(r.isEmpty())return;if(m.data.get("placement")!=null){text(s(R.string.ad_completed),true);text(s(R.string.ad_handover_recorded),false);action(s(R.string.ad_correct_report),"adoption_correct_report",()->correction(r),false);return;}text(s(R.string.ad_prepare),true);text(s(R.string.ad_prepare_explain),false);action(s(R.string.feedback_private_contacts),"adoption_contact",()->{com.gmail.manhle240406.project.MainActivity.open(this,"conversation:"+m.reservationId);},false);
-  if(m.ticket.uid.equals(r.get("applicantUid"))&&!Boolean.TRUE.equals(r.get("participantAck")))action(s(R.string.ad_acknowledge),"adoption_ack_prepare",()->placement(r,"acknowledge_preparation",map()),true);
-  if(meeting.isEmpty()&&m.ticket.uid.equals(r.get("hostUid"))){field(R.string.ad_meeting_time,str(m.extras.get("meetingTime")),30,v->m.extras.put("meetingTime",v),false);field(R.string.ad_meeting_place,str(m.extras.get("meetingPlace")),500,v->m.extras.put("meetingPlace",v.trim()),true);action(s(R.string.ad_propose_meeting),"adoption_meeting",()->{long utc=java.time.LocalDateTime.parse(str(m.extras.get("meetingTime"))).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();placement(r,"meeting",map("meeting",map("utcMillis",utc,"displayTimeZone",java.time.ZoneId.systemDefault().getId(),"location",m.extras.get("meetingPlace"),"notes","")));},true);}
-  else if(!meeting.isEmpty()){text(str(meeting.get("location")),false);text(java.text.DateFormat.getDateTimeInstance().format(new Date(number(meeting.get("utcMillis")))),false);Map<String,Object> ack=object(m.data.get("ownAck"));if(number(ack.get("meetingVersion"))!=number(p.get("activeMeetingVersion")))action(s(R.string.ad_agree_meeting),"adoption_agree_meeting",()->placement(r,"ack_meeting",map("meetingHash",meeting.get("hash"))),false);}
-  if(terms.isEmpty()&&m.ticket.uid.equals(r.get("hostUid")))action(s(R.string.ad_create_terms),"adoption_terms",()->placement(r,"terms",map("terms",map("templateVersion",1,"mode","fictional_course","followupMode","none_demo"))),false);
-  if(!meeting.isEmpty()&&!terms.isEmpty()){text(s(R.string.ad_terms_explain),false);if(!"accepted".equals(consent.get("status"))){action(s(R.string.ad_checklist),"adoption_checklist",()->checklist(r,consent),false);action(s(R.string.ad_accept_terms),"adoption_accept_terms",()->confirm(R.string.ad_accept_terms,R.string.ad_terms_explain,()->placement(r,"accept_terms",map("expectedOwnVersion",number(consent.get("consentVersion")),"termsHash",terms.get("hash")))),false);}}
-  if(m.data.get("confirmationHash")!=null&&m.data.get("ownConfirmation")==null)action(s(m.ticket.uid.equals(r.get("hostUid"))?R.string.ad_confirm_given:R.string.ad_confirm_received),"adoption_confirm_handover",()->confirm(R.string.ad_handover_title,R.string.ad_handover_notice,()->placement(r,"confirm",map("expectedOwnVersion",0,"sourceHash",m.data.get("confirmationHash"),"physicalEventReport",m.ticket.uid.equals(r.get("hostUid"))?"given":"received","reportedAt",null))),true);else if(m.data.get("ownConfirmation")!=null)text(s(R.string.ad_wait_peer),false);
-  if("accepted".equals(consent.get("status")))action(s(R.string.ad_revoke_consent),"adoption_revoke_consent",()->confirm(R.string.ad_revoke_consent,R.string.ad_terms_explain,()->placement(r,"revoke_consent",map("expectedOwnVersion",number(consent.get("consentVersion"))))),false);
-  if(m.data.get("ownConfirmation")!=null)action(s(R.string.ad_correct_report),"adoption_correct_report",()->correction(r),false);
-  if(!"cancelled".equals(r.get("status")))action(s(R.string.ad_cancel_prepare),"adoption_cancel_prepare",()->cancellation(r),false);
-  action(s(R.string.ad_refresh),"adoption_refresh_preparation",this::reservation,false);
- }
- private void correction(Map<String,Object> r){reasonDialog(R.string.ad_correct_report,reason->placement(r,"correct_confirmation",map("expectedOwnVersion",number(object(m.data.get("ownConfirmation")).get("version")),"reason",reason,"state","disputed")));}
- private void reasonDialog(int title,java.util.function.Consumer<String> done){TextInputLayout box=new TextInputLayout(this);box.setHint(s(R.string.ad_review_reason));TextInputEditText reason=new TextInputEditText(box.getContext());box.addView(reason);dialog=new MaterialAlertDialogBuilder(this).setTitle(title).setView(box).setNegativeButton(android.R.string.cancel,null).setPositiveButton(R.string.ad_continue,null).create();dialog.setOnShowListener(x->dialog.getButton(-1).setOnClickListener(v->{String text=str(reason.getText()).trim();if(text.isEmpty()||text.length()>500){box.setError(s(R.string.ad_required));return;}dialog.dismiss();safe(()->done.accept(text));}));dialog.show();}
- private void cancellation(Map<String,Object> r){LinearLayout form=SocialViews.column(this);TextView notice=SocialViews.text(this,s(R.string.ad_cancel_notice),false);form.addView(notice);TextInputLayout box=new TextInputLayout(this);box.setHint(s(R.string.ad_review_reason));TextInputEditText reason=new TextInputEditText(box.getContext());box.addView(reason);form.addView(box);CheckBox noTransfer=new CheckBox(this);noTransfer.setText(R.string.ad_no_transfer);noTransfer.setMinHeight(SocialViews.dp(this,48));form.addView(noTransfer);Map<String,Object> own=object(m.data.get("ownCancel")),peer=object(m.data.get("peerCancel"));boolean both=Boolean.TRUE.equals(own.get("noHandoverDeclaration"))&&Boolean.TRUE.equals(peer.get("noHandoverDeclaration"))&&"none".equals(own.get("physicalPossessionStatement"))&&"none".equals(peer.get("physicalPossessionStatement"));dialog=new MaterialAlertDialogBuilder(this).setTitle(R.string.ad_cancel_prepare).setView(form).setNegativeButton(android.R.string.cancel,null).setNeutralButton(R.string.ad_record_statement,null).setPositiveButton(R.string.ad_cancel_reservation,null).create();dialog.setOnShowListener(x->{dialog.getButton(-1).setEnabled(both);dialog.getButton(-1).setOnClickListener(v->{dialog.dismiss();placement(r,"cancel",map());});dialog.getButton(-3).setOnClickListener(v->{String why=str(reason.getText()).trim();if(why.isEmpty()||why.length()>500||!noTransfer.isChecked()){box.setError(s(R.string.ad_statement_required));return;}dialog.dismiss();placement(r,"cancel_statement",map("expectedOwnVersion",number(own.get("intentVersion")),"reason",why,"noHandoverDeclaration",true,"physicalPossessionStatement","none"));});});dialog.show();}
- private void checklist(Map<String,Object> r,Map<String,Object> consent){LinearLayout form=SocialViews.column(this);String[] keys={"known_needs","transport","supplies","responsibility","questions"};int[] labels={R.string.ad_check_care,R.string.ad_check_transport,R.string.ad_check_supplies,R.string.ad_check_responsibility,R.string.ad_check_questions};Map<String,Object> values=new HashMap<>();for(int i=0;i<keys.length;i++){CheckBox b=new CheckBox(this);b.setText(labels[i]);b.setMinHeight(SocialViews.dp(this,48));String key=keys[i];values.put(key,"needs_discussion");b.setOnCheckedChangeListener((v,on)->values.put(key,on?"yes":"needs_discussion"));form.addView(b);}dialog=new MaterialAlertDialogBuilder(this).setTitle(R.string.ad_checklist).setView(form).setNegativeButton(android.R.string.cancel,null).setPositiveButton(R.string.ad_save,(d,w)->placement(r,"checklist",map("expectedOwnVersion",number(consent.get("consentVersion")),"checklist",map("entries",values,"notes","")))).show();}
- private String error(String code){if(code.contains("applications_not_ready"))return s(R.string.ad_browse_only);if(code.contains("conflict"))return s(R.string.ad_conflict_feedback);if(code.contains("protected_account_ineligible"))return s(R.string.ad_account_ineligible_feedback);if(code.contains("email_required"))return "Vui lòng xác minh email trong Hồ sơ trước khi gửi yêu cầu.";if(code.contains("phone_required"))return "Vui lòng xác minh số điện thoại trong Hồ sơ trước khi gửi yêu cầu.";if(code.contains("display_name_required"))return "Vui lòng thêm tên hiển thị trong Hồ sơ trước khi gửi yêu cầu.";if(code.contains("account_restricted")||code.contains("scoped_restriction"))return "Tài khoản đang bị giới hạn quyền nhận nuôi. Xem thông báo trong Hồ sơ.";if(code.contains("authority_pending"))return s(R.string.ad_authority_pending);if(code.contains("reviewer_required"))return s(R.string.ad_reviewer_required);if(code.contains("publication_not_ready"))return s(R.string.ad_publication_pending);if(code.contains("active_obligation"))return s(R.string.ad_active_obligation);if(code.contains("unknown_outcome")||code.contains("receipt_pending"))return s(R.string.ad_unknown_outcome);if(code.contains("invalid")||code.contains("fields")||code.contains("required"))return s(R.string.ad_invalid);return s(R.string.ad_failed);}
- private void back(){if(!m.busy&&!m.uncertain())m.notice="";if(m.busy||m.uncertain()){m.error="unknown_outcome";m.changed();return;}if("compose".equals(m.page)&&m.step>0){m.step--;m.changed();return;}if("register".equals(m.page)){m.page="compose";m.step=0;m.changed();return;}if("compose".equals(m.page)){confirm(R.string.ad_leave,R.string.ad_unsaved,m::workspace);return;}if("claimReview".equals(m.page)||"listingReview".equals(m.page)){m.page="reviewQueue";m.data=m.reviewQueueData;m.changed();return;}if(m.managementOrigin&&"reservation".equals(m.page)&&m.applicationId!=null){m.load("application","application",map("applicationId",m.applicationId));return;}if(m.managementOrigin&&"application".equals(m.page)){loadManagement(m.managementRole,m.managementPages.getOrDefault(m.managementRole,0));return;}if("application".equals(m.page)&&!m.applicationsData.isEmpty()){m.page="applications";m.data=m.applicationsData;m.changed();return;}if(m.managementOrigin&&"applications".equals(m.page)){finish();return;}if("management".equals(m.page)||"workspace".equals(m.page)||"detail".equals(m.page)){finish();return;}m.workspace();}
- @Override protected void onDestroy(){if(dialog!=null)dialog.dismiss();super.onDestroy();}
+    protected AdoptionFlowModel m;
+    private SpeciesCatalogStore speciesCatalog;
+    private LinearLayout body, footer;
+    private androidx.appcompat.app.AlertDialog dialog;
+
+    protected String entry() {
+        return "workspace";
+    }
+
+    @Override
+    public void onCreate(Bundle state) {
+        super.onCreate(state);
+        if (this instanceof com.gmail.manhle240406.project.listing.ListingActivity) {
+            startActivity(
+                    new android.content.Intent(this, SocialComposerActivity.class)
+                            .putExtra("adoption", true));
+            finish();
+            return;
+        }
+        EdgeToEdge.enable(this);
+        speciesCatalog = ((AniloveApplication) getApplication()).speciesCatalog();
+        m = new ViewModelProvider(this).get(AdoptionFlowModel.class);
+        m.changes.observe(this, x -> render());
+        getOnBackPressedDispatcher()
+                .addCallback(
+                        this,
+                        new OnBackPressedCallback(true) {
+                            public void handleOnBackPressed() {
+                                back();
+                            }
+                        });
+        if (state == null) {
+            String mode = getIntent().getStringExtra("mode");
+            if (mode == null) mode = entry();
+            String id = getIntent().getStringExtra("listing");
+            if ("management".equals(mode) && !getIntent().getBooleanExtra("legacy", false)) {
+                startActivity(new android.content.Intent(this, LifecycleActivity.class));
+                finish();
+                return;
+            }
+            if (("detail".equals(mode) || "apply".equals(mode)) && id != null) {
+                m.listingId = id;
+                m.load(
+                        "detail".equals(mode) ? "detail" : "applicationForm",
+                        "detail".equals(mode) ? "publicDetail" : "offerSource",
+                        map("listingId", id));
+            } else if ("management".equals(mode)) {
+                m.managementOrigin = true;
+                loadManagement("applicant", 0);
+            } else if ("review".equals(mode)) m.load("reviewQueue", "reviewQueue", map());
+            else if ("applications".equals(mode))
+                m.load("applications", "applications", map("role", "applicant"));
+            else if ("hostApplications".equals(mode)) {
+                m.listingId = id;
+                m.load(
+                        "applications",
+                        "applications",
+                        id == null ? map("role", "host") : map("role", "host", "listingId", id));
+            } else if (getIntent().getStringExtra("reservation") != null) {
+                m.reservationId = getIntent().getStringExtra("reservation");
+                reservation();
+            } else if ("ownerOffer".equals(mode) && id != null) m.offer(id);
+            else if ("care".equals(mode) && getIntent().getStringExtra("petId") != null) {
+                m.extras.put("careOnly", true);
+                m.choosePet(getIntent().getStringExtra("petId"));
+            } else m.workspace();
+        }
+    }
+
+    private final Runnable sourceRefresh =
+            () -> {
+                if (m != null && !m.busy && "detail".equals(m.page) && m.listingId != null) {
+                    m.data.clear();
+                    m.load("detail", "publicDetail", map("listingId", m.listingId));
+                }
+            };
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        BrowsePulse.add(sourceRefresh);
+        sourceRefresh.run();
+    }
+
+    @Override
+    protected void onStop() {
+        BrowsePulse.remove(sourceRefresh);
+        if (m != null && "detail".equals(m.page)) m.data.clear();
+        super.onStop();
+    }
+
+    private String s(int id) {
+        return getString(id);
+    }
+
+    private String str(Object v) {
+        return v == null ? "" : String.valueOf(v);
+    }
+
+    private void text(String value, boolean heading) {
+        TextView t = SocialViews.text(this, value, heading);
+        if (heading) androidx.core.view.ViewCompat.setAccessibilityHeading(t, true);
+        body.addView(t);
+        SocialSurface.gap(body, 8);
+    }
+
+    private MaterialButton action(String label, String tag, Runnable run, boolean primary) {
+        MaterialButton b =
+                primary
+                        ? SocialViews.primaryButton(this, label, () -> safe(run))
+                        : SocialSurface.quiet(this, label, () -> safe(run));
+        b.setTag(tag);
+        b.setEnabled(!m.busy && !m.uncertain());
+        if (primary && m.uncertain() && !m.busy) return b;
+        (primary ? footer : body).addView(b, new LinearLayout.LayoutParams(-1, -2));
+        return b;
+    }
+
+    private void safe(Runnable run) {
+        try {
+            run.run();
+        } catch (IllegalArgumentException | java.time.DateTimeException e) {
+            m.error = "invalid_fields";
+            m.changed();
+        }
+    }
+
+    private TextInputEditText field(
+            int hint,
+            String value,
+            int limit,
+            java.util.function.Consumer<String> change,
+            boolean multi) {
+        TextInputLayout box = new TextInputLayout(this);
+        box.setHint(s(hint));
+        TextInputEditText input = new TextInputEditText(box.getContext());
+        input.setTag(getResources().getResourceEntryName(hint));
+        input.setSingleLine(!multi);
+        input.setInputType(
+                android.text.InputType.TYPE_CLASS_TEXT
+                        | (multi
+                                ? android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                                : android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES));
+        input.setMinLines(multi ? 3 : 1);
+        input.setFilters(new InputFilter[] {new InputFilter.LengthFilter(limit)});
+        input.setText(value);
+        input.setSaveEnabled(false);
+        input.setEnabled(!m.busy && !m.uncertain());
+        box.addView(input, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+        lp.topMargin = SocialViews.dp(this, 12);
+        body.addView(box, lp);
+        input.addTextChangedListener(
+                new TextWatcher() {
+                    public void beforeTextChanged(CharSequence s, int a, int c, int f) {}
+
+                    public void onTextChanged(CharSequence v, int a, int b, int c) {
+                        change.accept(v.toString());
+                    }
+
+                    public void afterTextChanged(Editable e) {}
+                });
+        return input;
+    }
+
+    private void choices(
+            int label,
+            String[] labels,
+            String[] values,
+            String selected,
+            java.util.function.Consumer<String> change) {
+        TextView name = SocialSurface.muted(this, s(label));
+        Spinner spinner = new Spinner(this);
+        spinner.setId(View.generateViewId());
+        spinner.setTag(getResources().getResourceEntryName(label));
+        name.setLabelFor(spinner.getId());
+        body.addView(name);
+        spinner.setMinimumHeight(SocialViews.dp(this, 48));
+        spinner.setAdapter(
+                new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, labels));
+        spinner.setSelection(Math.max(0, Arrays.asList(values).indexOf(selected)));
+        spinner.setEnabled(!m.busy && !m.uncertain());
+        body.addView(spinner, new LinearLayout.LayoutParams(-1, -2));
+        spinner.setOnItemSelectedListener(
+                new AdapterView.OnItemSelectedListener() {
+                    public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
+                        change.accept(values[pos]);
+                    }
+
+                    public void onNothingSelected(AdapterView<?> p) {}
+                });
+        SocialSurface.gap(body, 8);
+    }
+
+    private void speciesChoices(Map<String, Object> form) {
+        TextView name = SocialSurface.muted(this, s(R.string.ad_species));
+        Spinner spinner = new Spinner(this);
+        spinner.setId(View.generateViewId());
+        spinner.setTag("ad_species");
+        name.setLabelFor(spinner.getId());
+        body.addView(name);
+        spinner.setMinimumHeight(SocialViews.dp(this, 48));
+        spinner.setEnabled(!m.busy && !m.uncertain());
+        bindSpecies(spinner, form, speciesCatalog.snapshot());
+        body.addView(spinner, new LinearLayout.LayoutParams(-1, -2));
+        SocialSurface.gap(body, 8);
+        speciesCatalog.refresh(
+                false,
+                values -> {
+                    if (!isFinishing() && !isDestroyed() && spinner.getParent() != null)
+                        bindSpecies(spinner, form, values);
+                });
+    }
+
+    private void bindSpecies(
+            Spinner spinner, Map<String, Object> form, List<SpeciesCatalogStore.Entry> entries) {
+        String selected = str(form.get("species"));
+        List<String> ids = new ArrayList<>(), labels = new ArrayList<>();
+        for (SpeciesCatalogStore.Entry entry : entries) {
+            ids.add(entry.id);
+            labels.add(entry.label(this));
+        }
+        if (!ids.contains(selected)) {
+            ids.add(selected);
+            labels.add(speciesCatalog.label(selected));
+        }
+        spinner.setOnItemSelectedListener(null);
+        spinner.setAdapter(
+                new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, labels));
+        spinner.setSelection(Math.max(0, ids.indexOf(selected)));
+        spinner.setOnItemSelectedListener(
+                new AdapterView.OnItemSelectedListener() {
+                    public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
+                        form.put("species", ids.get(pos));
+                    }
+
+                    public void onNothingSelected(AdapterView<?> p) {}
+                });
+    }
+
+    private void confirm(int title, int message, Runnable run) {
+        dialog =
+                new MaterialAlertDialogBuilder(this)
+                        .setTitle(title)
+                        .setMessage(message)
+                        .setNegativeButton(R.string.ad_stay, null)
+                        .setPositiveButton(R.string.ad_continue, (d, w) -> safe(run))
+                        .show();
+    }
+
+    private void render() {
+        if (m.lost) {
+            finish();
+            return;
+        }
+        if ("careSaved".equals(m.page)) {
+            android.widget.Toast.makeText(
+                            this,
+                            R.string.permissions_care_saved,
+                            android.widget.Toast.LENGTH_SHORT)
+                    .show();
+            setResult(RESULT_OK);
+            finish();
+            return;
+        }
+        LinearLayout root = SocialSurface.page(this);
+        SocialViews.privateView(root);
+        SocialSurface.header(
+                this,
+                root,
+                m.managementOrigin
+                        ? ("host".equals(m.managementRole)
+                                ? R.string.oc3_rehoming
+                                : R.string.oc3_adopting)
+                        : Boolean.TRUE.equals(m.extras.get("careOnly"))
+                                ? R.string.permissions_care_title
+                                : R.string.ad_title,
+                this::back);
+        body = SocialSurface.content(this, root);
+        footer = SocialViews.column(this);
+        footer.setPadding(
+                SocialViews.dp(this, 16), 0, SocialViews.dp(this, 16), SocialViews.dp(this, 12));
+        root.addView(footer, new LinearLayout.LayoutParams(-1, -2));
+        if (m.busy) {
+            ProgressBar p = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+            p.setIndeterminate(true);
+            p.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            body.addView(p);
+            text(s(R.string.ad_loading), false);
+        }
+        if (m.uncertain() && !m.busy) {
+            MaterialButton check =
+                    SocialViews.button(this, s(R.string.ad_check_result), m::reconcile);
+            check.setEnabled(!m.busy);
+            footer.addView(check);
+            MaterialButton retry =
+                    SocialSurface.quiet(this, s(R.string.ad_retry_same), m::retrySame);
+            retry.setEnabled(!m.busy);
+            footer.addView(retry);
+        }
+        switch (m.page) {
+            case "management":
+                management();
+                break;
+            case "workspace":
+                workspace();
+                break;
+            case "register":
+                register();
+                break;
+            case "compose":
+                compose();
+                break;
+            case "offerStatus":
+                offerStatus();
+                break;
+            case "reviewQueue":
+                reviewQueue();
+                break;
+            case "claimReview":
+                claimReview();
+                break;
+            case "listingReview":
+                listingReview();
+                break;
+            case "detail":
+                detail();
+                break;
+            case "applicationForm":
+                applicationForm();
+                break;
+            case "applications":
+                applications();
+                break;
+            case "application":
+                application();
+                break;
+            case "reservation":
+                preparation();
+                break;
+        }
+        feedback();
+    }
+
+    private void selfReviewNotice() {
+        if (m.workspaceData.get("reviewer") instanceof List
+                && !((List<?>) m.workspaceData.get("reviewer")).isEmpty())
+            text(
+                    s(
+                            Boolean.TRUE.equals(m.workspaceData.get("selfReviewAllowed"))
+                                    ? R.string.ad_demo_self_available
+                                    : R.string.ad_claim_self_review),
+                    false);
+    }
+
+    private void feedback() {
+        String message = m.error.isEmpty() ? "" : error(m.error);
+        int notice =
+                "claim_submitted".equals(m.notice)
+                        ? (Boolean.TRUE.equals(m.workspaceData.get("selfReviewAllowed"))
+                                ? R.string.ad_claim_sent_self_feedback
+                                : R.string.ad_claim_sent_feedback)
+                        : "listing_submitted".equals(m.notice)
+                                ? R.string.ad_listing_sent_feedback
+                                : "saved_not_sent".equals(m.notice)
+                                        ? R.string.ad_saved_not_sent
+                                        : 0;
+        if (notice != 0) message += (message.isEmpty() ? "" : "\n") + s(notice);
+        if (message.isEmpty() && m.busy && m.uncertain())
+            message = s(R.string.ad_submit_in_progress);
+        if (message.isEmpty()) return;
+        TextView v = SocialSurface.muted(this, message);
+        v.setTag("adoption_feedback");
+        v.setAccessibilityLiveRegion(
+                m.error.isEmpty()
+                        ? View.ACCESSIBILITY_LIVE_REGION_POLITE
+                        : View.ACCESSIBILITY_LIVE_REGION_ASSERTIVE);
+        if (!m.error.isEmpty())
+            v.setTextColor(
+                    com.google.android.material.color.MaterialColors.getColor(
+                            v, androidx.appcompat.R.attr.colorError));
+        v.setPadding(0, SocialViews.dp(this, 8), 0, SocialViews.dp(this, 8));
+        footer.addView(v, 0, new LinearLayout.LayoutParams(-1, -2));
+    }
+
+    private void workspace() {
+        text(s(R.string.ad_owner_title), true);
+        text(s(R.string.ad_owner_intro), false);
+        action(
+                s(R.string.ad_new),
+                "adoption_new",
+                () -> {
+                    if (Boolean.TRUE.equals(m.workspaceData.get("simplified"))) {
+                        startActivity(
+                                new android.content.Intent(this, SocialComposerActivity.class)
+                                        .putExtra("adoption", true));
+                        return;
+                    }
+                    m.notice = "";
+                    m.error = "";
+                    m.fields =
+                            map(
+                                    "title",
+                                    "",
+                                    "description",
+                                    "",
+                                    "regionCode",
+                                    null,
+                                    "offerType",
+                                    "adoption",
+                                    "mediaRefs",
+                                    new ArrayList<>());
+                    m.listingId = null;
+                    m.contentVersion = 0;
+                    m.controlVersion = 0;
+                    m.draftId = UUID.randomUUID().toString();
+                    m.draftVersion = 0;
+                    m.step = 0;
+                    m.page = "compose";
+                    m.changed();
+                },
+                true);
+        for (Map<String, Object> offer : rows(m.data.get("offers"))) {
+            text(
+                    str(object(object(offer.get("revision")).get("editableFields")).get("title")),
+                    true);
+            text(
+                    status(offer, object(offer.get("review")), object(offer.get("publication"))),
+                    false);
+            String id = str(offer.get("listingId"));
+            action(s(R.string.ad_open), "adoption_offer_" + id, () -> m.offer(id), false);
+        }
+        for (Map<String, Object> draft : rows(m.data.get("drafts"))) {
+            text(str(object(draft.get("editableFields")).get("title")), true);
+            text(s(R.string.ad_draft), false);
+            action(
+                    s(R.string.ad_resume),
+                    "adoption_draft",
+                    () -> {
+                        if (Boolean.TRUE.equals(m.workspaceData.get("simplified"))) {
+                            startActivity(
+                                    new android.content.Intent(this, SocialComposerActivity.class)
+                                            .putExtra("adoption", true)
+                                            .putExtra(
+                                                    "initial_body",
+                                                    str(
+                                                            object(draft.get("editableFields"))
+                                                                    .get("description"))));
+                            return;
+                        }
+                        m.fields = new HashMap<>(object(draft.get("editableFields")));
+                        m.draftId = str(draft.get("documentId"));
+                        m.draftVersion = number(draft.get("draftVersion"));
+                        m.listingId = null;
+                        m.contentVersion = 0;
+                        m.controlVersion = 0;
+                        m.step = 0;
+                        m.page = "compose";
+                        m.changed();
+                    },
+                    false);
+        }
+        if (m.data.get("nextOffers") != null || m.data.get("nextPets") != null)
+            action(
+                    s(R.string.ad_next),
+                    "adoption_next_workspace",
+                    () ->
+                            m.load(
+                                    "workspace",
+                                    "workspace",
+                                    map(
+                                            "petsAfter",
+                                            m.data.get("nextPets"),
+                                            "offersAfter",
+                                            m.data.get("nextOffers"))),
+                    false);
+        if (rows(m.data.get("offers")).isEmpty() && rows(m.data.get("drafts")).isEmpty())
+            text(s(R.string.ad_no_offers), false);
+        action(
+                s(R.string.ad_my_applications),
+                "adoption_my_applications",
+                () -> m.load("applications", "applications", map("role", "applicant")),
+                false);
+        if (m.data.get("reviewer") instanceof List && !((List<?>) m.data.get("reviewer")).isEmpty())
+            action(
+                    s(R.string.ad_review),
+                    "adoption_review",
+                    () -> m.load("reviewQueue", "reviewQueue", map()),
+                    false);
+        action(s(R.string.ad_refresh), "adoption_refresh", () -> m.workspace(true), false);
+    }
+
+    private void compose() {
+        if (!Boolean.TRUE.equals(m.extras.get("careOnly"))
+                && !Boolean.TRUE.equals(m.extras.get("courseComposer")))
+            text(getString(R.string.ad_step, m.step + 1, 4), false);
+        if (m.step == 0) {
+            text(s(R.string.ad_choose_pet), true);
+            for (Map<String, Object> p : rows(m.workspaceData.get("pets"))) {
+                String id = str(p.get("petId"));
+                action(
+                        str(object(p.get("identity")).get("displayName")),
+                        "adoption_pet_" + id,
+                        () -> m.choosePet(id),
+                        false);
+            }
+            action(
+                    s(R.string.ad_add_pet),
+                    "adoption_add_pet",
+                    () -> {
+                        m.page = "register";
+                        m.extras.put(
+                                "registration",
+                                map(
+                                        "name",
+                                        "",
+                                        "species",
+                                        "cat",
+                                        "basis",
+                                        "claimed_owner",
+                                        "explanation",
+                                        ""));
+                        m.changed();
+                    },
+                    true);
+            return;
+        }
+        if (m.step == 1) {
+            care();
+            return;
+        }
+        if (m.step == 2) {
+            text(s(R.string.ad_offer_details), true);
+            if (Boolean.TRUE.equals(m.extras.get("courseComposer"))) {
+                field(
+                        R.string.lc_temperament,
+                        str(m.extras.get("courseTemperament")),
+                        2000,
+                        v -> m.extras.put("courseTemperament", v.trim()),
+                        true);
+                field(
+                        R.string.lc_care,
+                        str(m.extras.get("courseCare")),
+                        2000,
+                        v -> m.extras.put("courseCare", v.trim()),
+                        true);
+                field(
+                        R.string.lc_requirements,
+                        str(m.extras.get("courseRequirements")),
+                        2000,
+                        v -> m.extras.put("courseRequirements", v.trim()),
+                        true);
+            }
+            field(
+                    R.string.ad_offer_title,
+                    str(m.fields.get("title")),
+                    80,
+                    v -> m.fields.put("title", v.trim()),
+                    false);
+            field(
+                    R.string.ad_description,
+                    str(m.fields.get("description")),
+                    2000,
+                    v -> m.fields.put("description", v.trim()),
+                    true);
+            choices(
+                    R.string.ad_region,
+                    getResources().getStringArray(R.array.ad_regions),
+                    new String[] {"", "north", "central", "south"},
+                    str(m.fields.get("regionCode")),
+                    v -> m.fields.put("regionCode", v.isEmpty() ? null : v));
+            action(
+                    s(R.string.ad_preview),
+                    "adoption_preview",
+                    () -> {
+                        if (str(m.fields.get("title")).length() < 5)
+                            throw new IllegalArgumentException();
+                        m.step = 3;
+                        m.changed();
+                    },
+                    true);
+            action(
+                    s(R.string.ad_save_draft),
+                    "adoption_save_draft",
+                    () ->
+                            m.write(
+                                    "saveDraft",
+                                    map(
+                                            "draftId",
+                                            m.draftId,
+                                            "expectedVersion",
+                                            m.draftVersion,
+                                            "petId",
+                                            m.petId,
+                                            "fields",
+                                            m.fields),
+                                    m::workspace),
+                    false);
+            return;
+        }
+        if (Boolean.TRUE.equals(m.extras.get("courseComposer"))) {
+            text(str(m.fields.get("title")), true);
+            text(str(m.fields.get("description")), false);
+            text(s(R.string.permissions_self_declared), false);
+            action(
+                    s(R.string.permissions_publish),
+                    "adoption_submit",
+                    () -> {
+                        for (String key :
+                                new String[] {
+                                    "courseTemperament", "courseCare", "courseRequirements"
+                                })
+                            if (str(m.extras.get(key)).isEmpty())
+                                throw new IllegalArgumentException();
+                        Map<String, Object> p = object(m.extras.get("courseParticipation"));
+                        if (Boolean.TRUE.equals(p.get("terms"))) m.submitOffer();
+                        else
+                            dialog =
+                                    new MaterialAlertDialogBuilder(this)
+                                            .setTitle(R.string.lc_terms)
+                                            .setMessage(str(p.get("termsText")))
+                                            .setPositiveButton(
+                                                    R.string.permissions_agree_continue,
+                                                    (d, w) -> {
+                                                        m.extras.put(
+                                                                "participationConsent",
+                                                                map(
+                                                                        "termsVersion",
+                                                                        p.get("termsVersion"),
+                                                                        "termsHash",
+                                                                        p.get("termsHash")));
+                                                        m.submitOffer();
+                                                    })
+                                            .setNegativeButton(android.R.string.cancel, null)
+                                            .show();
+                    },
+                    true);
+            return;
+        }
+        text(s(R.string.ad_preview), true);
+        text(str(object(m.pet.get("identity")).get("displayName")), true);
+        text(str(m.fields.get("title")), true);
+        text(str(m.fields.get("description")), false);
+        careSummary(m.care);
+        text(s(R.string.ad_private_excluded), false);
+        text(s(R.string.ad_review_explain), false);
+        if (!"accepted_for_demo".equals(object(m.pet.get("claim")).get("reviewState"))
+                || m.error.contains("authority_pending")) {
+            text(s(R.string.ad_claim_waiting), false);
+            selfReviewNotice();
+            action(s(R.string.ad_check_claim), "adoption_check_claim", m::refreshClaim, true);
+            action(
+                    s(R.string.ad_save_draft),
+                    "adoption_save_draft",
+                    () ->
+                            m.write(
+                                    "saveDraft",
+                                    map(
+                                            "draftId",
+                                            m.draftId,
+                                            "expectedVersion",
+                                            m.draftVersion,
+                                            "petId",
+                                            m.petId,
+                                            "fields",
+                                            m.fields),
+                                    m::workspace),
+                    false);
+        } else action(s(R.string.ad_submit), "adoption_submit", m::submitOffer, true);
+    }
+
+    private void care() {
+        text(s(R.string.ad_care), true);
+        text(s(R.string.ad_owner_report), false);
+        choices(
+                R.string.ad_health,
+                getResources().getStringArray(R.array.ad_health_states),
+                new String[] {"unknown", "no_concerns_reported", "concerns_reported"},
+                str(m.care.get("healthState")),
+                v -> m.care.put("healthState", v));
+        choices(
+                R.string.ad_sterilization,
+                getResources().getStringArray(R.array.ad_tri_states),
+                new String[] {"unknown", "yes", "no"},
+                str(m.care.get("sterilization")),
+                v -> m.care.put("sterilization", v));
+        field(
+                R.string.ad_color,
+                str(m.care.get("color")),
+                120,
+                v -> m.care.put("color", v.trim()),
+                false);
+        field(
+                R.string.ad_behavior,
+                str(m.care.get("behaviorNotes")),
+                1000,
+                v -> m.care.put("behaviorNotes", v.trim()),
+                true);
+        field(
+                R.string.ad_needs,
+                str(m.care.get("careNeeds")),
+                1000,
+                v -> m.care.put("careNeeds", v.trim()),
+                true);
+        List<Map<String, Object>> vaccines = new ArrayList<>(rows(m.care.get("vaccinations")));
+        m.care.put("vaccinations", vaccines);
+        for (Map<String, Object> v : vaccines) {
+            text(
+                    str(v.get("typeLabel"))
+                            + " · "
+                            + (v.get("reportedDate") == null
+                                    ? s(R.string.ad_unknown)
+                                    : str(v.get("reportedDate"))),
+                    false);
+            action(
+                    s(R.string.ad_remove_record),
+                    "adoption_remove_vaccine",
+                    () -> {
+                        vaccines.remove(v);
+                        m.changed();
+                    },
+                    false);
+        }
+        if (vaccines.size() < 20)
+            action(s(R.string.ad_add_vaccine), "adoption_add_vaccine", this::vaccination, false);
+        text(s(R.string.ad_private_notes), true);
+        field(R.string.ad_medication, m.medication, 1000, v -> m.medication = v.trim(), true);
+        Map<String, Object> claim = object(m.pet.get("claim"));
+        if (!Boolean.TRUE.equals(m.extras.get("careOnly"))
+                && !Arrays.asList("accepted_for_demo", "self_declared_for_demo")
+                        .contains(claim.get("reviewState"))) {
+            text(
+                    s(
+                            "submitted".equals(claim.get("reviewState"))
+                                    ? R.string.ad_claim_waiting
+                                    : R.string.ad_authority_pending),
+                    false);
+            selfReviewNotice();
+            if (!"submitted".equals(claim.get("reviewState")))
+                action(s(R.string.ad_submit_claim), "adoption_submit_claim", m::submitClaim, false);
+            else action(s(R.string.ad_check_claim), "adoption_check_claim", m::refreshClaim, false);
+        }
+        action(
+                s(
+                        Boolean.TRUE.equals(m.extras.get("careOnly"))
+                                ? R.string.permissions_save_care
+                                : R.string.ad_save_continue),
+                "adoption_save_care",
+                m::saveCare,
+                true);
+    }
+
+    private void vaccination() {
+        LinearLayout form = SocialViews.column(this);
+        TextInputLayout type = new TextInputLayout(this);
+        type.setHint(s(R.string.ad_vaccine_type));
+        TextInputEditText name = new TextInputEditText(type.getContext());
+        name.setFilters(new InputFilter[] {new InputFilter.LengthFilter(80)});
+        type.addView(name);
+        form.addView(type);
+        Spinner precision = new Spinner(this);
+        precision.setAdapter(
+                new ArrayAdapter<>(
+                        this,
+                        android.R.layout.simple_spinner_dropdown_item,
+                        getResources().getStringArray(R.array.ad_precisions)));
+        form.addView(precision);
+        TextInputLayout dl = new TextInputLayout(this);
+        dl.setHint(s(R.string.ad_vaccine_date));
+        TextInputEditText date = new TextInputEditText(dl.getContext());
+        date.setFilters(new InputFilter[] {new InputFilter.LengthFilter(10)});
+        dl.addView(date);
+        form.addView(dl);
+        dialog =
+                new MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.ad_add_vaccine)
+                        .setView(form)
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .setPositiveButton(R.string.ad_add, null)
+                        .create();
+        dialog.setOnShowListener(
+                x ->
+                        dialog.getButton(-1)
+                                .setOnClickListener(
+                                        v -> {
+                                            String label = str(name.getText()).trim(),
+                                                    d = str(date.getText()).trim();
+                                            Map<String, Object> record =
+                                                    map(
+                                                            "entryId",
+                                                            UUID.randomUUID().toString(),
+                                                            "typeLabel",
+                                                            label,
+                                                            "reportedDate",
+                                                            precision.getSelectedItemPosition() == 0
+                                                                    ? null
+                                                                    : d,
+                                                            "datePrecision",
+                                                            new String[] {
+                                                                        "unknown", "year", "month",
+                                                                        "exact"
+                                                                    }
+                                                                    [
+                                                                    precision
+                                                                            .getSelectedItemPosition()],
+                                                            "provenance",
+                                                            "owner_report");
+                                            List<Map<String, Object>> records =
+                                                    new ArrayList<>(
+                                                            rows(m.care.get("vaccinations")));
+                                            records.add(record);
+                                            Map<String, Object> candidate = new HashMap<>(m.care);
+                                            candidate.put("vaccinations", records);
+                                            try {
+                                                PetCareContract.validate(
+                                                        candidate,
+                                                        m.medication,
+                                                        java.time.LocalDate.now(
+                                                                java.time.ZoneOffset.UTC));
+                                                m.care = candidate;
+                                                dialog.dismiss();
+                                                m.changed();
+                                            } catch (IllegalArgumentException bad) {
+                                                type.setError(
+                                                        label.isEmpty()
+                                                                ? s(R.string.ad_required)
+                                                                : null);
+                                                dl.setError(s(R.string.ad_invalid_date));
+                                            }
+                                        }));
+        dialog.show();
+    }
+
+    private void register() {
+        Map<String, Object> f = object(m.extras.get("registration"));
+        text(s(R.string.ad_add_pet), true);
+        field(R.string.ad_pet_name, str(f.get("name")), 80, v -> f.put("name", v.trim()), false);
+        speciesChoices(f);
+        choices(
+                R.string.ad_claim_basis,
+                getResources().getStringArray(R.array.ad_bases),
+                new String[] {"claimed_owner", "authorized_caregiver", "other_permission"},
+                str(f.get("basis")),
+                v -> f.put("basis", v));
+        CheckBox declared = new CheckBox(this);
+        declared.setText(R.string.ad_reported_care);
+        declared.setMinHeight(SocialViews.dp(this, 48));
+        declared.setChecked(Boolean.TRUE.equals(f.get("reportedCare")));
+        declared.setOnCheckedChangeListener((v, on) -> f.put("reportedCare", on));
+        body.addView(declared);
+        field(
+                R.string.ad_claim_explanation,
+                str(f.get("explanation")),
+                1000,
+                v -> f.put("explanation", v.trim()),
+                true);
+        text(s(R.string.ad_claim_notice), false);
+        action(
+                s(R.string.ad_save_pet),
+                "adoption_register_pet",
+                () -> {
+                    if (str(f.get("name")).isEmpty()) throw new IllegalArgumentException();
+                    String id = UUID.randomUUID().toString(),
+                            species = str(f.get("species")),
+                            illustration =
+                                    ("cat".equals(species) || "dog".equals(species))
+                                            ? species
+                                            : "default";
+                    Map<String, Object> identity =
+                            map(
+                                    "displayName",
+                                    f.get("name"),
+                                    "species",
+                                    species,
+                                    "breed",
+                                    "",
+                                    "sex",
+                                    "unknown",
+                                    "ageMonths",
+                                    null,
+                                    "ageObservedAt",
+                                    null,
+                                    "marks",
+                                    "",
+                                    "marksUnknown",
+                                    true,
+                                    "illustrationKey",
+                                    illustration);
+                    m.write(
+                            "register",
+                            map(
+                                    "petId",
+                                    id,
+                                    "identity",
+                                    identity,
+                                    "claim",
+                                    map(
+                                            "basis",
+                                            f.get("basis"),
+                                            "reportedCare",
+                                            Boolean.TRUE.equals(f.get("reportedCare")),
+                                            "explanation",
+                                            f.get("explanation"))),
+                            () -> m.choosePet(id));
+                },
+                true);
+    }
+
+    private String status(Map<String, Object> l, Map<String, Object> q, Map<String, Object> p) {
+        if ("closed".equals(l.get("lifecycle"))) return s(R.string.ad_closed);
+        if ("shown".equals(l.get("visibility"))) return s(R.string.ad_visible);
+        if ("queued".equals(q.get("state")) || "assigned".equals(q.get("state")))
+            return s(R.string.ad_pending);
+        if (number(p.get("approvedContentVersion")) == number(l.get("contentVersion"))
+                && number(l.get("contentVersion")) > 0)
+            return s(
+                    "course_self_declared".equals(p.get("reviewMode"))
+                            ? R.string.permissions_self_declared
+                            : R.string.ad_approved);
+        if ("needs_changes".equals(p.get("blockedReasonCode"))) return s(R.string.ad_needs_changes);
+        return s(R.string.ad_draft);
+    }
+
+    private void offerStatus() {
+        action(
+                s(R.string.lc_prepare_listing),
+                "lifecycle_requirements",
+                () -> LifecycleActivity.open(this, m.listingId),
+                false);
+        Map<String, Object> l = object(m.data.get("listing")),
+                r = object(m.data.get("revision")),
+                q = object(m.data.get("review")),
+                p = object(m.data.get("publication"));
+        if (l.isEmpty()) return;
+        if (Boolean.TRUE.equals(m.data.get("simplified")))
+            action(
+                    s(R.string.permissions_update_offer),
+                    "adoption_update_course",
+                    () -> {
+                        m.extras.put("courseComposer", true);
+                        m.extras.put("courseParticipation", m.data.get("participation"));
+                        Map<String, Object> req =
+                                object(object(m.data.get("requirements")).get("fields"));
+                        m.extras.put("courseTemperament", str(req.get("temperament")));
+                        m.extras.put("courseCare", str(req.get("careRequirements")));
+                        m.extras.put("courseRequirements", str(req.get("adoptionRequirements")));
+                        m.fields = new HashMap<>(object(r.get("editableFields")));
+                        m.petId = str(l.get("petId"));
+                        m.listingId = str(l.get("listingId"));
+                        m.contentVersion = number(l.get("contentVersion"));
+                        m.controlVersion = number(l.get("controlVersion"));
+                        m.step = 2;
+                        m.page = "compose";
+                        m.changed();
+                    },
+                    false);
+        text(str(object(r.get("editableFields")).get("title")), true);
+        text(status(l, q, p), true);
+        if (m.data.get("decision") != null)
+            text(str(object(m.data.get("decision")).get("reason")), false);
+        String id = str(l.get("listingId"));
+        if (Arrays.asList("pet_reviewed_owner_publication", "course_self_declared")
+                .contains(p.get("reviewMode"))) {
+            action(
+                    s(R.string.feedback_received_requests),
+                    "adoption_applicants",
+                    () ->
+                            m.load(
+                                    "applications",
+                                    "applications",
+                                    map("role", "host", "listingId", id)),
+                    true);
+            if ("shown".equals(l.get("visibility")))
+                action(
+                        s(R.string.ad_hide),
+                        "adoption_hide",
+                        () ->
+                                m.write(
+                                        "hide",
+                                        map(
+                                                "listingId",
+                                                id,
+                                                "expectedControlVersion",
+                                                l.get("controlVersion")),
+                                        () -> m.offer(id)),
+                        false);
+            else if (number(p.get("approvedContentVersion")) == number(l.get("contentVersion"))
+                    && !"closed".equals(l.get("lifecycle")))
+                action(
+                        s(R.string.ad_show),
+                        "adoption_show",
+                        () ->
+                                m.write(
+                                        "show",
+                                        map(
+                                                "listingId",
+                                                id,
+                                                "expectedControlVersion",
+                                                l.get("controlVersion")),
+                                        () -> m.offer(id)),
+                        false);
+            if (!"closed".equals(l.get("lifecycle")))
+                action(
+                        s(R.string.ad_close),
+                        "adoption_close",
+                        () ->
+                                confirm(
+                                        R.string.ad_close,
+                                        R.string.ad_close_notice,
+                                        () ->
+                                                m.write(
+                                                        "close",
+                                                        map(
+                                                                "listingId",
+                                                                id,
+                                                                "expectedControlVersion",
+                                                                l.get("controlVersion")),
+                                                        () -> m.offer(id))),
+                        false);
+            return;
+        }
+        if (number(p.get("approvedContentVersion")) == number(l.get("contentVersion"))
+                && !"shown".equals(l.get("visibility")))
+            action(
+                    s(R.string.ad_show),
+                    "adoption_show",
+                    () ->
+                            m.write(
+                                    "show",
+                                    map(
+                                            "listingId",
+                                            id,
+                                            "expectedControlVersion",
+                                            l.get("controlVersion")),
+                                    () -> m.offer(id)),
+                    true);
+        else if (q.isEmpty() && number(l.get("schemaVersion")) == 2)
+            action(
+                    s(R.string.ad_submit),
+                    "adoption_submit_existing",
+                    () ->
+                            m.write(
+                                    "submitReview",
+                                    map(
+                                            "listingId",
+                                            id,
+                                            "contentVersion",
+                                            l.get("contentVersion"),
+                                            "requestVersion",
+                                            0),
+                                    () -> {
+                                        m.notice = "listing_submitted";
+                                        m.offer(id);
+                                    }),
+                    true);
+        if ("shown".equals(l.get("visibility")))
+            action(
+                    s(R.string.ad_applicants),
+                    "adoption_applicants",
+                    () ->
+                            m.load(
+                                    "applications",
+                                    "applications",
+                                    map("role", "host", "listingId", id)),
+                    true);
+        if (!"closed".equals(l.get("lifecycle")))
+            action(
+                    s(R.string.ad_edit),
+                    "adoption_edit",
+                    () -> {
+                        m.listingId = id;
+                        m.contentVersion = number(l.get("contentVersion"));
+                        m.controlVersion = number(l.get("controlVersion"));
+                        m.fields = new HashMap<>(object(r.get("editableFields")));
+                        m.choosePet(str(l.get("petId")));
+                    },
+                    false);
+        if ("shown".equals(l.get("visibility")))
+            action(
+                    s(R.string.ad_hide),
+                    "adoption_hide",
+                    () ->
+                            m.write(
+                                    "hide",
+                                    map(
+                                            "listingId",
+                                            id,
+                                            "expectedControlVersion",
+                                            l.get("controlVersion")),
+                                    () -> m.offer(id)),
+                    false);
+        if (!"closed".equals(l.get("lifecycle")))
+            action(
+                    s(R.string.ad_close),
+                    "adoption_close",
+                    () ->
+                            confirm(
+                                    R.string.ad_close,
+                                    R.string.ad_close_notice,
+                                    () ->
+                                            m.write(
+                                                    "close",
+                                                    map(
+                                                            "listingId",
+                                                            id,
+                                                            "expectedControlVersion",
+                                                            l.get("controlVersion")),
+                                                    () -> m.offer(id))),
+                    false);
+        action(s(R.string.ad_refresh), "adoption_refresh_status", () -> m.offer(id), false);
+    }
+
+    private void reviewQueue() {
+        text(s(R.string.ad_review), true);
+        text(
+                s(
+                        Boolean.TRUE.equals(m.data.get("selfReviewAllowed"))
+                                ? R.string.ad_demo_queue_note
+                                : R.string.ad_queue_self_note),
+                false);
+        for (Map<String, Object> q : rows(m.data.get("claims"))) {
+            String id = str(q.get("petId")), owner = str(q.get("claimantUid"));
+            action(
+                    s(R.string.ad_claim_to_review)
+                            + " - "
+                            + str(q.get("displayName"))
+                            + (m.ticket.uid.equals(q.get("claimantUid"))
+                                    ? " - " + s(R.string.ad_demo_own_record)
+                                    : ""),
+                    "adoption_review_claim_" + id,
+                    () ->
+                            m.load(
+                                    "claimReview",
+                                    "claimCandidate",
+                                    map("petId", id, "ownerUid", owner)),
+                    false);
+        }
+        for (Map<String, Object> q : rows(m.data.get("offers"))) {
+            String id = str(q.get("listingId"));
+            action(
+                    s(R.string.ad_offer_to_review)
+                            + " - "
+                            + str(q.get("title"))
+                            + (m.ticket.uid.equals(q.get("ownerUid"))
+                                    ? " - " + s(R.string.ad_demo_own_record)
+                                    : ""),
+                    "adoption_review_offer_" + id,
+                    () -> {
+                        m.listingId = id;
+                        m.load("listingReview", "candidate", map("listingId", id));
+                    },
+                    false);
+        }
+        if (rows(m.data.get("claims")).isEmpty() && rows(m.data.get("offers")).isEmpty())
+            text(s(R.string.ad_queue_empty), false);
+        if (m.data.get("nextClaims") != null || m.data.get("nextOffers") != null)
+            action(
+                    s(R.string.ad_next),
+                    "adoption_next_review",
+                    () ->
+                            m.load(
+                                    "reviewQueue",
+                                    "reviewQueue",
+                                    map(
+                                            "claimsAfter",
+                                            m.data.get("nextClaims"),
+                                            "offersAfter",
+                                            m.data.get("nextOffers"))),
+                    false);
+        action(
+                s(R.string.ad_refresh),
+                "adoption_review_refresh",
+                () -> m.load("reviewQueue", "reviewQueue", map()),
+                true);
+    }
+
+    private void claimReview() {
+        Map<String, Object> p = object(m.data.get("pet")), q = object(m.data.get("claim"));
+        if (q.isEmpty()) return;
+        com.gmail.manhle240406.project.media.MediaGrid photos =
+                new com.gmail.manhle240406.project.media.MediaGrid(this);
+        photos.bind(m.data.get("photoAssetIds"));
+        body.addView(photos);
+        text(str(object(m.data.get("identity")).get("displayName")), true);
+        text(
+                getResources()
+                        .getStringArray(R.array.ad_bases)[
+                        "authorized_caregiver".equals(q.get("basis"))
+                                ? 1
+                                : "other_permission".equals(q.get("basis")) ? 2 : 0],
+                false);
+        text(
+                s(R.string.ad_reported_care)
+                        + ": "
+                        + s(
+                                Boolean.TRUE.equals(q.get("reportedCare"))
+                                        ? R.string.ad_yes
+                                        : R.string.ad_no),
+                false);
+        text(s(R.string.ad_claim_explanation), true);
+        text(str(q.get("explanation")), false);
+        reviewReason(
+                decision ->
+                        m.write(
+                                "claimDecision",
+                                map(
+                                        "petId",
+                                        p.get("petId"),
+                                        "ownerUid",
+                                        q.get("claimantUid"),
+                                        "expectedClaimVersion",
+                                        q.get("claimVersion"),
+                                        "expectedIdentityVersion",
+                                        p.get("identityVersion"),
+                                        "decision",
+                                        decision,
+                                        "reason",
+                                        m.extras.get("reviewReason")),
+                                () -> m.load("reviewQueue", "reviewQueue", map())));
+    }
+
+    private void listingReview() {
+        Map<String, Object> l = object(m.data.get("listing")),
+                r = object(m.data.get("revision")),
+                q = object(m.data.get("review"));
+        if (q.isEmpty()) return;
+        text(str(object(r.get("identitySnapshot")).get("displayName")), true);
+        text(str(object(r.get("editableFields")).get("title")), true);
+        text(str(object(r.get("editableFields")).get("description")), false);
+        careSummary(object(r.get("careSnapshot")));
+        if ("queued".equals(q.get("state"))) {
+            action(
+                    s(R.string.ad_start_review),
+                    "adoption_assign",
+                    () ->
+                            m.write(
+                                    "assignReview",
+                                    map(
+                                            "listingId",
+                                            l.get("listingId"),
+                                            "contentVersion",
+                                            l.get("contentVersion"),
+                                            "requestVersion",
+                                            q.get("requestVersion")),
+                                    () ->
+                                            m.load(
+                                                    "listingReview",
+                                                    "candidate",
+                                                    map("listingId", l.get("listingId")))),
+                    true);
+            return;
+        }
+        reviewReason(
+                decision ->
+                        m.write(
+                                "decideReview",
+                                map(
+                                        "listingId",
+                                        l.get("listingId"),
+                                        "contentVersion",
+                                        l.get("contentVersion"),
+                                        "requestVersion",
+                                        q.get("requestVersion"),
+                                        "decision",
+                                        decision,
+                                        "reason",
+                                        m.extras.get("reviewReason")),
+                                () -> m.load("reviewQueue", "reviewQueue", map())));
+    }
+
+    private void reviewReason(java.util.function.Consumer<String> done) {
+        if ("demo_self_review".equals(m.data.get("reviewMode")))
+            text(s(R.string.ad_demo_own_record), true);
+        field(
+                R.string.ad_review_reason,
+                str(m.extras.get("reviewReason")),
+                1000,
+                v -> m.extras.put("reviewReason", v.trim()),
+                true);
+        action(
+                s(R.string.ad_approve),
+                "adoption_approve",
+                () -> {
+                    if (str(m.extras.get("reviewReason")).isEmpty())
+                        throw new IllegalArgumentException();
+                    reviewDecision("approve", done);
+                },
+                true);
+        action(
+                s(R.string.ad_reject),
+                "adoption_reject",
+                () -> {
+                    if (str(m.extras.get("reviewReason")).isEmpty())
+                        throw new IllegalArgumentException();
+                    reviewDecision("reject", done);
+                },
+                false);
+    }
+
+    private void reviewDecision(String decision, java.util.function.Consumer<String> done) {
+        if (!"demo_self_review".equals(m.data.get("reviewMode"))) {
+            done.accept(decision);
+            return;
+        }
+        dialog =
+                new MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.ad_demo_review_title)
+                        .setMessage(R.string.ad_demo_review_confirmation)
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .setPositiveButton(
+                                "approve".equals(decision)
+                                        ? R.string.ad_confirm_demo_approve
+                                        : R.string.ad_confirm_demo_reject,
+                                (d, w) -> safe(() -> done.accept(decision)))
+                        .show();
+    }
+
+    private void careSummary(Map<String, Object> c) {
+        text(s(R.string.ad_care), true);
+        String state = str(c.get("healthState"));
+        text(
+                s(
+                        state.equals("concerns_reported")
+                                ? R.string.ad_health_concerns
+                                : state.equals("no_concerns_reported")
+                                        ? R.string.ad_health_reported
+                                        : R.string.ad_unknown),
+                false);
+        text(s(R.string.ad_owner_report), false);
+        text(
+                s(R.string.ad_sterilization)
+                        + ": "
+                        + s(
+                                "yes".equals(c.get("sterilization"))
+                                        ? R.string.ad_yes
+                                        : "no".equals(c.get("sterilization"))
+                                                ? R.string.ad_no
+                                                : R.string.ad_unknown),
+                false);
+        if (!str(c.get("color")).isEmpty()) text(str(c.get("color")), false);
+        for (Map<String, Object> vaccine : rows(c.get("vaccinations")))
+            text(
+                    str(vaccine.get("typeLabel"))
+                            + " ? "
+                            + (vaccine.get("reportedDate") == null
+                                    ? s(R.string.ad_unknown)
+                                    : str(vaccine.get("reportedDate"))),
+                    false);
+        if (!str(c.get("behaviorNotes")).isEmpty()) text(str(c.get("behaviorNotes")), false);
+        if (!str(c.get("careNeeds")).isEmpty()) text(str(c.get("careNeeds")), false);
+    }
+
+    private void detail() {
+        action(
+                s(R.string.lc_start),
+                "lifecycle_listing",
+                () -> LifecycleActivity.open(this, m.listingId, true),
+                true);
+        if (Boolean.FALSE.equals(m.data.get("applicationsEnabled")))
+            text(s(R.string.ad_browse_only), false);
+        Map<String, Object> d = object(m.data.get("detail"));
+        if (d.isEmpty()) return;
+        com.gmail.manhle240406.project.media.MediaGrid petPhotos =
+                new com.gmail.manhle240406.project.media.MediaGrid(this);
+        petPhotos.bind(m.data.get("photoAssetIds"));
+        body.addView(petPhotos);
+        Map<String, Object> identity = object(d.get("identitySnapshot"));
+        text(str(identity.get("displayName")), true);
+        text(str(d.get("title")), true);
+        text(str(d.get("description")), false);
+        petDetail(R.string.contract_label_8, identity.get("species"));
+        petDetail(R.string.contract_label_9, identity.get("breed"));
+        petDetail(R.string.contract_label_10, identity.get("sex"));
+        petDetail(R.string.contract_label_11, identity.get("ageMonths"));
+        petDetail(R.string.contract_label_13, identity.get("marks"));
+        if ("demo_self_review".equals(m.data.get("reviewMode")))
+            text(s(R.string.ad_demo_reader_notice), false);
+        if ("course_self_declared".equals(m.data.get("reviewMode")))
+            text(s(R.string.permissions_self_declared), false);
+        careSummary(object(d.get("careSnapshot")));
+        text(
+                s(
+                        "reserved".equals(d.get("availability"))
+                                ? R.string.ad_reserved
+                                : R.string.ad_available),
+                false);
+        if (Boolean.TRUE.equals(m.data.get("isOwner")))
+            action(s(R.string.ad_manage), "adoption_manage", () -> m.offer(m.listingId), true);
+        else if ("available".equals(d.get("availability")))
+            if (!Boolean.FALSE.equals(m.data.get("applicationsEnabled")))
+                action(
+                        s(R.string.ad_apply),
+                        "adoption_apply",
+                        () -> LifecycleActivity.open(this, m.listingId, true),
+                        true);
+    }
+
+    private void petDetail(int label, Object value) {
+        String shown = str(value);
+        if (!shown.isEmpty()) text(s(label) + ": " + shown, false);
+    }
+
+    private void applicationForm() {
+        Map<String, Object> template = object(m.data.get("template"));
+        if (template.isEmpty()) return;
+        text(s(R.string.ad_apply), true);
+        Map<String, Object> answers = object(m.extras.get("answers"));
+        m.extras.put("answers", answers);
+        for (Map<String, Object> q : rows(template.get("questions"))) {
+            String id = str(q.get("id")), label = str(object(q.get("labels")).get("vi"));
+            text(label, false);
+            if ("tri_state".equals(q.get("type")))
+                choices(
+                        R.string.ad_answer,
+                        getResources().getStringArray(R.array.ad_answer_options),
+                        new String[] {"needs_discussion", "yes", "no"},
+                        str(answers.getOrDefault(id, "needs_discussion")),
+                        v -> answers.put(id, v));
+            else
+                field(
+                        R.string.ad_answer,
+                        str(answers.get(id)),
+                        400,
+                        v -> answers.put(id, v.trim()),
+                        true);
+        }
+        field(
+                R.string.ad_message,
+                str(m.extras.get("applicationMessage")),
+                1000,
+                v -> m.extras.put("applicationMessage", v.trim()),
+                true);
+        action(
+                s(R.string.ad_send_application),
+                "adoption_send_application",
+                () -> {
+                    String id = UUID.randomUUID().toString();
+                    m.write(
+                            "placement",
+                            map(
+                                    "command",
+                                    "submit",
+                                    "applicationId",
+                                    id,
+                                    "listingId",
+                                    m.listingId,
+                                    "expectedVersion",
+                                    0,
+                                    "sourceHash",
+                                    m.data.get("sourceHash"),
+                                    "templateHash",
+                                    m.data.get("templateHash"),
+                                    "answers",
+                                    answers,
+                                    "message",
+                                    m.extras.getOrDefault("applicationMessage", "")),
+                            () -> {
+                                m.applicationId = id;
+                                m.load("application", "application", map("applicationId", id));
+                            });
+                },
+                true);
+    }
+
+    private void management() {
+        managementTabs();
+    }
+
+    private void managementTabs() {
+        com.google.android.material.tabs.TabLayout tabs =
+                new com.google.android.material.tabs.TabLayout(this);
+        tabs.setTag("adoption_role_tabs");
+        tabs.setTabMode(com.google.android.material.tabs.TabLayout.MODE_FIXED);
+        tabs.addTab(tabs.newTab().setText(R.string.oc3_adopting));
+        tabs.addTab(tabs.newTab().setText(R.string.oc3_rehoming));
+        tabs.selectTab(tabs.getTabAt("host".equals(m.managementRole) ? 1 : 0));
+        tabs.addOnTabSelectedListener(
+                new com.google.android.material.tabs.TabLayout.OnTabSelectedListener() {
+                    public void onTabSelected(com.google.android.material.tabs.TabLayout.Tab tab) {
+                        String role = tab.getPosition() == 1 ? "host" : "applicant";
+                        if (role.equals(m.managementRole)) return;
+                        if (m.busy || m.uncertain()) {
+                            tabs.selectTab(tabs.getTabAt("host".equals(m.managementRole) ? 1 : 0));
+                            return;
+                        }
+                        loadManagement(role, m.managementPages.getOrDefault(role, 0));
+                    }
+
+                    public void onTabUnselected(com.google.android.material.tabs.TabLayout.Tab t) {}
+
+                    public void onTabReselected(com.google.android.material.tabs.TabLayout.Tab t) {}
+                });
+        body.addView(tabs);
+    }
+
+    private void loadManagement(String role, int page) {
+        if (m.busy || m.uncertain()) return;
+        m.managementOrigin = true;
+        m.managementRole = role;
+        ArrayList<String> cursors =
+                m.managementCursors.computeIfAbsent(
+                        role,
+                        k -> {
+                            ArrayList<String> c = new ArrayList<>();
+                            c.add(null);
+                            return c;
+                        });
+        page = Math.max(0, Math.min(page, cursors.size() - 1));
+        m.managementPages.put(role, page);
+        m.data = new HashMap<>();
+        Map<String, Object> input = map("role", role);
+        if (cursors.get(page) != null) input.put("after", cursors.get(page));
+        m.load("applications", "applications", input);
+    }
+
+    private void applications() {
+        String role =
+                m.lastReadInput.get("role") == null
+                        ? m.managementRole
+                        : str(m.lastReadInput.get("role"));
+        m.managementRole = role;
+        if (m.managementOrigin) managementTabs();
+        text(
+                s(
+                        "host".equals(role)
+                                ? R.string.oc3_received_requests
+                                : R.string.oc3_sent_requests),
+                true);
+        if (m.busy) return;
+        for (Map<String, Object> a : rows(m.data.get("rows"))) {
+            String id = str(a.get("applicationId"));
+            text(str(a.get("title")), true);
+            text(applicationStatus(str(a.get("status"))), true);
+            action(
+                    s(R.string.ad_open),
+                    "adoption_application_" + id,
+                    () -> {
+                        m.applicationId = id;
+                        m.load("application", "application", map("applicationId", id));
+                    },
+                    false);
+        }
+        if (rows(m.data.get("rows")).isEmpty()) text(s(R.string.ad_no_applications), false);
+    }
+
+    private String applicationStatus(String status) {
+        switch (status) {
+            case "selected":
+            case "preparing":
+                return s(R.string.ad_selected);
+            case "completed":
+                return s(R.string.ad_completed);
+            case "withdrawn":
+            case "cancelled":
+                return s(R.string.ad_cancelled);
+            case "rejected":
+            case "closed_not_selected":
+                return s(R.string.ad_not_selected);
+            case "cancellation_requested":
+                return s(R.string.ad_cancellation_requested);
+            default:
+                return s(R.string.ad_application_pending);
+        }
+    }
+
+    private void application() {
+        Map<String, Object> a = object(m.data.get("application"));
+        if (a.isEmpty()) return;
+        Map<String, Object> snapshot = object(object(m.data.get("submission")).get("snapshot"));
+        text(str(object(snapshot.get("offer")).get("title")), true);
+        text(applicationStatus(str(a.get("status"))), true);
+        Map<String, Object> answers = object(object(m.data.get("answer")).get("answers"));
+        for (Object value : answers.values()) text(str(value), false);
+        if ("pending".equals(a.get("status")) || "under_review".equals(a.get("status"))) {
+            boolean owner = m.ticket.uid.equals(a.get("hostUid"));
+            if (owner) {
+                action(
+                        s(R.string.ad_select),
+                        "adoption_select",
+                        () -> decisionApplication(a, true),
+                        true);
+                action(
+                        s(R.string.ad_reject),
+                        "adoption_reject_application",
+                        () -> decisionApplication(a, false),
+                        false);
+            } else
+                action(
+                        s(R.string.ad_withdraw),
+                        "adoption_withdraw",
+                        () ->
+                                m.write(
+                                        "placement",
+                                        map(
+                                                "command",
+                                                "withdraw",
+                                                "applicationId",
+                                                a.get("applicationId"),
+                                                "expectedVersion",
+                                                a.get("applicationVersion")),
+                                        () ->
+                                                m.load(
+                                                        "application",
+                                                        "application",
+                                                        map(
+                                                                "applicationId",
+                                                                a.get("applicationId")))),
+                        true);
+        }
+        if (a.get("selectedReservationId") != null) {
+            m.reservationId = str(a.get("selectedReservationId"));
+            action(s(R.string.ad_prepare), "adoption_prepare", this::reservation, true);
+        }
+    }
+
+    private void decisionApplication(Map<String, Object> a, boolean select) {
+        TextInputLayout box = new TextInputLayout(this);
+        box.setHint(s(R.string.ad_review_reason));
+        TextInputEditText reason = new TextInputEditText(box.getContext());
+        box.addView(reason);
+        dialog =
+                new MaterialAlertDialogBuilder(this)
+                        .setTitle(select ? R.string.ad_select : R.string.ad_reject)
+                        .setView(box)
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .setPositiveButton(R.string.ad_continue, null)
+                        .create();
+        dialog.setOnShowListener(
+                x ->
+                        dialog.getButton(-1)
+                                .setOnClickListener(
+                                        v -> {
+                                            String why = str(reason.getText()).trim();
+                                            if (why.isEmpty() || why.length() > 500) {
+                                                box.setError(s(R.string.ad_required));
+                                                return;
+                                            }
+                                            Map<String, Object> input =
+                                                    map(
+                                                            "command",
+                                                            select ? "select" : "reject",
+                                                            "applicationId",
+                                                            a.get("applicationId"),
+                                                            "expectedVersion",
+                                                            a.get("applicationVersion"),
+                                                            "reason",
+                                                            why);
+                                            if (select)
+                                                input.put(
+                                                        "reservationId",
+                                                        UUID.randomUUID().toString());
+                                            dialog.dismiss();
+                                            m.write(
+                                                    "placement",
+                                                    input,
+                                                    () ->
+                                                            m.load(
+                                                                    "application",
+                                                                    "application",
+                                                                    map(
+                                                                            "applicationId",
+                                                                            a.get(
+                                                                                    "applicationId"))));
+                                        }));
+        dialog.show();
+    }
+
+    private void reservation() {
+        m.load("reservation", "reservation", map("reservationId", m.reservationId));
+    }
+
+    private void placement(Map<String, Object> r, String command, Map<String, Object> values) {
+        Map<String, Object> c =
+                map(
+                        "command",
+                        command,
+                        "reservationId",
+                        r.get("reservationId"),
+                        "expectedVersion",
+                        r.get("reservationVersion"));
+        c.putAll(values);
+        m.write("placement", c, this::reservation);
+    }
+
+    private void preparation() {
+        Map<String, Object> r = object(m.data.get("reservation")),
+                p = object(m.data.get("preparation")),
+                meeting = object(m.data.get("meeting")),
+                terms = object(m.data.get("terms")),
+                consent = object(m.data.get("ownConsent"));
+        if (r.isEmpty()) return;
+        if (m.data.get("placement") != null) {
+            text(s(R.string.ad_completed), true);
+            text(s(R.string.ad_handover_recorded), false);
+            action(
+                    s(R.string.ad_correct_report),
+                    "adoption_correct_report",
+                    () -> correction(r),
+                    false);
+            return;
+        }
+        text(s(R.string.ad_prepare), true);
+        text(s(R.string.ad_prepare_explain), false);
+        action(
+                s(R.string.feedback_private_contacts),
+                "adoption_contact",
+                () -> {
+                    com.gmail.manhle240406.project.MainActivity.open(
+                            this, "conversation:" + m.reservationId);
+                },
+                false);
+        if (m.ticket.uid.equals(r.get("applicantUid"))
+                && !Boolean.TRUE.equals(r.get("participantAck")))
+            action(
+                    s(R.string.ad_acknowledge),
+                    "adoption_ack_prepare",
+                    () -> placement(r, "acknowledge_preparation", map()),
+                    true);
+        if (meeting.isEmpty() && m.ticket.uid.equals(r.get("hostUid"))) {
+            field(
+                    R.string.ad_meeting_time,
+                    str(m.extras.get("meetingTime")),
+                    30,
+                    v -> m.extras.put("meetingTime", v),
+                    false);
+            field(
+                    R.string.ad_meeting_place,
+                    str(m.extras.get("meetingPlace")),
+                    500,
+                    v -> m.extras.put("meetingPlace", v.trim()),
+                    true);
+            action(
+                    s(R.string.ad_propose_meeting),
+                    "adoption_meeting",
+                    () -> {
+                        long utc =
+                                java.time.LocalDateTime.parse(str(m.extras.get("meetingTime")))
+                                        .atZone(java.time.ZoneId.systemDefault())
+                                        .toInstant()
+                                        .toEpochMilli();
+                        placement(
+                                r,
+                                "meeting",
+                                map(
+                                        "meeting",
+                                        map(
+                                                "utcMillis",
+                                                utc,
+                                                "displayTimeZone",
+                                                java.time.ZoneId.systemDefault().getId(),
+                                                "location",
+                                                m.extras.get("meetingPlace"),
+                                                "notes",
+                                                "")));
+                    },
+                    true);
+        } else if (!meeting.isEmpty()) {
+            text(str(meeting.get("location")), false);
+            text(
+                    java.text.DateFormat.getDateTimeInstance()
+                            .format(new Date(number(meeting.get("utcMillis")))),
+                    false);
+            Map<String, Object> ack = object(m.data.get("ownAck"));
+            if (number(ack.get("meetingVersion")) != number(p.get("activeMeetingVersion")))
+                action(
+                        s(R.string.ad_agree_meeting),
+                        "adoption_agree_meeting",
+                        () -> placement(r, "ack_meeting", map("meetingHash", meeting.get("hash"))),
+                        false);
+        }
+        if (terms.isEmpty() && m.ticket.uid.equals(r.get("hostUid")))
+            action(
+                    s(R.string.ad_create_terms),
+                    "adoption_terms",
+                    () ->
+                            placement(
+                                    r,
+                                    "terms",
+                                    map(
+                                            "terms",
+                                            map(
+                                                    "templateVersion",
+                                                    1,
+                                                    "mode",
+                                                    "fictional_course",
+                                                    "followupMode",
+                                                    "none_demo"))),
+                    false);
+        if (!meeting.isEmpty() && !terms.isEmpty()) {
+            text(s(R.string.ad_terms_explain), false);
+            if (!"accepted".equals(consent.get("status"))) {
+                action(
+                        s(R.string.ad_checklist),
+                        "adoption_checklist",
+                        () -> checklist(r, consent),
+                        false);
+                action(
+                        s(R.string.ad_accept_terms),
+                        "adoption_accept_terms",
+                        () ->
+                                confirm(
+                                        R.string.ad_accept_terms,
+                                        R.string.ad_terms_explain,
+                                        () ->
+                                                placement(
+                                                        r,
+                                                        "accept_terms",
+                                                        map(
+                                                                "expectedOwnVersion",
+                                                                number(
+                                                                        consent.get(
+                                                                                "consentVersion")),
+                                                                "termsHash",
+                                                                terms.get("hash")))),
+                        false);
+            }
+        }
+        if (m.data.get("confirmationHash") != null && m.data.get("ownConfirmation") == null)
+            action(
+                    s(
+                            m.ticket.uid.equals(r.get("hostUid"))
+                                    ? R.string.ad_confirm_given
+                                    : R.string.ad_confirm_received),
+                    "adoption_confirm_handover",
+                    () ->
+                            confirm(
+                                    R.string.ad_handover_title,
+                                    R.string.ad_handover_notice,
+                                    () ->
+                                            placement(
+                                                    r,
+                                                    "confirm",
+                                                    map(
+                                                            "expectedOwnVersion",
+                                                            0,
+                                                            "sourceHash",
+                                                            m.data.get("confirmationHash"),
+                                                            "physicalEventReport",
+                                                            m.ticket.uid.equals(r.get("hostUid"))
+                                                                    ? "given"
+                                                                    : "received",
+                                                            "reportedAt",
+                                                            null))),
+                    true);
+        else if (m.data.get("ownConfirmation") != null) text(s(R.string.ad_wait_peer), false);
+        if ("accepted".equals(consent.get("status")))
+            action(
+                    s(R.string.ad_revoke_consent),
+                    "adoption_revoke_consent",
+                    () ->
+                            confirm(
+                                    R.string.ad_revoke_consent,
+                                    R.string.ad_terms_explain,
+                                    () ->
+                                            placement(
+                                                    r,
+                                                    "revoke_consent",
+                                                    map(
+                                                            "expectedOwnVersion",
+                                                            number(
+                                                                    consent.get(
+                                                                            "consentVersion"))))),
+                    false);
+        if (m.data.get("ownConfirmation") != null)
+            action(
+                    s(R.string.ad_correct_report),
+                    "adoption_correct_report",
+                    () -> correction(r),
+                    false);
+        if (!"cancelled".equals(r.get("status")))
+            action(
+                    s(R.string.ad_cancel_prepare),
+                    "adoption_cancel_prepare",
+                    () -> cancellation(r),
+                    false);
+        action(s(R.string.ad_refresh), "adoption_refresh_preparation", this::reservation, false);
+    }
+
+    private void correction(Map<String, Object> r) {
+        reasonDialog(
+                R.string.ad_correct_report,
+                reason ->
+                        placement(
+                                r,
+                                "correct_confirmation",
+                                map(
+                                        "expectedOwnVersion",
+                                        number(
+                                                object(m.data.get("ownConfirmation"))
+                                                        .get("version")),
+                                        "reason",
+                                        reason,
+                                        "state",
+                                        "disputed")));
+    }
+
+    private void reasonDialog(int title, java.util.function.Consumer<String> done) {
+        TextInputLayout box = new TextInputLayout(this);
+        box.setHint(s(R.string.ad_review_reason));
+        TextInputEditText reason = new TextInputEditText(box.getContext());
+        box.addView(reason);
+        dialog =
+                new MaterialAlertDialogBuilder(this)
+                        .setTitle(title)
+                        .setView(box)
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .setPositiveButton(R.string.ad_continue, null)
+                        .create();
+        dialog.setOnShowListener(
+                x ->
+                        dialog.getButton(-1)
+                                .setOnClickListener(
+                                        v -> {
+                                            String text = str(reason.getText()).trim();
+                                            if (text.isEmpty() || text.length() > 500) {
+                                                box.setError(s(R.string.ad_required));
+                                                return;
+                                            }
+                                            dialog.dismiss();
+                                            safe(() -> done.accept(text));
+                                        }));
+        dialog.show();
+    }
+
+    private void cancellation(Map<String, Object> r) {
+        LinearLayout form = SocialViews.column(this);
+        TextView notice = SocialViews.text(this, s(R.string.ad_cancel_notice), false);
+        form.addView(notice);
+        TextInputLayout box = new TextInputLayout(this);
+        box.setHint(s(R.string.ad_review_reason));
+        TextInputEditText reason = new TextInputEditText(box.getContext());
+        box.addView(reason);
+        form.addView(box);
+        CheckBox noTransfer = new CheckBox(this);
+        noTransfer.setText(R.string.ad_no_transfer);
+        noTransfer.setMinHeight(SocialViews.dp(this, 48));
+        form.addView(noTransfer);
+        Map<String, Object> own = object(m.data.get("ownCancel")),
+                peer = object(m.data.get("peerCancel"));
+        boolean both =
+                Boolean.TRUE.equals(own.get("noHandoverDeclaration"))
+                        && Boolean.TRUE.equals(peer.get("noHandoverDeclaration"))
+                        && "none".equals(own.get("physicalPossessionStatement"))
+                        && "none".equals(peer.get("physicalPossessionStatement"));
+        dialog =
+                new MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.ad_cancel_prepare)
+                        .setView(form)
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .setNeutralButton(R.string.ad_record_statement, null)
+                        .setPositiveButton(R.string.ad_cancel_reservation, null)
+                        .create();
+        dialog.setOnShowListener(
+                x -> {
+                    dialog.getButton(-1).setEnabled(both);
+                    dialog.getButton(-1)
+                            .setOnClickListener(
+                                    v -> {
+                                        dialog.dismiss();
+                                        placement(r, "cancel", map());
+                                    });
+                    dialog.getButton(-3)
+                            .setOnClickListener(
+                                    v -> {
+                                        String why = str(reason.getText()).trim();
+                                        if (why.isEmpty()
+                                                || why.length() > 500
+                                                || !noTransfer.isChecked()) {
+                                            box.setError(s(R.string.ad_statement_required));
+                                            return;
+                                        }
+                                        dialog.dismiss();
+                                        placement(
+                                                r,
+                                                "cancel_statement",
+                                                map(
+                                                        "expectedOwnVersion",
+                                                        number(own.get("intentVersion")),
+                                                        "reason",
+                                                        why,
+                                                        "noHandoverDeclaration",
+                                                        true,
+                                                        "physicalPossessionStatement",
+                                                        "none"));
+                                    });
+                });
+        dialog.show();
+    }
+
+    private void checklist(Map<String, Object> r, Map<String, Object> consent) {
+        LinearLayout form = SocialViews.column(this);
+        String[] keys = {"known_needs", "transport", "supplies", "responsibility", "questions"};
+        int[] labels = {
+            R.string.ad_check_care,
+            R.string.ad_check_transport,
+            R.string.ad_check_supplies,
+            R.string.ad_check_responsibility,
+            R.string.ad_check_questions
+        };
+        Map<String, Object> values = new HashMap<>();
+        for (int i = 0; i < keys.length; i++) {
+            CheckBox b = new CheckBox(this);
+            b.setText(labels[i]);
+            b.setMinHeight(SocialViews.dp(this, 48));
+            String key = keys[i];
+            values.put(key, "needs_discussion");
+            b.setOnCheckedChangeListener(
+                    (v, on) -> values.put(key, on ? "yes" : "needs_discussion"));
+            form.addView(b);
+        }
+        dialog =
+                new MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.ad_checklist)
+                        .setView(form)
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .setPositiveButton(
+                                R.string.ad_save,
+                                (d, w) ->
+                                        placement(
+                                                r,
+                                                "checklist",
+                                                map(
+                                                        "expectedOwnVersion",
+                                                        number(consent.get("consentVersion")),
+                                                        "checklist",
+                                                        map("entries", values, "notes", ""))))
+                        .show();
+    }
+
+    private String error(String code) {
+        if (code.contains("applications_not_ready")) return s(R.string.ad_browse_only);
+        if (code.contains("conflict")) return s(R.string.ad_conflict_feedback);
+        if (code.contains("protected_account_ineligible"))
+            return s(R.string.ad_account_ineligible_feedback);
+        if (code.contains("email_required"))
+            return "Vui lòng xác minh email trong Hồ sơ trước khi gửi yêu cầu.";
+        if (code.contains("phone_required"))
+            return "Vui lòng xác minh số điện thoại trong Hồ sơ trước khi gửi yêu cầu.";
+        if (code.contains("display_name_required"))
+            return "Vui lòng thêm tên hiển thị trong Hồ sơ trước khi gửi yêu cầu.";
+        if (code.contains("account_restricted") || code.contains("scoped_restriction"))
+            return "Tài khoản đang bị giới hạn quyền nhận nuôi. Xem thông báo trong Hồ sơ.";
+        if (code.contains("authority_pending")) return s(R.string.ad_authority_pending);
+        if (code.contains("reviewer_required")) return s(R.string.ad_reviewer_required);
+        if (code.contains("publication_not_ready")) return s(R.string.ad_publication_pending);
+        if (code.contains("active_obligation")) return s(R.string.ad_active_obligation);
+        if (code.contains("unknown_outcome") || code.contains("receipt_pending"))
+            return s(R.string.ad_unknown_outcome);
+        if (code.contains("invalid") || code.contains("fields") || code.contains("required"))
+            return s(R.string.ad_invalid);
+        return s(R.string.ad_failed);
+    }
+
+    private void back() {
+        if (!m.busy && !m.uncertain()) m.notice = "";
+        if (m.busy || m.uncertain()) {
+            m.error = "unknown_outcome";
+            m.changed();
+            return;
+        }
+        if ("compose".equals(m.page) && m.step > 0) {
+            m.step--;
+            m.changed();
+            return;
+        }
+        if ("register".equals(m.page)) {
+            m.page = "compose";
+            m.step = 0;
+            m.changed();
+            return;
+        }
+        if ("compose".equals(m.page)) {
+            confirm(R.string.ad_leave, R.string.ad_unsaved, m::workspace);
+            return;
+        }
+        if ("claimReview".equals(m.page) || "listingReview".equals(m.page)) {
+            m.page = "reviewQueue";
+            m.data = m.reviewQueueData;
+            m.changed();
+            return;
+        }
+        if (m.managementOrigin && "reservation".equals(m.page) && m.applicationId != null) {
+            m.load("application", "application", map("applicationId", m.applicationId));
+            return;
+        }
+        if (m.managementOrigin && "application".equals(m.page)) {
+            loadManagement(m.managementRole, m.managementPages.getOrDefault(m.managementRole, 0));
+            return;
+        }
+        if ("application".equals(m.page) && !m.applicationsData.isEmpty()) {
+            m.page = "applications";
+            m.data = m.applicationsData;
+            m.changed();
+            return;
+        }
+        if (m.managementOrigin && "applications".equals(m.page)) {
+            finish();
+            return;
+        }
+        if ("management".equals(m.page) || "workspace".equals(m.page) || "detail".equals(m.page)) {
+            finish();
+            return;
+        }
+        m.workspace();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (dialog != null) dialog.dismiss();
+        super.onDestroy();
+    }
 }

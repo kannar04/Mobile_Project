@@ -1,10 +1,12 @@
 package com.gmail.manhle240406.project.foundation;
 
-import org.junit.Test;
 import static org.junit.Assert.*;
 
+import org.junit.Test;
+
 public class SessionEpochTest {
-    @Test public void accountSwitchDropsOldResultsEvenAfterSwitchingBack() {
+    @Test
+    public void accountSwitchDropsOldResultsEvenAfterSwitchingBack() {
         SessionEpoch epoch = new SessionEpoch();
         epoch.change("A");
         SessionEpoch.Ticket oldA = epoch.capture();
@@ -14,14 +16,18 @@ public class SessionEpochTest {
         assertFalse(epoch.current(oldA));
         assertTrue(epoch.current(epoch.capture()));
     }
-    @Test public void logoutImmediatelyInvalidatesPendingSameAccountCallbacks() {
+
+    @Test
+    public void logoutImmediatelyInvalidatesPendingSameAccountCallbacks() {
         SessionEpoch epoch = new SessionEpoch();
         epoch.change("A");
         SessionEpoch.Ticket old = epoch.capture();
         epoch.invalidate();
         assertFalse(epoch.current(old));
     }
-    @Test public void tokenRefreshForSameUidDoesNotResetPendingOperation() {
+
+    @Test
+    public void tokenRefreshForSameUidDoesNotResetPendingOperation() {
         SessionEpoch epoch = new SessionEpoch();
         epoch.change("A");
         SessionEpoch.Ticket pending = epoch.capture();
@@ -30,7 +36,9 @@ public class SessionEpochTest {
         epoch.change(null);
         assertFalse(epoch.current(pending));
     }
-    @Test public void uuidValidationRejectsPathInjectionAndMalformedIds() {
+
+    @Test
+    public void uuidValidationRejectsPathInjectionAndMalformedIds() {
         assertTrue(FoundationDocuments.validOperationId("12345678-1234-1234-1234-123456789abc"));
         assertFalse(FoundationDocuments.validOperationId("../securitySubjects/admin"));
         assertFalse(FoundationDocuments.validOperationId(null));

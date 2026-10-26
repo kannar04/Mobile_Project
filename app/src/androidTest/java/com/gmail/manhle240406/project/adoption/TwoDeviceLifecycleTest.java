@@ -1,53 +1,547 @@
 package com.gmail.manhle240406.project.adoption;
 
-import android.content.*;import android.graphics.*;import android.net.Uri;import android.os.*;import android.widget.*;import androidx.lifecycle.ViewModelProvider;import androidx.test.core.app.ActivityScenario;import androidx.test.ext.junit.runners.AndroidJUnit4;import androidx.test.platform.app.InstrumentationRegistry;import androidx.test.uiautomator.*;import com.gmail.manhle240406.project.*;import com.gmail.manhle240406.project.R;import com.gmail.manhle240406.project.media.*;import com.google.android.gms.tasks.*;import com.google.firebase.auth.*;import com.google.firebase.functions.FirebaseFunctionsException;import org.json.*;import org.junit.*;import org.junit.runner.RunWith;import java.io.*;import java.net.Socket;import java.nio.charset.StandardCharsets;import java.nio.file.Files;import java.util.*;import java.util.concurrent.*;import java.util.concurrent.atomic.*;
-import static org.junit.Assert.*;import static org.hamcrest.Matchers.*;import static androidx.test.espresso.Espresso.*;import static androidx.test.espresso.action.ViewActions.*;import static androidx.test.espresso.matcher.ViewMatchers.*;import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.*;
+import static androidx.test.espresso.Espresso.*;
+import static androidx.test.espresso.action.ViewActions.*;
+import static androidx.test.espresso.matcher.ViewMatchers.*;
 
-/** Two Android transports, independent existing Auth identities, one real isolated Firestore state machine. */
-@RunWith(AndroidJUnit4.class) public final class TwoDeviceLifecycleTest {
- private final Context c=InstrumentationRegistry.getInstrumentation().getTargetContext();private final ExecutorService work=Executors.newFixedThreadPool(4);private final AtomicLong clock=new AtomicLong(System.currentTimeMillis());private String uid,action,role,caseName,reportId;private Map<String,Object> caseData;private ActivityScenario<LifecycleActivity> activity;
- @Before public void begin()throws Exception{Bundle args=InstrumentationRegistry.getArguments();action=args.getString("action");role=args.getString("role");caseName=args.getString("scenario","success");reportId=args.getString("report","D03");uid=FirebaseAuth.getInstance().getUid();assertNotNull("Sign in on this device before testing",uid);assertEquals("App session ready",uid,((AniloveApplication)c.getApplicationContext()).foundation().sessions.capture().uid);
-  JSONObject state=raw("/state",new JSONObject());assertTrue(state.getJSONObject("result").getBoolean("isolated"));assertEquals(uid,state.getJSONObject("result").getString(role.equals("host")?"hostUid":"adopterUid"));caseData=object(state.getJSONObject("result").getJSONObject("cases").getJSONObject(caseName));
-  AdoptionApi.testEnvelopeTransport=(op,input,consent)->Tasks.call(work,()->{JSONObject body=new JSONObject().put("operation",op).put("input",new JSONObject(input));if(consent!=null)body.put("participationConsent",new JSONObject(consent));JSONObject result=raw("/adoption",body);return object(result.getJSONObject("result"));});LifecycleModel.testClock=clock::get;
-  ManagedMediaClient.debugTransport=(op,body,id)->Tasks.call(work,()->{JSONObject result=raw("/media",new JSONObject().put("operation",op).put("body",android.util.Base64.encodeToString(body,android.util.Base64.NO_WRAP)).put("assetId",id==null?JSONObject.NULL:id));return android.util.Base64.decode(result.getJSONObject("result").getString("bytes"),android.util.Base64.NO_WRAP);});SessionImageCache.clear();
- }
- @After public void end(){try{if(activity!=null)activity.close();}finally{AdoptionApi.testEnvelopeTransport=null;ManagedMediaClient.debugTransport=null;LifecycleModel.testClock=null;SessionImageCache.clear();work.shutdownNow();assertEquals("Existing identity preserved",uid,FirebaseAuth.getInstance().getUid());}}
- private JSONObject raw(String route,JSONObject input)throws Exception{FirebaseUser user=FirebaseAuth.getInstance().getCurrentUser();assertNotNull(user);assertEquals(uid,user.getUid());String token=Tasks.await(user.getIdToken(false),20,TimeUnit.SECONDS).getToken();byte[] body=input.toString().getBytes(StandardCharsets.UTF_8);try(Socket socket=new Socket("127.0.0.1",8765)){socket.setSoTimeout(60000);OutputStream out=socket.getOutputStream();out.write(("POST "+route+" HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\nContent-Type: application/json\r\nAuthorization: Bearer "+token+"\r\nContent-Length: "+body.length+"\r\n\r\n").getBytes(StandardCharsets.US_ASCII));out.write(body);out.flush();InputStream in=socket.getInputStream();String status=line(in);int length=0;for(String h;!(h=line(in)).isEmpty();)if(h.toLowerCase(Locale.ROOT).startsWith("content-length:"))length=Integer.parseInt(h.substring(15).trim());if(length<1||length>5*1024*1024)throw new IOException("fixture_response_size");byte[] bytes=new byte[length];int pos=0,n;while(pos<length&&(n=in.read(bytes,pos,length-pos))>0)pos+=n;if(pos!=length)throw new IOException("fixture_response_incomplete");JSONObject result=new JSONObject(new String(bytes,StandardCharsets.UTF_8));if(!status.contains(" 200 "))throw new FirebaseFunctionsException(result.optString("error","fixture_error"),status.contains(" 503 ")?FirebaseFunctionsException.Code.UNAVAILABLE:FirebaseFunctionsException.Code.PERMISSION_DENIED,null);clock.set(result.optLong("serverTime",clock.get()));return result;}}
- private String line(InputStream in)throws IOException{ByteArrayOutputStream b=new ByteArrayOutputStream();int ch;while((ch=in.read())!=-1){if(ch=='\n')break;if(ch!='\r')b.write(ch);if(b.size()>32768)throw new IOException("fixture_header_size");}if(ch==-1&&b.size()==0)throw new EOFException();return b.toString("US-ASCII");}
- private static Map<String,Object> object(JSONObject j)throws JSONException{Map<String,Object> m=new HashMap<>();for(Iterator<String> it=j.keys();it.hasNext();){String k=it.next();m.put(k,value(j.get(k)));}return m;}private static Object value(Object v)throws JSONException{if(v==JSONObject.NULL)return null;if(v instanceof JSONObject)return object((JSONObject)v);if(v instanceof JSONArray){List<Object> a=new ArrayList<>();for(int i=0;i<((JSONArray)v).length();i++)a.add(value(((JSONArray)v).get(i)));return a;}return v;}
- private LifecycleModel model(LifecycleActivity a){return new ViewModelProvider(a).get(LifecycleModel.class);}private String error(){AtomicReference<String> e=new AtomicReference<>();activity.onActivity(a->e.set(model(a).error));return e.get();}
- private void idle(){long end=SystemClock.elapsedRealtime()+65000;AtomicBoolean busy=new AtomicBoolean();do{activity.onActivity(a->busy.set(model(a).busy));if(!busy.get())return;SystemClock.sleep(100);}while(SystemClock.elapsedRealtime()<end);fail("Task did not settle: "+action);}
- private void ok(){idle();assertEquals("Managed command error", "",error());AtomicBoolean pending=new AtomicBoolean();activity.onActivity(a->pending.set(model(a).pending()));assertFalse("Unresolved operation",pending.get());}
- private void click(int id){onView(withTagValue(equalTo("lc_action_"+c.getResources().getResourceEntryName(id)))).perform(scrollTo(),androidx.test.espresso.action.ViewActions.click());}
- private void confirm(){onView(withText(android.R.string.ok)).perform(androidx.test.espresso.action.ViewActions.click());idle();}
- private void type(String key,String text){onView(withTagValue(equalTo("lc_"+key))).perform(scrollTo(),replaceText(text),androidx.test.espresso.action.ViewActions.closeSoftKeyboard());}
- private void launch(boolean listing){Intent i=new Intent(c,LifecycleActivity.class);if(listing)i.putExtra("listing",String.valueOf(caseData.get("listingId")));else i.putExtra("adoption",String.valueOf(caseData.get("adoptionId")));activity=ActivityScenario.launch(i);ok();}
- private void prerequisites(){AtomicBoolean missing=new AtomicBoolean();activity.onActivity(a->missing.set(model(a).readiness.isEmpty()));if(missing.get()){click(R.string.lc_setup);ok();}AtomicBoolean simplified=new AtomicBoolean();activity.onActivity(a->{simplified.set(Boolean.TRUE.equals(model(a).readiness.get("simplified")));if(simplified.get()){assertEquals(Boolean.TRUE,model(a).readiness.get("email"));assertEquals(Boolean.TRUE,model(a).readiness.get("profile"));assertEquals(Boolean.TRUE,model(a).readiness.get("phone"));}else missing.set(!Boolean.TRUE.equals(model(a).readiness.get("terms")));});if(!simplified.get()&&missing.get()){click(R.string.lc_terms);onView(withText(R.string.lc_agree)).perform(androidx.test.espresso.action.ViewActions.click());ok();}}
- private void participatingClick(int id){AtomicBoolean consent=new AtomicBoolean();activity.onActivity(a->consent.set(Boolean.TRUE.equals(model(a).readiness.get("simplified"))&&!Boolean.TRUE.equals(model(a).readiness.get("terms"))));click(id);if(consent.get())onView(withText(R.string.permissions_agree_continue)).perform(androidx.test.espresso.action.ViewActions.click());ok();}
- private void photo()throws Exception{File file=new File(c.getCacheDir(),"two-device-"+UUID.randomUUID()+".jpg");Bitmap bitmap=Bitmap.createBitmap(96,96,Bitmap.Config.ARGB_8888);bitmap.eraseColor(role.equals("host")?Color.rgb(50,104,73):Color.rgb(200,103,82));try(FileOutputStream out=new FileOutputStream(file)){bitmap.compress(Bitmap.CompressFormat.JPEG,90,out);}bitmap.recycle();activity.onActivity(a->new ViewModelProvider(a).get(MediaDraftViewModel.class).add(Collections.singletonList(Uri.fromFile(file))));long end=SystemClock.elapsedRealtime()+90000;AtomicBoolean ready=new AtomicBoolean();AtomicReference<String> failed=new AtomicReference<>("");do{activity.onActivity(a->{MediaDraftViewModel m=new ViewModelProvider(a).get(MediaDraftViewModel.class);ready.set(!m.entries.isEmpty()&&m.ready());if(m.entries.stream().anyMatch(e->e.state.equals("failed")))failed.set("verified_fixture_upload_failed");});if(!failed.get().isEmpty())fail(failed.get());if(ready.get()){file.delete();return;}SystemClock.sleep(100);}while(SystemClock.elapsedRealtime()<end);fail("Verified photo upload timed out");}
- private void report(){onView(withText(startsWith(reportId))).perform(scrollTo(),androidx.test.espresso.action.ViewActions.click());ok();}
- @Test public void runAction()throws Exception{assertNotNull(action);
-  switch(action){
-   case "prepare":launch(true);prerequisites();type("description","Synthetic reviewed course animal");type("temperament","Gentle synthetic fixture");type("careRequirements","Daily care and safe shelter");type("adoptionRequirements","Responsible follow-up");photo();participatingClick(R.string.lc_save);break;
-   case "apply":launch(true);click(R.string.lc_apply);prerequisites();type("introduction","Independent course adopter");type("environment","Safe indoor test home");type("care","Daily attention");type("experience","Course demonstration only");participatingClick(R.string.lc_submit);break;
-   case "select":activity=ActivityScenario.launch(new Intent(c,LifecycleActivity.class).putExtra("role","host"));ok();onView(withText(allOf(containsString(String.valueOf(caseData.get("title"))),containsString(c.getString(R.string.oc4_status_submitted))))).perform(scrollTo(),androidx.test.espresso.action.ViewActions.click());ok();click(R.string.lc_select);confirm();ok();break;
-   case "verifySelection":launch(false);activity.onActivity(a->{assertEquals("CONTRACT_PENDING",AdoptionFlowModel.object(model(a).data.get("adoption")).get("status"));});break;
-   case "accept":launch(false);click(R.string.lc_accept);confirm();if(!error().isEmpty()){assertTrue(error().contains("pending_reconcile"));activity.recreate();click(R.string.lc_check);ok();}else ok();break;
-   case "baseline":launch(false);click(R.string.lc_baseline);photo();click(R.string.lc_save);ok();break;
-   case "ack":launch(false);click(R.string.lc_ack);confirm();ok();break;
-   case "ready":launch(false);click(R.string.lc_ready);confirm();ok();break;
-   case "receive":launch(false);click(R.string.lc_received);confirm();ok();break;
-   case "verify":launch(false);click(R.string.lc_verify);confirm();ok();break;
-   case "report":launch(false);report();type("condition","Well in course fixture");type("care","Daily care recorded");type("shelter","Safe indoor shelter");type("changes","No new concerns");photo();click(R.string.lc_report_submit);ok();break;
-   case "review":launch(false);report();click(R.string.lc_reviewed);ok();break;
-   case "correct":launch(false);report();type("note","Append-only clarification");click(R.string.lc_correction);ok();break;
-   case "finalize":launch(false);click(R.string.lc_finalize);confirm();ok();break;
-   case "readonly":launch(false);click(R.string.lc_chat);ok();assertTrue("Finalized chat becomes read-only",UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).wait(Until.hasObject(By.text(c.getString(R.string.lc_readonly))),30000));break;
-   case "cancel":launch(false);click(R.string.lc_dispute);onView(withText(R.string.lc_cancel)).perform(androidx.test.espresso.action.ViewActions.click());confirm();ok();break;
-   case "dispute":launch(false);click(R.string.lc_dispute);onView(allOf(withId(android.R.id.text1),withText(R.string.lc_dispute))).perform(androidx.test.espresso.action.ViewActions.click());onView(withText(android.R.string.ok)).perform(androidx.test.espresso.action.ViewActions.click());onView(withHint(R.string.lc_reason)).perform(replaceText("Independent support needed in isolated fixture"),androidx.test.espresso.action.ViewActions.closeSoftKeyboard());onView(withText(R.string.lc_submit)).perform(androidx.test.espresso.action.ViewActions.click());ok();break;
-   case "blockedVerify":launch(false);click(R.string.lc_verify);confirm();assertTrue("Dispute prevents handover",error().contains("not_ready"));break;
-   default:fail("Unknown two-device action");
-  }
-  JSONObject receipt=new JSONObject().put("action",action).put("scenario",caseName).put("role",role).put("report",reportId).put("passed",true).put("identityPreserved",uid.equals(FirebaseAuth.getInstance().getUid())).put("isolated",true);Files.write(new File(c.getExternalFilesDir(null),"two-device-result.json").toPath(),receipt.toString().getBytes(StandardCharsets.UTF_8));if(Arrays.asList("finalize","cancel","dispute","readonly").contains(action))UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).takeScreenshot(new File(c.getExternalFilesDir(null),"two-device-"+caseName+"-"+action+".png"));
- }
+import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.*;
+
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
+import android.content.*;
+import android.graphics.*;
+import android.net.Uri;
+import android.os.*;
+import android.widget.*;
+
+import androidx.lifecycle.ViewModelProvider;
+import androidx.test.core.app.ActivityScenario;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.*;
+
+import com.gmail.manhle240406.project.*;
+import com.gmail.manhle240406.project.R;
+import com.gmail.manhle240406.project.media.*;
+import com.google.android.gms.tasks.*;
+import com.google.firebase.auth.*;
+import com.google.firebase.functions.FirebaseFunctionsException;
+
+import org.json.*;
+import org.junit.*;
+import org.junit.runner.RunWith;
+
+import java.io.*;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
+
+/**
+ * Two Android transports, independent existing Auth identities, one real isolated Firestore state
+ * machine.
+ */
+@RunWith(AndroidJUnit4.class)
+public final class TwoDeviceLifecycleTest {
+    private final Context c = InstrumentationRegistry.getInstrumentation().getTargetContext();
+    private final ExecutorService work = Executors.newFixedThreadPool(4);
+    private final AtomicLong clock = new AtomicLong(System.currentTimeMillis());
+    private String uid, action, role, caseName, reportId;
+    private Map<String, Object> caseData;
+    private ActivityScenario<LifecycleActivity> activity;
+
+    @Before
+    public void begin() throws Exception {
+        Bundle args = InstrumentationRegistry.getArguments();
+        action = args.getString("action");
+        role = args.getString("role");
+        caseName = args.getString("scenario", "success");
+        reportId = args.getString("report", "D03");
+        uid = FirebaseAuth.getInstance().getUid();
+        assertNotNull("Sign in on this device before testing", uid);
+        assertEquals(
+                "App session ready",
+                uid,
+                ((AniloveApplication) c.getApplicationContext())
+                        .foundation()
+                        .sessions
+                        .capture()
+                        .uid);
+        JSONObject state = raw("/state", new JSONObject());
+        assertTrue(state.getJSONObject("result").getBoolean("isolated"));
+        assertEquals(
+                uid,
+                state.getJSONObject("result")
+                        .getString(role.equals("host") ? "hostUid" : "adopterUid"));
+        caseData =
+                object(
+                        state.getJSONObject("result")
+                                .getJSONObject("cases")
+                                .getJSONObject(caseName));
+        AdoptionApi.testEnvelopeTransport =
+                (op, input, consent) ->
+                        Tasks.call(
+                                work,
+                                () -> {
+                                    JSONObject body =
+                                            new JSONObject()
+                                                    .put("operation", op)
+                                                    .put("input", new JSONObject(input));
+                                    if (consent != null)
+                                        body.put("participationConsent", new JSONObject(consent));
+                                    JSONObject result = raw("/adoption", body);
+                                    return object(result.getJSONObject("result"));
+                                });
+        LifecycleModel.testClock = clock::get;
+        ManagedMediaClient.debugTransport =
+                (op, body, id) ->
+                        Tasks.call(
+                                work,
+                                () -> {
+                                    JSONObject result =
+                                            raw(
+                                                    "/media",
+                                                    new JSONObject()
+                                                            .put("operation", op)
+                                                            .put(
+                                                                    "body",
+                                                                    android.util.Base64
+                                                                            .encodeToString(
+                                                                                    body,
+                                                                                    android.util
+                                                                                            .Base64
+                                                                                            .NO_WRAP))
+                                                            .put(
+                                                                    "assetId",
+                                                                    id == null
+                                                                            ? JSONObject.NULL
+                                                                            : id));
+                                    return android.util.Base64.decode(
+                                            result.getJSONObject("result").getString("bytes"),
+                                            android.util.Base64.NO_WRAP);
+                                });
+        SessionImageCache.clear();
+    }
+
+    @After
+    public void end() {
+        try {
+            if (activity != null) activity.close();
+        } finally {
+            AdoptionApi.testEnvelopeTransport = null;
+            ManagedMediaClient.debugTransport = null;
+            LifecycleModel.testClock = null;
+            SessionImageCache.clear();
+            work.shutdownNow();
+            assertEquals("Existing identity preserved", uid, FirebaseAuth.getInstance().getUid());
+        }
+    }
+
+    private JSONObject raw(String route, JSONObject input) throws Exception {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        assertNotNull(user);
+        assertEquals(uid, user.getUid());
+        String token = Tasks.await(user.getIdToken(false), 20, TimeUnit.SECONDS).getToken();
+        byte[] body = input.toString().getBytes(StandardCharsets.UTF_8);
+        try (Socket socket = new Socket("127.0.0.1", 8765)) {
+            socket.setSoTimeout(60000);
+            OutputStream out = socket.getOutputStream();
+            out.write(
+                    ("POST "
+                                    + route
+                                    + " HTTP/1.1\r\n"
+                                    + "Host: localhost\r\n"
+                                    + "Connection: close\r\n"
+                                    + "Content-Type: application/json\r\n"
+                                    + "Authorization: Bearer "
+                                    + token
+                                    + "\r\nContent-Length: "
+                                    + body.length
+                                    + "\r\n\r\n")
+                            .getBytes(StandardCharsets.US_ASCII));
+            out.write(body);
+            out.flush();
+            InputStream in = socket.getInputStream();
+            String status = line(in);
+            int length = 0;
+            for (String h; !(h = line(in)).isEmpty(); )
+                if (h.toLowerCase(Locale.ROOT).startsWith("content-length:"))
+                    length = Integer.parseInt(h.substring(15).trim());
+            if (length < 1 || length > 5 * 1024 * 1024)
+                throw new IOException("fixture_response_size");
+            byte[] bytes = new byte[length];
+            int pos = 0, n;
+            while (pos < length && (n = in.read(bytes, pos, length - pos)) > 0) pos += n;
+            if (pos != length) throw new IOException("fixture_response_incomplete");
+            JSONObject result = new JSONObject(new String(bytes, StandardCharsets.UTF_8));
+            if (!status.contains(" 200 "))
+                throw new FirebaseFunctionsException(
+                        result.optString("error", "fixture_error"),
+                        status.contains(" 503 ")
+                                ? FirebaseFunctionsException.Code.UNAVAILABLE
+                                : FirebaseFunctionsException.Code.PERMISSION_DENIED,
+                        null);
+            clock.set(result.optLong("serverTime", clock.get()));
+            return result;
+        }
+    }
+
+    private String line(InputStream in) throws IOException {
+        ByteArrayOutputStream b = new ByteArrayOutputStream();
+        int ch;
+        while ((ch = in.read()) != -1) {
+            if (ch == '\n') break;
+            if (ch != '\r') b.write(ch);
+            if (b.size() > 32768) throw new IOException("fixture_header_size");
+        }
+        if (ch == -1 && b.size() == 0) throw new EOFException();
+        return b.toString("US-ASCII");
+    }
+
+    private static Map<String, Object> object(JSONObject j) throws JSONException {
+        Map<String, Object> m = new HashMap<>();
+        for (Iterator<String> it = j.keys(); it.hasNext(); ) {
+            String k = it.next();
+            m.put(k, value(j.get(k)));
+        }
+        return m;
+    }
+
+    private static Object value(Object v) throws JSONException {
+        if (v == JSONObject.NULL) return null;
+        if (v instanceof JSONObject) return object((JSONObject) v);
+        if (v instanceof JSONArray) {
+            List<Object> a = new ArrayList<>();
+            for (int i = 0; i < ((JSONArray) v).length(); i++) a.add(value(((JSONArray) v).get(i)));
+            return a;
+        }
+        return v;
+    }
+
+    private LifecycleModel model(LifecycleActivity a) {
+        return new ViewModelProvider(a).get(LifecycleModel.class);
+    }
+
+    private String error() {
+        AtomicReference<String> e = new AtomicReference<>();
+        activity.onActivity(a -> e.set(model(a).error));
+        return e.get();
+    }
+
+    private void idle() {
+        long end = SystemClock.elapsedRealtime() + 65000;
+        AtomicBoolean busy = new AtomicBoolean();
+        do {
+            activity.onActivity(a -> busy.set(model(a).busy));
+            if (!busy.get()) return;
+            SystemClock.sleep(100);
+        } while (SystemClock.elapsedRealtime() < end);
+        fail("Task did not settle: " + action);
+    }
+
+    private void ok() {
+        idle();
+        assertEquals("Managed command error", "", error());
+        AtomicBoolean pending = new AtomicBoolean();
+        activity.onActivity(a -> pending.set(model(a).pending()));
+        assertFalse("Unresolved operation", pending.get());
+    }
+
+    private void click(int id) {
+        onView(withTagValue(equalTo("lc_action_" + c.getResources().getResourceEntryName(id))))
+                .perform(scrollTo(), androidx.test.espresso.action.ViewActions.click());
+    }
+
+    private void confirm() {
+        onView(withText(android.R.string.ok))
+                .perform(androidx.test.espresso.action.ViewActions.click());
+        idle();
+    }
+
+    private void type(String key, String text) {
+        onView(withTagValue(equalTo("lc_" + key)))
+                .perform(
+                        scrollTo(),
+                        replaceText(text),
+                        androidx.test.espresso.action.ViewActions.closeSoftKeyboard());
+    }
+
+    private void launch(boolean listing) {
+        Intent i = new Intent(c, LifecycleActivity.class);
+        if (listing) i.putExtra("listing", String.valueOf(caseData.get("listingId")));
+        else i.putExtra("adoption", String.valueOf(caseData.get("adoptionId")));
+        activity = ActivityScenario.launch(i);
+        ok();
+    }
+
+    private void prerequisites() {
+        AtomicBoolean missing = new AtomicBoolean();
+        activity.onActivity(a -> missing.set(model(a).readiness.isEmpty()));
+        if (missing.get()) {
+            click(R.string.lc_setup);
+            ok();
+        }
+        AtomicBoolean simplified = new AtomicBoolean();
+        activity.onActivity(
+                a -> {
+                    simplified.set(Boolean.TRUE.equals(model(a).readiness.get("simplified")));
+                    if (simplified.get()) {
+                        assertEquals(Boolean.TRUE, model(a).readiness.get("email"));
+                        assertEquals(Boolean.TRUE, model(a).readiness.get("profile"));
+                        assertEquals(Boolean.TRUE, model(a).readiness.get("phone"));
+                    } else missing.set(!Boolean.TRUE.equals(model(a).readiness.get("terms")));
+                });
+        if (!simplified.get() && missing.get()) {
+            click(R.string.lc_terms);
+            onView(withText(R.string.lc_agree))
+                    .perform(androidx.test.espresso.action.ViewActions.click());
+            ok();
+        }
+    }
+
+    private void participatingClick(int id) {
+        AtomicBoolean consent = new AtomicBoolean();
+        activity.onActivity(
+                a ->
+                        consent.set(
+                                Boolean.TRUE.equals(model(a).readiness.get("simplified"))
+                                        && !Boolean.TRUE.equals(model(a).readiness.get("terms"))));
+        click(id);
+        if (consent.get())
+            onView(withText(R.string.permissions_agree_continue))
+                    .perform(androidx.test.espresso.action.ViewActions.click());
+        ok();
+    }
+
+    private void photo() throws Exception {
+        File file = new File(c.getCacheDir(), "two-device-" + UUID.randomUUID() + ".jpg");
+        Bitmap bitmap = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888);
+        bitmap.eraseColor(role.equals("host") ? Color.rgb(50, 104, 73) : Color.rgb(200, 103, 82));
+        try (FileOutputStream out = new FileOutputStream(file)) {
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+        }
+        bitmap.recycle();
+        activity.onActivity(
+                a ->
+                        new ViewModelProvider(a)
+                                .get(MediaDraftViewModel.class)
+                                .add(Collections.singletonList(Uri.fromFile(file))));
+        long end = SystemClock.elapsedRealtime() + 90000;
+        AtomicBoolean ready = new AtomicBoolean();
+        AtomicReference<String> failed = new AtomicReference<>("");
+        do {
+            activity.onActivity(
+                    a -> {
+                        MediaDraftViewModel m =
+                                new ViewModelProvider(a).get(MediaDraftViewModel.class);
+                        ready.set(!m.entries.isEmpty() && m.ready());
+                        if (m.entries.stream().anyMatch(e -> e.state.equals("failed")))
+                            failed.set("verified_fixture_upload_failed");
+                    });
+            if (!failed.get().isEmpty()) fail(failed.get());
+            if (ready.get()) {
+                file.delete();
+                return;
+            }
+            SystemClock.sleep(100);
+        } while (SystemClock.elapsedRealtime() < end);
+        fail("Verified photo upload timed out");
+    }
+
+    private void report() {
+        onView(withText(startsWith(reportId)))
+                .perform(scrollTo(), androidx.test.espresso.action.ViewActions.click());
+        ok();
+    }
+
+    @Test
+    public void runAction() throws Exception {
+        assertNotNull(action);
+        switch (action) {
+            case "prepare":
+                launch(true);
+                prerequisites();
+                type("description", "Synthetic reviewed course animal");
+                type("temperament", "Gentle synthetic fixture");
+                type("careRequirements", "Daily care and safe shelter");
+                type("adoptionRequirements", "Responsible follow-up");
+                photo();
+                participatingClick(R.string.lc_save);
+                break;
+            case "apply":
+                launch(true);
+                click(R.string.lc_apply);
+                prerequisites();
+                type("introduction", "Independent course adopter");
+                type("environment", "Safe indoor test home");
+                type("care", "Daily attention");
+                type("experience", "Course demonstration only");
+                participatingClick(R.string.lc_submit);
+                break;
+            case "select":
+                activity =
+                        ActivityScenario.launch(
+                                new Intent(c, LifecycleActivity.class).putExtra("role", "host"));
+                ok();
+                onView(
+                                withText(
+                                        allOf(
+                                                containsString(
+                                                        String.valueOf(caseData.get("title"))),
+                                                containsString(
+                                                        c.getString(
+                                                                R.string.oc4_status_submitted)))))
+                        .perform(scrollTo(), androidx.test.espresso.action.ViewActions.click());
+                ok();
+                click(R.string.lc_select);
+                confirm();
+                ok();
+                break;
+            case "verifySelection":
+                launch(false);
+                activity.onActivity(
+                        a -> {
+                            assertEquals(
+                                    "CONTRACT_PENDING",
+                                    AdoptionFlowModel.object(model(a).data.get("adoption"))
+                                            .get("status"));
+                        });
+                break;
+            case "accept":
+                launch(false);
+                click(R.string.lc_accept);
+                confirm();
+                if (!error().isEmpty()) {
+                    assertTrue(error().contains("pending_reconcile"));
+                    activity.recreate();
+                    click(R.string.lc_check);
+                    ok();
+                } else ok();
+                break;
+            case "baseline":
+                launch(false);
+                click(R.string.lc_baseline);
+                photo();
+                click(R.string.lc_save);
+                ok();
+                break;
+            case "ack":
+                launch(false);
+                click(R.string.lc_ack);
+                confirm();
+                ok();
+                break;
+            case "ready":
+                launch(false);
+                click(R.string.lc_ready);
+                confirm();
+                ok();
+                break;
+            case "receive":
+                launch(false);
+                click(R.string.lc_received);
+                confirm();
+                ok();
+                break;
+            case "verify":
+                launch(false);
+                click(R.string.lc_verify);
+                confirm();
+                ok();
+                break;
+            case "report":
+                launch(false);
+                report();
+                type("condition", "Well in course fixture");
+                type("care", "Daily care recorded");
+                type("shelter", "Safe indoor shelter");
+                type("changes", "No new concerns");
+                photo();
+                click(R.string.lc_report_submit);
+                ok();
+                break;
+            case "review":
+                launch(false);
+                report();
+                click(R.string.lc_reviewed);
+                ok();
+                break;
+            case "correct":
+                launch(false);
+                report();
+                type("note", "Append-only clarification");
+                click(R.string.lc_correction);
+                ok();
+                break;
+            case "finalize":
+                launch(false);
+                click(R.string.lc_finalize);
+                confirm();
+                ok();
+                break;
+            case "readonly":
+                launch(false);
+                click(R.string.lc_chat);
+                ok();
+                assertTrue(
+                        "Finalized chat becomes read-only",
+                        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+                                .wait(
+                                        Until.hasObject(By.text(c.getString(R.string.lc_readonly))),
+                                        30000));
+                break;
+            case "cancel":
+                launch(false);
+                click(R.string.lc_dispute);
+                onView(withText(R.string.lc_cancel))
+                        .perform(androidx.test.espresso.action.ViewActions.click());
+                confirm();
+                ok();
+                break;
+            case "dispute":
+                launch(false);
+                click(R.string.lc_dispute);
+                onView(allOf(withId(android.R.id.text1), withText(R.string.lc_dispute)))
+                        .perform(androidx.test.espresso.action.ViewActions.click());
+                onView(withText(android.R.string.ok))
+                        .perform(androidx.test.espresso.action.ViewActions.click());
+                onView(withHint(R.string.lc_reason))
+                        .perform(
+                                replaceText("Independent support needed in isolated fixture"),
+                                androidx.test.espresso.action.ViewActions.closeSoftKeyboard());
+                onView(withText(R.string.lc_submit))
+                        .perform(androidx.test.espresso.action.ViewActions.click());
+                ok();
+                break;
+            case "blockedVerify":
+                launch(false);
+                click(R.string.lc_verify);
+                confirm();
+                assertTrue("Dispute prevents handover", error().contains("not_ready"));
+                break;
+            default:
+                fail("Unknown two-device action");
+        }
+        JSONObject receipt =
+                new JSONObject()
+                        .put("action", action)
+                        .put("scenario", caseName)
+                        .put("role", role)
+                        .put("report", reportId)
+                        .put("passed", true)
+                        .put("identityPreserved", uid.equals(FirebaseAuth.getInstance().getUid()))
+                        .put("isolated", true);
+        Files.write(
+                new File(c.getExternalFilesDir(null), "two-device-result.json").toPath(),
+                receipt.toString().getBytes(StandardCharsets.UTF_8));
+        if (Arrays.asList("finalize", "cancel", "dispute", "readonly").contains(action))
+            UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+                    .takeScreenshot(
+                            new File(
+                                    c.getExternalFilesDir(null),
+                                    "two-device-" + caseName + "-" + action + ".png"));
+    }
 }

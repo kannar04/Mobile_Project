@@ -1,45 +1,315 @@
 package com.gmail.manhle240406.project.notifications;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.*;
 import android.widget.*;
-import androidx.activity.EdgeToEdge;
-import androidx.appcompat.app.AppCompatActivity;
+
 import androidx.recyclerview.widget.*;
+
 import com.gmail.manhle240406.project.AniloveApplication;
 import com.gmail.manhle240406.project.R;
 import com.gmail.manhle240406.project.community.*;
 import com.gmail.manhle240406.project.foundation.*;
-import com.gmail.manhle240406.project.wiring.UnavailableScreen;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.*;
+
 import java.util.*;
 
 /** Own real inbox only; no seeded notification, push banner or fake read receipt. */
 public final class InboxFragment extends com.gmail.manhle240406.project.wiring.MainPageFragment {
- private InboxRepository repository;private SessionGateway sessions;private SessionEpoch.Ticket ticket;
- private final List<DocumentSnapshot> rows=new ArrayList<>();private RecyclerView list;private Adapter adapter;private View empty;
- private TextView loadStatus;private com.google.android.material.button.MaterialButton retry;
- private boolean busy,more=true;private DocumentSnapshot cursor;private long generation;
- private final Runnable invalidation=()->{generation++;rows.clear();if(adapter!=null)adapter.notifyDataSetChanged();showRows();};
- @Override protected void createPage(Bundle state){setContentView(R.layout.activity_inbox);SocialViews.privateView(findViewById(R.id.inbox_root));
-  LinearLayout root=findViewById(R.id.inbox_root);loadStatus=SocialSurface.muted(requireContext(),getString(R.string.wiring_loading));loadStatus.setPadding(SocialViews.dp(requireContext(),20),SocialViews.dp(requireContext(),12),SocialViews.dp(requireContext(),20),0);root.addView(loadStatus,1);
-  android.view.View accountUpdates=SocialSurface.quiet(requireContext(),getString(R.string.permissions_own_updates),()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.adoption.CourseNoticesActivity.class)));root.addView(accountUpdates,1);
-  retry=SocialSurface.quiet(requireContext(),getString(R.string.wiring_retry),this::load);retry.setVisibility(View.GONE);root.addView(retry,2);
-  findViewById(R.id.inbox_back).setOnClickListener(v->finish());
-  findViewById(R.id.inbox_settings_btn).setOnClickListener(v->startActivity(new Intent(requireActivity(),NotificationSettingsActivity.class)));
-  FirebaseEnvironment env=((AniloveApplication)getApplication()).foundation();sessions=env.sessions;ticket=sessions==null?null:sessions.capture();if(ticket==null||ticket.uid==null){finish();return;}
-  repository=new InboxRepository(FirebaseFirestore.getInstance(),sessions);sessions.onInvalidated(invalidation);empty=findViewById(R.id.inbox_empty_view);list=findViewById(R.id.inbox_recycler);list.setLayoutManager(new LinearLayoutManager(requireActivity()));adapter=new Adapter();list.setAdapter(adapter);showRows();
-  list.addOnScrollListener(new RecyclerView.OnScrollListener(){@Override public void onScrolled(RecyclerView v,int x,int y){if(y>0&&((LinearLayoutManager)list.getLayoutManager()).findLastVisibleItemPosition()>=rows.size()-5)load();}});
- }
- @Override public void onResume(){super.onResume();if(repository==null||!current())return;repository.listenHead(ticket,(snapshot,error)->{if(!current()||list==null)return;if(error!=null){loadStatus.setText(R.string.wiring_failed);loadStatus.setVisibility(View.VISIBLE);retry.setVisibility(View.VISIBLE);return;}if(snapshot==null||snapshot.getMetadata().isFromCache())return;Timestamp now=Timestamp.now();for(DocumentSnapshot row:snapshot.getDocuments()){rows.removeIf(old->old.getId().equals(row.getId()));Timestamp expiry=row.getTimestamp("expiresAt");if(expiry!=null&&expiry.compareTo(now)>0&&InboxContract.route(row.getString("kind"),row.getString("routeType"),row.getString("targetId"),row.getString("templateKey")))rows.add(row);}rows.sort((a,b)->{Timestamp x=a.getTimestamp("createdAt"),y=b.getTimestamp("createdAt");return x==null?1:y==null?-1:y.compareTo(x);});while(rows.size()>100)rows.remove(rows.size()-1);if(cursor==null&&!snapshot.isEmpty()){cursor=snapshot.getDocuments().get(snapshot.size()-1);more=snapshot.size()==20;}adapter.notifyDataSetChanged();loadStatus.setVisibility(View.GONE);retry.setVisibility(View.GONE);showRows();});}
- @Override public void onPause(){if(repository!=null)repository.detach();super.onPause();}
- private boolean current(){return !isDestroyed()&&!isFinishing()&&sessions!=null&&sessions.current(ticket);}
- private void load(){if(busy||!more||!current())return;busy=true;retry.setVisibility(View.GONE);loadStatus.setVisibility(rows.isEmpty()?View.VISIBLE:View.GONE);loadStatus.setText(R.string.wiring_loading);long g=++generation;repository.page(ticket,cursor,Timestamp.now()).addOnCompleteListener(done->{if(!current()||g!=generation)return;busy=false;if(!done.isSuccessful()){loadStatus.setText(R.string.wiring_failed);loadStatus.setVisibility(View.VISIBLE);retry.setVisibility(View.VISIBLE);return;}for(DocumentSnapshot d:done.getResult().visible)if(InboxContract.route(d.getString("kind"),d.getString("routeType"),d.getString("targetId"),d.getString("templateKey"))&&rows.stream().noneMatch(x->x.getId().equals(d.getId())))rows.add(d);while(rows.size()>100)rows.remove(0);cursor=done.getResult().rawCursor;more=done.getResult().moreCandidates;adapter.notifyDataSetChanged();loadStatus.setVisibility(View.GONE);showRows();});}
- private void showRows(){if(list==null||empty==null)return;boolean none=rows.isEmpty();list.setVisibility(none?View.GONE:View.VISIBLE);empty.setVisibility(none?View.VISIBLE:View.GONE);}
- private void open(DocumentSnapshot row){if(busy||!current())return;Long version=row.getLong("itemVersion");if(version==null)return;busy=true;repository.targetAvailable(ticket,row.getId(),Timestamp.now()).addOnCompleteListener(result->{if(!current())return;busy=false;if(!result.isSuccessful()||!Boolean.TRUE.equals(result.getResult())){Snackbar.make(list,R.string.wiring_unavailable_item,Snackbar.LENGTH_LONG).show();return;}repository.markRead(ticket,Collections.singletonMap(row.getId(),version));String route=row.getString("routeType");if("adoption".equals(row.getString("kind"))){Intent adoption=new Intent(requireActivity(),com.gmail.manhle240406.project.adoption.LifecycleActivity.class);if("adoption".equals(route))adoption.putExtra("adoption",row.getString("targetId"));else if("adoption_request".equals(route))adoption.putExtra("request",row.getString("targetId"));startActivity(adoption);}else if("direct".equals(route))com.gmail.manhle240406.project.MainActivity.open(requireActivity(),"direct:"+row.getString("targetId"));else if("post".equals(route))startActivity(new Intent(requireActivity(),SocialDetailActivity.class).putExtra("post",row.getString("targetId")));else if("pet".equals(route))startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.pet.PetActivity.class));else if("own_report".equals(route))startActivity(new Intent(requireActivity(),MyReportsActivity.class));});}
- @Override public void onDestroyView(){generation++;if(repository!=null)repository.close();if(sessions!=null)sessions.removeInvalidation(invalidation);super.onDestroyView();}
- private final class Adapter extends RecyclerView.Adapter<Holder>{public int getItemCount(){return rows.size();}public Holder onCreateViewHolder(ViewGroup p,int type){return new Holder(getLayoutInflater().inflate(R.layout.item_inbox,p,false));}public void onBindViewHolder(Holder h,int p){DocumentSnapshot d=rows.get(p);TextView title=h.itemView.findViewById(R.id.inbox_title);title.setText("pet_review".equals(d.getString("kind"))?("pet_approved".equals(d.getString("templateKey"))?R.string.feedback_pet_approved:R.string.feedback_pet_rejected):"adoption".equals(d.getString("kind"))?R.string.lc_push_generic:"message".equals(d.getString("kind"))?R.string.oc4_notification_message:"like".equals(d.getString("kind"))?R.string.oc4_notification_like:"comment".equals(d.getString("kind"))?R.string.wiring_inbox_comment:R.string.wiring_inbox_activity);ImageView icon=h.itemView.findViewById(R.id.inbox_avatar);icon.setImageResource(InboxPresentation.icon(d.getString("kind")));icon.setContentDescription(title.getText());((TextView)h.itemView.findViewById(R.id.inbox_message)).setText("own_report".equals(d.getString("routeType"))?R.string.report_received:R.string.wiring_inbox_open);((TextView)h.itemView.findViewById(R.id.inbox_time)).setText(d.getTimestamp("createdAt")==null?"":java.text.DateFormat.getDateTimeInstance().format(d.getTimestamp("createdAt").toDate()));h.itemView.findViewById(R.id.inbox_unread_dot).setVisibility(d.get("readAt")==null?View.VISIBLE:View.INVISIBLE);h.itemView.setOnClickListener(v->open(d));}}
- private static final class Holder extends RecyclerView.ViewHolder{Holder(View v){super(v);}}
+    private InboxRepository repository;
+    private SessionGateway sessions;
+    private SessionEpoch.Ticket ticket;
+    private final List<DocumentSnapshot> rows = new ArrayList<>();
+    private RecyclerView list;
+    private Adapter adapter;
+    private View empty;
+    private TextView loadStatus;
+    private com.google.android.material.button.MaterialButton retry;
+    private boolean busy, more = true;
+    private DocumentSnapshot cursor;
+    private long generation;
+    private final Runnable invalidation =
+            () -> {
+                generation++;
+                rows.clear();
+                if (adapter != null) adapter.notifyDataSetChanged();
+                showRows();
+            };
+
+    @Override
+    protected void createPage(Bundle state) {
+        setContentView(R.layout.activity_inbox);
+        SocialViews.privateView(findViewById(R.id.inbox_root));
+        LinearLayout root = findViewById(R.id.inbox_root);
+        loadStatus = SocialSurface.muted(requireContext(), getString(R.string.wiring_loading));
+        loadStatus.setPadding(
+                SocialViews.dp(requireContext(), 20),
+                SocialViews.dp(requireContext(), 12),
+                SocialViews.dp(requireContext(), 20),
+                0);
+        root.addView(loadStatus, 1);
+        android.view.View accountUpdates =
+                SocialSurface.quiet(
+                        requireContext(),
+                        getString(R.string.permissions_own_updates),
+                        () ->
+                                startActivity(
+                                        new Intent(
+                                                requireActivity(),
+                                                com.gmail.manhle240406.project.adoption
+                                                        .CourseNoticesActivity.class)));
+        root.addView(accountUpdates, 1);
+        retry = SocialSurface.quiet(requireContext(), getString(R.string.wiring_retry), this::load);
+        retry.setVisibility(View.GONE);
+        root.addView(retry, 2);
+        findViewById(R.id.inbox_back).setOnClickListener(v -> finish());
+        findViewById(R.id.inbox_settings_btn)
+                .setOnClickListener(
+                        v ->
+                                startActivity(
+                                        new Intent(
+                                                requireActivity(),
+                                                NotificationSettingsActivity.class)));
+        FirebaseEnvironment env = ((AniloveApplication) getApplication()).foundation();
+        sessions = env.sessions;
+        ticket = sessions == null ? null : sessions.capture();
+        if (ticket == null || ticket.uid == null) {
+            finish();
+            return;
+        }
+        repository = new InboxRepository(FirebaseFirestore.getInstance(), sessions);
+        sessions.onInvalidated(invalidation);
+        empty = findViewById(R.id.inbox_empty_view);
+        list = findViewById(R.id.inbox_recycler);
+        list.setLayoutManager(new LinearLayoutManager(requireActivity()));
+        adapter = new Adapter();
+        list.setAdapter(adapter);
+        showRows();
+        list.addOnScrollListener(
+                new RecyclerView.OnScrollListener() {
+                    @Override
+                    public void onScrolled(RecyclerView v, int x, int y) {
+                        if (y > 0
+                                && ((LinearLayoutManager) list.getLayoutManager())
+                                                .findLastVisibleItemPosition()
+                                        >= rows.size() - 5) load();
+                    }
+                });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (repository == null || !current()) return;
+        repository.listenHead(
+                ticket,
+                (snapshot, error) -> {
+                    if (!current() || list == null) return;
+                    if (error != null) {
+                        loadStatus.setText(R.string.wiring_failed);
+                        loadStatus.setVisibility(View.VISIBLE);
+                        retry.setVisibility(View.VISIBLE);
+                        return;
+                    }
+                    if (snapshot == null || snapshot.getMetadata().isFromCache()) return;
+                    Timestamp now = Timestamp.now();
+                    for (DocumentSnapshot row : snapshot.getDocuments()) {
+                        rows.removeIf(old -> old.getId().equals(row.getId()));
+                        Timestamp expiry = row.getTimestamp("expiresAt");
+                        if (expiry != null
+                                && expiry.compareTo(now) > 0
+                                && InboxContract.route(
+                                        row.getString("kind"),
+                                        row.getString("routeType"),
+                                        row.getString("targetId"),
+                                        row.getString("templateKey"))) rows.add(row);
+                    }
+                    rows.sort(
+                            (a, b) -> {
+                                Timestamp x = a.getTimestamp("createdAt"),
+                                        y = b.getTimestamp("createdAt");
+                                return x == null ? 1 : y == null ? -1 : y.compareTo(x);
+                            });
+                    while (rows.size() > 100) rows.remove(rows.size() - 1);
+                    if (cursor == null && !snapshot.isEmpty()) {
+                        cursor = snapshot.getDocuments().get(snapshot.size() - 1);
+                        more = snapshot.size() == 20;
+                    }
+                    adapter.notifyDataSetChanged();
+                    loadStatus.setVisibility(View.GONE);
+                    retry.setVisibility(View.GONE);
+                    showRows();
+                });
+    }
+
+    @Override
+    public void onPause() {
+        if (repository != null) repository.detach();
+        super.onPause();
+    }
+
+    private boolean current() {
+        return !isDestroyed() && !isFinishing() && sessions != null && sessions.current(ticket);
+    }
+
+    private void load() {
+        if (busy || !more || !current()) return;
+        busy = true;
+        retry.setVisibility(View.GONE);
+        loadStatus.setVisibility(rows.isEmpty() ? View.VISIBLE : View.GONE);
+        loadStatus.setText(R.string.wiring_loading);
+        long g = ++generation;
+        repository
+                .page(ticket, cursor, Timestamp.now())
+                .addOnCompleteListener(
+                        done -> {
+                            if (!current() || g != generation) return;
+                            busy = false;
+                            if (!done.isSuccessful()) {
+                                loadStatus.setText(R.string.wiring_failed);
+                                loadStatus.setVisibility(View.VISIBLE);
+                                retry.setVisibility(View.VISIBLE);
+                                return;
+                            }
+                            for (DocumentSnapshot d : done.getResult().visible)
+                                if (InboxContract.route(
+                                                d.getString("kind"),
+                                                d.getString("routeType"),
+                                                d.getString("targetId"),
+                                                d.getString("templateKey"))
+                                        && rows.stream()
+                                                .noneMatch(x -> x.getId().equals(d.getId())))
+                                    rows.add(d);
+                            while (rows.size() > 100) rows.remove(0);
+                            cursor = done.getResult().rawCursor;
+                            more = done.getResult().moreCandidates;
+                            adapter.notifyDataSetChanged();
+                            loadStatus.setVisibility(View.GONE);
+                            showRows();
+                        });
+    }
+
+    private void showRows() {
+        if (list == null || empty == null) return;
+        boolean none = rows.isEmpty();
+        list.setVisibility(none ? View.GONE : View.VISIBLE);
+        empty.setVisibility(none ? View.VISIBLE : View.GONE);
+    }
+
+    private void open(DocumentSnapshot row) {
+        if (busy || !current()) return;
+        Long version = row.getLong("itemVersion");
+        if (version == null) return;
+        busy = true;
+        repository
+                .targetAvailable(ticket, row.getId(), Timestamp.now())
+                .addOnCompleteListener(
+                        result -> {
+                            if (!current()) return;
+                            busy = false;
+                            if (!result.isSuccessful()
+                                    || !Boolean.TRUE.equals(result.getResult())) {
+                                Snackbar.make(
+                                                list,
+                                                R.string.wiring_unavailable_item,
+                                                Snackbar.LENGTH_LONG)
+                                        .show();
+                                return;
+                            }
+                            repository.markRead(
+                                    ticket, Collections.singletonMap(row.getId(), version));
+                            String route = row.getString("routeType");
+                            if ("adoption".equals(row.getString("kind"))) {
+                                Intent adoption =
+                                        new Intent(
+                                                requireActivity(),
+                                                com.gmail.manhle240406.project.adoption
+                                                        .LifecycleActivity.class);
+                                if ("adoption".equals(route))
+                                    adoption.putExtra("adoption", row.getString("targetId"));
+                                else if ("adoption_request".equals(route))
+                                    adoption.putExtra("request", row.getString("targetId"));
+                                startActivity(adoption);
+                            } else if ("direct".equals(route))
+                                com.gmail.manhle240406.project.MainActivity.open(
+                                        requireActivity(), "direct:" + row.getString("targetId"));
+                            else if ("post".equals(route))
+                                startActivity(
+                                        new Intent(requireActivity(), SocialDetailActivity.class)
+                                                .putExtra("post", row.getString("targetId")));
+                            else if ("pet".equals(route))
+                                startActivity(
+                                        new Intent(
+                                                requireActivity(),
+                                                com.gmail.manhle240406.project.pet.PetActivity
+                                                        .class));
+                            else if ("own_report".equals(route))
+                                startActivity(
+                                        new Intent(requireActivity(), MyReportsActivity.class));
+                        });
+    }
+
+    @Override
+    public void onDestroyView() {
+        generation++;
+        if (repository != null) repository.close();
+        if (sessions != null) sessions.removeInvalidation(invalidation);
+        super.onDestroyView();
+    }
+
+    private final class Adapter extends RecyclerView.Adapter<Holder> {
+        public int getItemCount() {
+            return rows.size();
+        }
+
+        public Holder onCreateViewHolder(ViewGroup p, int type) {
+            return new Holder(getLayoutInflater().inflate(R.layout.item_inbox, p, false));
+        }
+
+        public void onBindViewHolder(Holder h, int p) {
+            DocumentSnapshot d = rows.get(p);
+            TextView title = h.itemView.findViewById(R.id.inbox_title);
+            title.setText(
+                    "pet_review".equals(d.getString("kind"))
+                            ? ("pet_approved".equals(d.getString("templateKey"))
+                                    ? R.string.feedback_pet_approved
+                                    : R.string.feedback_pet_rejected)
+                            : "adoption".equals(d.getString("kind"))
+                                    ? R.string.lc_push_generic
+                                    : "message".equals(d.getString("kind"))
+                                            ? R.string.oc4_notification_message
+                                            : "like".equals(d.getString("kind"))
+                                                    ? R.string.oc4_notification_like
+                                                    : "comment".equals(d.getString("kind"))
+                                                            ? R.string.wiring_inbox_comment
+                                                            : R.string.wiring_inbox_activity);
+            ImageView icon = h.itemView.findViewById(R.id.inbox_avatar);
+            icon.setImageResource(InboxPresentation.icon(d.getString("kind")));
+            icon.setContentDescription(title.getText());
+            ((TextView) h.itemView.findViewById(R.id.inbox_message))
+                    .setText(
+                            "own_report".equals(d.getString("routeType"))
+                                    ? R.string.report_received
+                                    : R.string.wiring_inbox_open);
+            ((TextView) h.itemView.findViewById(R.id.inbox_time))
+                    .setText(
+                            d.getTimestamp("createdAt") == null
+                                    ? ""
+                                    : java.text.DateFormat.getDateTimeInstance()
+                                            .format(d.getTimestamp("createdAt").toDate()));
+            h.itemView
+                    .findViewById(R.id.inbox_unread_dot)
+                    .setVisibility(d.get("readAt") == null ? View.VISIBLE : View.INVISIBLE);
+            h.itemView.setOnClickListener(v -> open(d));
+        }
+    }
+
+    private static final class Holder extends RecyclerView.ViewHolder {
+        Holder(View v) {
+            super(v);
+        }
+    }
 }

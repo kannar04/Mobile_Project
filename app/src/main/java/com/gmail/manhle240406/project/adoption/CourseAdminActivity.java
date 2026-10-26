@@ -1,58 +1,694 @@
 package com.gmail.manhle240406.project.adoption;
-import android.os.Bundle;import android.widget.*;import androidx.activity.*;import androidx.appcompat.app.AppCompatActivity;import androidx.lifecycle.ViewModelProvider;import com.google.android.material.textfield.TextInputEditText;import com.gmail.manhle240406.project.R;import com.gmail.manhle240406.project.community.*;import java.util.*;import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.*;
+
+import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.*;
+
+import android.os.Bundle;
+import android.widget.*;
+
+import androidx.activity.*;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
+
+import com.gmail.manhle240406.project.R;
+import com.gmail.manhle240406.project.community.*;
+import com.google.android.material.textfield.TextInputEditText;
+
+import java.util.*;
 
 /** Existing native task primitives, backed by strictly scoped managed operations. */
 public class CourseAdminActivity extends AppCompatActivity {
- private androidx.appcompat.app.AlertDialog leaveDialog;private AdoptionFlowModel m;private LinearLayout body;private String kind="post",parent,after;
- private static final String[] KINDS={"post","listing","pet","lost_found","foster_ad","report"};
- @Override public void onCreate(Bundle saved){super.onCreate(saved);EdgeToEdge.enable(this);m=new ViewModelProvider(this).get(AdoptionFlowModel.class);if(saved!=null){kind=saved.getString("kind","post");parent=saved.getString("parent");after=saved.getString("after");}m.changes.observe(this,x->render());if(saved==null){if("accounts".equals(getIntent().getStringExtra("adminSection"))){m.page="adminSearch";m.data=new HashMap<>();m.changed();}else queue();}getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){public void handleOnBackPressed(){back();}});}
- @Override protected void onSaveInstanceState(Bundle out){out.putString("kind",kind);out.putString("parent",parent);out.putString("after",after);super.onSaveInstanceState(out);}
- private void queue(){m.load("adminQueue","courseAdminRead",map("mode","queue","kind",kind,"parentId",parent,"after",after));}
- private void button(int text,Runnable action,boolean primary){android.view.View b=primary?SocialViews.primaryButton(this,getString(text),action):SocialSurface.quiet(this,getString(text),action);b.setEnabled(!m.busy&&(!m.uncertain()||text==R.string.ad_check_result||text==R.string.ad_retry_same));body.addView(b);}
- private void back(){
-  if(m.busy||m.uncertain()){leaveDialog=new com.google.android.material.dialog.MaterialAlertDialogBuilder(this).setMessage(R.string.permissions_leave_pending).setPositiveButton(R.string.permissions_leave_tools,(d,w)->finish()).setNegativeButton(android.R.string.cancel,null).show();return;}
-  if("adminAccount".equals(m.page)){Map<String,Object> back=object(m.extras.get("accountBackTarget"));if(!back.isEmpty())m.load("adminTarget","courseAdminRead",back);else if(m.extras.get("accountQuery")!=null)searchAccounts();else queue();return;}
-  if("adminSearch".equals(m.page)){if("accounts".equals(getIntent().getStringExtra("adminSection")))finish();else queue();return;}
-  if("adminTarget".equals(m.page)&&m.extras.get("reportBack")!=null){loadReport(String.valueOf(m.extras.get("reportBack")));return;}
-  if("adminTarget".equals(m.page)){queue();return;}
-  if("adminReport".equals(m.page)){m.extras.remove("reportBack");m.extras.remove("lastModerationAction");queue();return;}
-  if(parent!=null){parent=null;kind="post";after=null;queue();return;}finish();
- }
- @Override protected void onDestroy(){if(leaveDialog!=null)leaveDialog.dismiss();super.onDestroy();}
- private void render(){if(m.lost){finish();return;}LinearLayout root=SocialSurface.page(this);SocialViews.privateView(root);SocialSurface.header(this,root,"accounts".equals(getIntent().getStringExtra("adminSection"))?R.string.flow_admin_accounts:R.string.f39_title,this::back);body=SocialSurface.content(this,root);
-  if(m.busy)body.addView(SocialSurface.muted(this,getString(R.string.wiring_loading)));
-  if(!m.error.isEmpty()){body.addView(SocialSurface.muted(this,getString(m.error.contains("reauthentication")?R.string.permissions_reauth:R.string.permissions_admin_error)));if(m.uncertain()){button(R.string.ad_check_result,m::reconcile,true);button(R.string.ad_retry_same,m::retrySame,false);}else button(R.string.wiring_retry,this::reload,false);}
-  if("adminAccount".equals(m.page)){account();return;}if("adminSearch".equals(m.page)){accountSearch();return;}if("adminReport".equals(m.page)){report();return;}if("adminTarget".equals(m.page)){target();return;}
-  TextInputEditText accountQuery=SocialViews.field(this,body,getString(R.string.permissions_account_search_hint),1);accountQuery.setSingleLine(true);accountQuery.setText(String.valueOf(m.extras.getOrDefault("accountQuery","")));remember(accountQuery,"accountQuery");accountQuery.setEnabled(!m.busy&&!m.uncertain());button(R.string.permissions_account_search,()->{String query=accountQuery.getText().toString().trim();if(query.length()<2){accountQuery.setError(getString(R.string.permissions_account_search_error));return;}m.extras.put("accountQuery",query);searchAccounts();},false);
-  Spinner types=new Spinner(this);types.setMinimumHeight(SocialViews.dp(this,48));types.setContentDescription(getString(R.string.permissions_content_type));types.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,getResources().getStringArray(R.array.permissions_content_types)));types.setSelection(Math.max(0,Arrays.asList(KINDS).indexOf(kind)));types.setEnabled(!m.busy&&!m.uncertain());body.addView(types);if("comment".equals(kind)){types.setVisibility(android.view.View.GONE);body.addView(SocialViews.text(this,getString(R.string.permissions_comments),true));}types.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){public void onItemSelected(AdapterView<?> p,android.view.View v,int position,long id){if(!"comment".equals(kind)&&!KINDS[position].equals(kind)&&!m.busy){kind=KINDS[position];parent=null;after=null;queue();}}public void onNothingSelected(AdapterView<?> p){}});
-  for(Map<String,Object> row:rows(m.data.get("rows"))){String title=row.get("title")==null?getString(R.string.permissions_content_item):String.valueOf(row.get("title"));if(title.length()>100)title=title.substring(0,100);String label=title+"\n"+getString("held".equals(row.get("state"))?R.string.permissions_held:R.string.permissions_clear);android.view.View b=SocialSurface.quiet(this,label,()->open(row));b.setEnabled(!m.busy&&!m.uncertain());body.addView(b);}
-  if(!m.busy&&m.error.isEmpty()&&rows(m.data.get("rows")).isEmpty())body.addView(SocialSurface.muted(this,getString(R.string.lc_empty)));
-  if(m.data.get("next")!=null)button(R.string.oc3_next,()->{after=String.valueOf(m.data.get("next"));queue();},false);
-  button(after==null?R.string.ad_refresh:R.string.permissions_first_page,()->{after=null;queue();},false);button(R.string.lc_cases,()->startActivity(new android.content.Intent(this,LifecycleActivity.class).putExtra("mode","cases")),false);
- }
- private void open(Map<String,Object> row){m.extras.put("selectedTitle",row.get("title"));if("report".equals(row.get("kind"))){m.extras.remove("lastModerationAction");m.extras.remove("reportBack");String id=String.valueOf(row.get("targetId"));m.write("courseReport",map("command","claim","reportId",id,"expectedVersion",0),()->loadReport(id));}else m.load("adminTarget","courseAdminRead",map("mode","target","kind",row.get("kind"),"targetId",row.get("targetId"),"parentId",row.get("parentId")));}
- private void loadReport(String id){m.load("adminReport","courseReportRead",map("workId",id,"purpose","Review the assigned course report"));}
- private void report(){Map<String,Object> r=object(m.data.get("report")),assignment=object(m.data.get("assignment"));if(r.isEmpty())return;body.addView(SocialViews.text(this,String.valueOf(r.getOrDefault("statement","")),false));TextInputEditText response=SocialViews.field(this,body,getString(R.string.permissions_report_response),3);response.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(1000)});response.setText(String.valueOf(m.extras.getOrDefault("reportResponse","")));remember(response,"reportResponse");response.setEnabled(!m.busy&&!m.uncertain());String id=String.valueOf(r.get("reportId"));
-  Map<String,Object> evidence=object(m.data.get("evidence"));com.gmail.manhle240406.project.media.MediaGrid evidenceGrid=new com.gmail.manhle240406.project.media.MediaGrid(this);evidenceGrid.bind(evidence.get("assetIds"));body.addView(evidenceGrid);
-  if(Arrays.asList("post","comment","listing").contains(r.get("targetKind")))button(R.string.permissions_review_content,()->{m.extras.put("reportBack",id);m.load("adminTarget","courseAdminRead",map("mode","target","kind",r.get("targetKind"),"targetId",r.get("targetId"),"parentId",r.get("parentId")));},false);
-  java.util.function.Consumer<String> resolve=outcome->{String text=response.getText().toString().trim();if(text.isEmpty()){response.setError(getString(R.string.ad_required));return;}m.write("courseReport",map("command","resolve","reportId",id,"expectedVersion",assignment.get("assignmentVersion"),"sourceVersion",r.get("statusVersion"),"outcome",outcome,"response",text,"actionId",outcome.equals("action_recorded")?m.extras.get("lastModerationAction"):null),()->{m.extras.remove("reportBack");m.extras.remove("lastModerationAction");m.extras.remove("reportResponse");queue();});};
-  button(R.string.permissions_report_no_action,()->resolve.accept("resolved_no_action"),true);if(m.extras.get("lastModerationAction")!=null)button(R.string.permissions_report_action,()->resolve.accept("action_recorded"),false);button(R.string.permissions_report_specialist,()->resolve.accept("needs_specialist"),false);
- }
- private void loadAccount(String uid){m.load("adminAccount","courseAccountRead",map("uid",uid));}
- private void searchAccounts(){String query=String.valueOf(m.extras.getOrDefault("accountQuery","")).trim();if(query.length()>=2)m.load("adminSearch","courseAccountRead",map("query",query));}
- private void reload(){if(m.lastReadOperation!=null)m.load(m.page,m.lastReadOperation,new HashMap<>(m.lastReadInput));else queue();}
- private void accountSearch(){TextInputEditText query=SocialViews.field(this,body,getString(R.string.permissions_account_search_hint),1);query.setSingleLine(true);query.setText(String.valueOf(m.extras.getOrDefault("accountQuery","")));remember(query,"accountQuery");query.setEnabled(!m.busy&&!m.uncertain());button(R.string.permissions_account_search,()->{String text=query.getText().toString().trim();if(text.length()<2){query.setError(getString(R.string.permissions_account_search_error));return;}m.extras.put("accountQuery",text);searchAccounts();},true);List<Map<String,Object>> accounts=rows(m.data.get("rows"));if(!m.busy&&m.error.isEmpty()&&accounts.isEmpty())body.addView(SocialSurface.muted(this,getString(R.string.permissions_account_empty)));for(Map<String,Object> a:accounts){String alias=String.valueOf(a.getOrDefault("alias",getString(R.string.permissions_account_unknown))),email=String.valueOf(a.getOrDefault("email",""));android.view.View row=SocialSurface.quiet(this,alias+(email.isEmpty()?"":"\n"+email)+(Boolean.TRUE.equals(a.get("admin"))?"\n"+getString(R.string.permissions_admin_badge):""),()->loadAccount(String.valueOf(a.get("uid"))));row.setEnabled(!m.busy&&!m.uncertain());body.addView(row);}}
- private void account(){Map<String,Object> a=object(m.data.get("account"));if(a.isEmpty())return;String uid=String.valueOf(a.get("uid"));body.addView(SocialViews.text(this,String.valueOf(a.getOrDefault("alias","")),true));TextInputEditText reason=SocialViews.field(this,body,getString(R.string.lc_reason),3);reason.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(1000)});reason.setText(String.valueOf(m.extras.getOrDefault("accountReason","")));remember(reason,"accountReason");reason.setEnabled(!m.busy&&!m.uncertain());
-  java.util.function.Consumer<Map<String,Object>> commit=input->{String text=reason.getText().toString().trim();if(text.isEmpty()){reason.setError(getString(R.string.ad_required));return;}input.put("reason",text);m.write("courseAccount",input,()->{m.extras.remove("accountReason");loadAccount(uid);});};
-  for(String scope:new String[]{"community_publication","new_offering","new_adoption"}){int label=scope.equals("community_publication")?R.string.permissions_restrict_posts:scope.equals("new_offering")?R.string.permissions_restrict_offers:R.string.permissions_restrict_adoptions;button(label,()->commit.accept(map("command","precaution","decisionId",java.util.UUID.randomUUID().toString(),"targetUid",uid,"scope",scope,"sourceKind","account","sourceId",uid,"sourceVersion",a.get("directoryVersion"),"expectedVersion",m.data.get("restrictionVersion"))),false);}
-  button(R.string.permissions_ban_account,()->commit.accept(map("command","final","decisionId",java.util.UUID.randomUUID().toString(),"targetUid",uid,"scope","platform_access","sourceKind","account","sourceId",uid,"sourceVersion",a.get("directoryVersion"),"expectedVersion",m.data.get("restrictionVersion"))),true);
-  boolean admin=Boolean.TRUE.equals(a.get("admin"));button(admin?R.string.permissions_demote_admin:R.string.permissions_promote_admin,()->{String text=reason.getText().toString().trim();if(text.isEmpty()){reason.setError(getString(R.string.ad_required));return;}new com.google.android.material.dialog.MaterialAlertDialogBuilder(this).setTitle(admin?R.string.permissions_demote_admin:R.string.permissions_promote_admin).setMessage(admin?R.string.permissions_demote_confirm:R.string.permissions_promote_confirm).setNegativeButton(android.R.string.cancel,null).setPositiveButton(R.string.permissions_confirm,(d,w)->m.write("courseAccount",map("command",admin?"demote_admin":"promote_admin","targetUid",uid,"expectedVersion",number(a.get("capabilityVersion")),"reason",text),()->{m.extras.remove("accountReason");loadAccount(uid);})).show();},false);
-  for(Map<String,Object> d:rows(m.data.get("decisions"))){body.addView(SocialSurface.muted(this,String.valueOf(d.get("reason"))));button(R.string.permissions_lift_restriction,()->commit.accept(map("command","lift","decisionId",d.get("decisionId"),"expectedVersion",d.get("version"))),false);}
- }
- private void remember(TextInputEditText field,String key){field.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int f){}public void afterTextChanged(android.text.Editable e){}public void onTextChanged(CharSequence s,int a,int b,int c){m.extras.put(key,s.toString());}});}
- private void target(){if(m.extras.get("selectedTitle")!=null)body.addView(SocialViews.text(this,String.valueOf(m.extras.get("selectedTitle")),true));Map<String,Object> target=m.data,control=object(target.get("control"));boolean held="held".equals(control.get("state"));body.addView(SocialViews.text(this,getString(held?R.string.permissions_held:R.string.permissions_clear),true));TextInputEditText reason=SocialViews.field(this,body,getString(R.string.lc_reason),3);reason.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(1000)});reason.setText(String.valueOf(m.extras.getOrDefault("moderationReason","")));reason.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int f){}public void afterTextChanged(android.text.Editable e){}public void onTextChanged(CharSequence s,int a,int b,int c){m.extras.put("moderationReason",s.toString());}});reason.setEnabled(!m.busy&&!m.uncertain());
-  button(held?R.string.permissions_restore:R.string.permissions_hold,()->{String text=reason.getText().toString().trim();if(text.isEmpty()){reason.setError(getString(R.string.ad_required));return;}Map<String,Object> input=map("command",held?"restore":"hold","kind",target.get("kind"),"targetId",target.get("targetId"),"parentId",target.get("parentId"),"sourceVersion",target.get("sourceVersion"),"expectedVersion",number(control.get("version")),"reason",text);if(held)input.put("holdActionId",control.get("holdActionId"));m.write("courseModerate",input,()->{m.extras.remove("moderationReason");m.extras.put("lastModerationAction",m.data.get("actionId"));if(m.extras.get("reportBack")!=null)loadReport(String.valueOf(m.extras.get("reportBack")));else queue();});},true);
-  if(target.get("ownerUid") instanceof String)button(R.string.permissions_manage_account,()->{m.extras.put("accountBackTarget",map("mode","target","kind",target.get("kind"),"targetId",target.get("targetId"),"parentId",target.get("parentId")));loadAccount(String.valueOf(target.get("ownerUid")));},false);
-  if("post".equals(target.get("kind")))button(R.string.permissions_comments,()->{kind="comment";parent=String.valueOf(target.get("targetId"));after=null;queue();},false);
- }
+    private androidx.appcompat.app.AlertDialog leaveDialog;
+    private AdoptionFlowModel m;
+    private LinearLayout body;
+    private String kind = "post", parent, after;
+    private static final String[] KINDS = {
+        "post", "listing", "pet", "lost_found", "foster_ad", "report"
+    };
+
+    @Override
+    public void onCreate(Bundle saved) {
+        super.onCreate(saved);
+        EdgeToEdge.enable(this);
+        m = new ViewModelProvider(this).get(AdoptionFlowModel.class);
+        if (saved != null) {
+            kind = saved.getString("kind", "post");
+            parent = saved.getString("parent");
+            after = saved.getString("after");
+        }
+        m.changes.observe(this, x -> render());
+        if (saved == null) {
+            if ("accounts".equals(getIntent().getStringExtra("adminSection"))) {
+                m.page = "adminSearch";
+                m.data = new HashMap<>();
+                m.changed();
+            } else queue();
+        }
+        getOnBackPressedDispatcher()
+                .addCallback(
+                        this,
+                        new OnBackPressedCallback(true) {
+                            public void handleOnBackPressed() {
+                                back();
+                            }
+                        });
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle out) {
+        out.putString("kind", kind);
+        out.putString("parent", parent);
+        out.putString("after", after);
+        super.onSaveInstanceState(out);
+    }
+
+    private void queue() {
+        m.load(
+                "adminQueue",
+                "courseAdminRead",
+                map("mode", "queue", "kind", kind, "parentId", parent, "after", after));
+    }
+
+    private void button(int text, Runnable action, boolean primary) {
+        android.view.View b =
+                primary
+                        ? SocialViews.primaryButton(this, getString(text), action)
+                        : SocialSurface.quiet(this, getString(text), action);
+        b.setEnabled(
+                !m.busy
+                        && (!m.uncertain()
+                                || text == R.string.ad_check_result
+                                || text == R.string.ad_retry_same));
+        body.addView(b);
+    }
+
+    private void back() {
+        if (m.busy || m.uncertain()) {
+            leaveDialog =
+                    new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                            .setMessage(R.string.permissions_leave_pending)
+                            .setPositiveButton(R.string.permissions_leave_tools, (d, w) -> finish())
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .show();
+            return;
+        }
+        if ("adminAccount".equals(m.page)) {
+            Map<String, Object> back = object(m.extras.get("accountBackTarget"));
+            if (!back.isEmpty()) m.load("adminTarget", "courseAdminRead", back);
+            else if (m.extras.get("accountQuery") != null) searchAccounts();
+            else queue();
+            return;
+        }
+        if ("adminSearch".equals(m.page)) {
+            if ("accounts".equals(getIntent().getStringExtra("adminSection"))) finish();
+            else queue();
+            return;
+        }
+        if ("adminTarget".equals(m.page) && m.extras.get("reportBack") != null) {
+            loadReport(String.valueOf(m.extras.get("reportBack")));
+            return;
+        }
+        if ("adminTarget".equals(m.page)) {
+            queue();
+            return;
+        }
+        if ("adminReport".equals(m.page)) {
+            m.extras.remove("reportBack");
+            m.extras.remove("lastModerationAction");
+            queue();
+            return;
+        }
+        if (parent != null) {
+            parent = null;
+            kind = "post";
+            after = null;
+            queue();
+            return;
+        }
+        finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (leaveDialog != null) leaveDialog.dismiss();
+        super.onDestroy();
+    }
+
+    private void render() {
+        if (m.lost) {
+            finish();
+            return;
+        }
+        LinearLayout root = SocialSurface.page(this);
+        SocialViews.privateView(root);
+        SocialSurface.header(
+                this,
+                root,
+                "accounts".equals(getIntent().getStringExtra("adminSection"))
+                        ? R.string.flow_admin_accounts
+                        : R.string.f39_title,
+                this::back);
+        body = SocialSurface.content(this, root);
+        if (m.busy) body.addView(SocialSurface.muted(this, getString(R.string.wiring_loading)));
+        if (!m.error.isEmpty()) {
+            body.addView(
+                    SocialSurface.muted(
+                            this,
+                            getString(
+                                    m.error.contains("reauthentication")
+                                            ? R.string.permissions_reauth
+                                            : R.string.permissions_admin_error)));
+            if (m.uncertain()) {
+                button(R.string.ad_check_result, m::reconcile, true);
+                button(R.string.ad_retry_same, m::retrySame, false);
+            } else button(R.string.wiring_retry, this::reload, false);
+        }
+        if ("adminAccount".equals(m.page)) {
+            account();
+            return;
+        }
+        if ("adminSearch".equals(m.page)) {
+            accountSearch();
+            return;
+        }
+        if ("adminReport".equals(m.page)) {
+            report();
+            return;
+        }
+        if ("adminTarget".equals(m.page)) {
+            target();
+            return;
+        }
+        TextInputEditText accountQuery =
+                SocialViews.field(
+                        this, body, getString(R.string.permissions_account_search_hint), 1);
+        accountQuery.setSingleLine(true);
+        accountQuery.setText(String.valueOf(m.extras.getOrDefault("accountQuery", "")));
+        remember(accountQuery, "accountQuery");
+        accountQuery.setEnabled(!m.busy && !m.uncertain());
+        button(
+                R.string.permissions_account_search,
+                () -> {
+                    String query = accountQuery.getText().toString().trim();
+                    if (query.length() < 2) {
+                        accountQuery.setError(getString(R.string.permissions_account_search_error));
+                        return;
+                    }
+                    m.extras.put("accountQuery", query);
+                    searchAccounts();
+                },
+                false);
+        Spinner types = new Spinner(this);
+        types.setMinimumHeight(SocialViews.dp(this, 48));
+        types.setContentDescription(getString(R.string.permissions_content_type));
+        types.setAdapter(
+                new ArrayAdapter<>(
+                        this,
+                        android.R.layout.simple_spinner_dropdown_item,
+                        getResources().getStringArray(R.array.permissions_content_types)));
+        types.setSelection(Math.max(0, Arrays.asList(KINDS).indexOf(kind)));
+        types.setEnabled(!m.busy && !m.uncertain());
+        body.addView(types);
+        if ("comment".equals(kind)) {
+            types.setVisibility(android.view.View.GONE);
+            body.addView(SocialViews.text(this, getString(R.string.permissions_comments), true));
+        }
+        types.setOnItemSelectedListener(
+                new AdapterView.OnItemSelectedListener() {
+                    public void onItemSelected(
+                            AdapterView<?> p, android.view.View v, int position, long id) {
+                        if (!"comment".equals(kind) && !KINDS[position].equals(kind) && !m.busy) {
+                            kind = KINDS[position];
+                            parent = null;
+                            after = null;
+                            queue();
+                        }
+                    }
+
+                    public void onNothingSelected(AdapterView<?> p) {}
+                });
+        for (Map<String, Object> row : rows(m.data.get("rows"))) {
+            String title =
+                    row.get("title") == null
+                            ? getString(R.string.permissions_content_item)
+                            : String.valueOf(row.get("title"));
+            if (title.length() > 100) title = title.substring(0, 100);
+            String label =
+                    title
+                            + "\n"
+                            + getString(
+                                    "held".equals(row.get("state"))
+                                            ? R.string.permissions_held
+                                            : R.string.permissions_clear);
+            android.view.View b = SocialSurface.quiet(this, label, () -> open(row));
+            b.setEnabled(!m.busy && !m.uncertain());
+            body.addView(b);
+        }
+        if (!m.busy && m.error.isEmpty() && rows(m.data.get("rows")).isEmpty())
+            body.addView(SocialSurface.muted(this, getString(R.string.lc_empty)));
+        if (m.data.get("next") != null)
+            button(
+                    R.string.oc3_next,
+                    () -> {
+                        after = String.valueOf(m.data.get("next"));
+                        queue();
+                    },
+                    false);
+        button(
+                after == null ? R.string.ad_refresh : R.string.permissions_first_page,
+                () -> {
+                    after = null;
+                    queue();
+                },
+                false);
+        button(
+                R.string.lc_cases,
+                () ->
+                        startActivity(
+                                new android.content.Intent(this, LifecycleActivity.class)
+                                        .putExtra("mode", "cases")),
+                false);
+    }
+
+    private void open(Map<String, Object> row) {
+        m.extras.put("selectedTitle", row.get("title"));
+        if ("report".equals(row.get("kind"))) {
+            m.extras.remove("lastModerationAction");
+            m.extras.remove("reportBack");
+            String id = String.valueOf(row.get("targetId"));
+            m.write(
+                    "courseReport",
+                    map("command", "claim", "reportId", id, "expectedVersion", 0),
+                    () -> loadReport(id));
+        } else
+            m.load(
+                    "adminTarget",
+                    "courseAdminRead",
+                    map(
+                            "mode",
+                            "target",
+                            "kind",
+                            row.get("kind"),
+                            "targetId",
+                            row.get("targetId"),
+                            "parentId",
+                            row.get("parentId")));
+    }
+
+    private void loadReport(String id) {
+        m.load(
+                "adminReport",
+                "courseReportRead",
+                map("workId", id, "purpose", "Review the assigned course report"));
+    }
+
+    private void report() {
+        Map<String, Object> r = object(m.data.get("report")),
+                assignment = object(m.data.get("assignment"));
+        if (r.isEmpty()) return;
+        body.addView(
+                SocialViews.text(this, String.valueOf(r.getOrDefault("statement", "")), false));
+        TextInputEditText response =
+                SocialViews.field(this, body, getString(R.string.permissions_report_response), 3);
+        response.setFilters(
+                new android.text.InputFilter[] {new android.text.InputFilter.LengthFilter(1000)});
+        response.setText(String.valueOf(m.extras.getOrDefault("reportResponse", "")));
+        remember(response, "reportResponse");
+        response.setEnabled(!m.busy && !m.uncertain());
+        String id = String.valueOf(r.get("reportId"));
+        Map<String, Object> evidence = object(m.data.get("evidence"));
+        com.gmail.manhle240406.project.media.MediaGrid evidenceGrid =
+                new com.gmail.manhle240406.project.media.MediaGrid(this);
+        evidenceGrid.bind(evidence.get("assetIds"));
+        body.addView(evidenceGrid);
+        if (Arrays.asList("post", "comment", "listing").contains(r.get("targetKind")))
+            button(
+                    R.string.permissions_review_content,
+                    () -> {
+                        m.extras.put("reportBack", id);
+                        m.load(
+                                "adminTarget",
+                                "courseAdminRead",
+                                map(
+                                        "mode",
+                                        "target",
+                                        "kind",
+                                        r.get("targetKind"),
+                                        "targetId",
+                                        r.get("targetId"),
+                                        "parentId",
+                                        r.get("parentId")));
+                    },
+                    false);
+        java.util.function.Consumer<String> resolve =
+                outcome -> {
+                    String text = response.getText().toString().trim();
+                    if (text.isEmpty()) {
+                        response.setError(getString(R.string.ad_required));
+                        return;
+                    }
+                    m.write(
+                            "courseReport",
+                            map(
+                                    "command",
+                                    "resolve",
+                                    "reportId",
+                                    id,
+                                    "expectedVersion",
+                                    assignment.get("assignmentVersion"),
+                                    "sourceVersion",
+                                    r.get("statusVersion"),
+                                    "outcome",
+                                    outcome,
+                                    "response",
+                                    text,
+                                    "actionId",
+                                    outcome.equals("action_recorded")
+                                            ? m.extras.get("lastModerationAction")
+                                            : null),
+                            () -> {
+                                m.extras.remove("reportBack");
+                                m.extras.remove("lastModerationAction");
+                                m.extras.remove("reportResponse");
+                                queue();
+                            });
+                };
+        button(
+                R.string.permissions_report_no_action,
+                () -> resolve.accept("resolved_no_action"),
+                true);
+        if (m.extras.get("lastModerationAction") != null)
+            button(
+                    R.string.permissions_report_action,
+                    () -> resolve.accept("action_recorded"),
+                    false);
+        button(
+                R.string.permissions_report_specialist,
+                () -> resolve.accept("needs_specialist"),
+                false);
+    }
+
+    private void loadAccount(String uid) {
+        m.load("adminAccount", "courseAccountRead", map("uid", uid));
+    }
+
+    private void searchAccounts() {
+        String query = String.valueOf(m.extras.getOrDefault("accountQuery", "")).trim();
+        if (query.length() >= 2) m.load("adminSearch", "courseAccountRead", map("query", query));
+    }
+
+    private void reload() {
+        if (m.lastReadOperation != null)
+            m.load(m.page, m.lastReadOperation, new HashMap<>(m.lastReadInput));
+        else queue();
+    }
+
+    private void accountSearch() {
+        TextInputEditText query =
+                SocialViews.field(
+                        this, body, getString(R.string.permissions_account_search_hint), 1);
+        query.setSingleLine(true);
+        query.setText(String.valueOf(m.extras.getOrDefault("accountQuery", "")));
+        remember(query, "accountQuery");
+        query.setEnabled(!m.busy && !m.uncertain());
+        button(
+                R.string.permissions_account_search,
+                () -> {
+                    String text = query.getText().toString().trim();
+                    if (text.length() < 2) {
+                        query.setError(getString(R.string.permissions_account_search_error));
+                        return;
+                    }
+                    m.extras.put("accountQuery", text);
+                    searchAccounts();
+                },
+                true);
+        List<Map<String, Object>> accounts = rows(m.data.get("rows"));
+        if (!m.busy && m.error.isEmpty() && accounts.isEmpty())
+            body.addView(SocialSurface.muted(this, getString(R.string.permissions_account_empty)));
+        for (Map<String, Object> a : accounts) {
+            String
+                    alias =
+                            String.valueOf(
+                                    a.getOrDefault(
+                                            "alias",
+                                            getString(R.string.permissions_account_unknown))),
+                    email = String.valueOf(a.getOrDefault("email", ""));
+            android.view.View row =
+                    SocialSurface.quiet(
+                            this,
+                            alias
+                                    + (email.isEmpty() ? "" : "\n" + email)
+                                    + (Boolean.TRUE.equals(a.get("admin"))
+                                            ? "\n" + getString(R.string.permissions_admin_badge)
+                                            : ""),
+                            () -> loadAccount(String.valueOf(a.get("uid"))));
+            row.setEnabled(!m.busy && !m.uncertain());
+            body.addView(row);
+        }
+    }
+
+    private void account() {
+        Map<String, Object> a = object(m.data.get("account"));
+        if (a.isEmpty()) return;
+        String uid = String.valueOf(a.get("uid"));
+        body.addView(SocialViews.text(this, String.valueOf(a.getOrDefault("alias", "")), true));
+        TextInputEditText reason = SocialViews.field(this, body, getString(R.string.lc_reason), 3);
+        reason.setFilters(
+                new android.text.InputFilter[] {new android.text.InputFilter.LengthFilter(1000)});
+        reason.setText(String.valueOf(m.extras.getOrDefault("accountReason", "")));
+        remember(reason, "accountReason");
+        reason.setEnabled(!m.busy && !m.uncertain());
+        java.util.function.Consumer<Map<String, Object>> commit =
+                input -> {
+                    String text = reason.getText().toString().trim();
+                    if (text.isEmpty()) {
+                        reason.setError(getString(R.string.ad_required));
+                        return;
+                    }
+                    input.put("reason", text);
+                    m.write(
+                            "courseAccount",
+                            input,
+                            () -> {
+                                m.extras.remove("accountReason");
+                                loadAccount(uid);
+                            });
+                };
+        for (String scope :
+                new String[] {"community_publication", "new_offering", "new_adoption"}) {
+            int label =
+                    scope.equals("community_publication")
+                            ? R.string.permissions_restrict_posts
+                            : scope.equals("new_offering")
+                                    ? R.string.permissions_restrict_offers
+                                    : R.string.permissions_restrict_adoptions;
+            button(
+                    label,
+                    () ->
+                            commit.accept(
+                                    map(
+                                            "command",
+                                            "precaution",
+                                            "decisionId",
+                                            java.util.UUID.randomUUID().toString(),
+                                            "targetUid",
+                                            uid,
+                                            "scope",
+                                            scope,
+                                            "sourceKind",
+                                            "account",
+                                            "sourceId",
+                                            uid,
+                                            "sourceVersion",
+                                            a.get("directoryVersion"),
+                                            "expectedVersion",
+                                            m.data.get("restrictionVersion"))),
+                    false);
+        }
+        button(
+                R.string.permissions_ban_account,
+                () ->
+                        commit.accept(
+                                map(
+                                        "command",
+                                        "final",
+                                        "decisionId",
+                                        java.util.UUID.randomUUID().toString(),
+                                        "targetUid",
+                                        uid,
+                                        "scope",
+                                        "platform_access",
+                                        "sourceKind",
+                                        "account",
+                                        "sourceId",
+                                        uid,
+                                        "sourceVersion",
+                                        a.get("directoryVersion"),
+                                        "expectedVersion",
+                                        m.data.get("restrictionVersion"))),
+                true);
+        boolean admin = Boolean.TRUE.equals(a.get("admin"));
+        button(
+                admin ? R.string.permissions_demote_admin : R.string.permissions_promote_admin,
+                () -> {
+                    String text = reason.getText().toString().trim();
+                    if (text.isEmpty()) {
+                        reason.setError(getString(R.string.ad_required));
+                        return;
+                    }
+                    new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                            .setTitle(
+                                    admin
+                                            ? R.string.permissions_demote_admin
+                                            : R.string.permissions_promote_admin)
+                            .setMessage(
+                                    admin
+                                            ? R.string.permissions_demote_confirm
+                                            : R.string.permissions_promote_confirm)
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .setPositiveButton(
+                                    R.string.permissions_confirm,
+                                    (d, w) ->
+                                            m.write(
+                                                    "courseAccount",
+                                                    map(
+                                                            "command",
+                                                            admin
+                                                                    ? "demote_admin"
+                                                                    : "promote_admin",
+                                                            "targetUid",
+                                                            uid,
+                                                            "expectedVersion",
+                                                            number(a.get("capabilityVersion")),
+                                                            "reason",
+                                                            text),
+                                                    () -> {
+                                                        m.extras.remove("accountReason");
+                                                        loadAccount(uid);
+                                                    }))
+                            .show();
+                },
+                false);
+        for (Map<String, Object> d : rows(m.data.get("decisions"))) {
+            body.addView(SocialSurface.muted(this, String.valueOf(d.get("reason"))));
+            button(
+                    R.string.permissions_lift_restriction,
+                    () ->
+                            commit.accept(
+                                    map(
+                                            "command",
+                                            "lift",
+                                            "decisionId",
+                                            d.get("decisionId"),
+                                            "expectedVersion",
+                                            d.get("version"))),
+                    false);
+        }
+    }
+
+    private void remember(TextInputEditText field, String key) {
+        field.addTextChangedListener(
+                new android.text.TextWatcher() {
+                    public void beforeTextChanged(CharSequence s, int a, int c, int f) {}
+
+                    public void afterTextChanged(android.text.Editable e) {}
+
+                    public void onTextChanged(CharSequence s, int a, int b, int c) {
+                        m.extras.put(key, s.toString());
+                    }
+                });
+    }
+
+    private void target() {
+        if (m.extras.get("selectedTitle") != null)
+            body.addView(
+                    SocialViews.text(this, String.valueOf(m.extras.get("selectedTitle")), true));
+        Map<String, Object> target = m.data, control = object(target.get("control"));
+        boolean held = "held".equals(control.get("state"));
+        body.addView(
+                SocialViews.text(
+                        this,
+                        getString(held ? R.string.permissions_held : R.string.permissions_clear),
+                        true));
+        TextInputEditText reason = SocialViews.field(this, body, getString(R.string.lc_reason), 3);
+        reason.setFilters(
+                new android.text.InputFilter[] {new android.text.InputFilter.LengthFilter(1000)});
+        reason.setText(String.valueOf(m.extras.getOrDefault("moderationReason", "")));
+        reason.addTextChangedListener(
+                new android.text.TextWatcher() {
+                    public void beforeTextChanged(CharSequence s, int a, int c, int f) {}
+
+                    public void afterTextChanged(android.text.Editable e) {}
+
+                    public void onTextChanged(CharSequence s, int a, int b, int c) {
+                        m.extras.put("moderationReason", s.toString());
+                    }
+                });
+        reason.setEnabled(!m.busy && !m.uncertain());
+        button(
+                held ? R.string.permissions_restore : R.string.permissions_hold,
+                () -> {
+                    String text = reason.getText().toString().trim();
+                    if (text.isEmpty()) {
+                        reason.setError(getString(R.string.ad_required));
+                        return;
+                    }
+                    Map<String, Object> input =
+                            map(
+                                    "command",
+                                    held ? "restore" : "hold",
+                                    "kind",
+                                    target.get("kind"),
+                                    "targetId",
+                                    target.get("targetId"),
+                                    "parentId",
+                                    target.get("parentId"),
+                                    "sourceVersion",
+                                    target.get("sourceVersion"),
+                                    "expectedVersion",
+                                    number(control.get("version")),
+                                    "reason",
+                                    text);
+                    if (held) input.put("holdActionId", control.get("holdActionId"));
+                    m.write(
+                            "courseModerate",
+                            input,
+                            () -> {
+                                m.extras.remove("moderationReason");
+                                m.extras.put("lastModerationAction", m.data.get("actionId"));
+                                if (m.extras.get("reportBack") != null)
+                                    loadReport(String.valueOf(m.extras.get("reportBack")));
+                                else queue();
+                            });
+                },
+                true);
+        if (target.get("ownerUid") instanceof String)
+            button(
+                    R.string.permissions_manage_account,
+                    () -> {
+                        m.extras.put(
+                                "accountBackTarget",
+                                map(
+                                        "mode",
+                                        "target",
+                                        "kind",
+                                        target.get("kind"),
+                                        "targetId",
+                                        target.get("targetId"),
+                                        "parentId",
+                                        target.get("parentId")));
+                        loadAccount(String.valueOf(target.get("ownerUid")));
+                    },
+                    false);
+        if ("post".equals(target.get("kind")))
+            button(
+                    R.string.permissions_comments,
+                    () -> {
+                        kind = "comment";
+                        parent = String.valueOf(target.get("targetId"));
+                        after = null;
+                        queue();
+                    },
+                    false);
+    }
 }

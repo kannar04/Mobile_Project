@@ -1,26 +1,188 @@
 package com.gmail.manhle240406.project.extensions;
+
 import com.gmail.manhle240406.project.foundation.*;
 import com.google.android.gms.tasks.*;
 import com.google.firebase.firestore.*;
+
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /** Non-UI scoped adapters. Managed transport and product bindings are unavailable by default. */
 public final class ExtensionRepository implements AutoCloseable {
-    public interface Transport {Task<Map<String,Object>> call(String module,String command,Map<String,Object> input);}
-    public static final Transport UNAVAILABLE=(m,c,p)->Tasks.forException(new IllegalStateException("managed_extension_transport_unavailable"));
-    private final FirebaseFirestore db;private final SessionGateway sessions;private final Transport transport;
-    private ListenerRegistration head;private final Runnable invalidation=this::stop;
-    private static final Set<String> MODULES=new HashSet<>(Arrays.asList("lostfound","foster","exchange","preference","reminder","dashboard"));
-    private static final Set<String> VIEWS=new HashSet<>(Arrays.asList("claimPartyViews","fosterPartyViews","exchangePartyViews"));
-    public ExtensionRepository(FirebaseFirestore db,SessionGateway sessions,Transport transport){this.db=db;this.sessions=sessions;this.transport=Objects.requireNonNull(transport);sessions.onInvalidated(invalidation);}
-    private void current(SessionEpoch.Ticket t){if(t==null||t.uid==null||!sessions.current(t))throw new IllegalStateException("session_changed");}
-    private <T> Task<T> scope(SessionEpoch.Ticket t,Task<T> task){return Tasks.withTimeout(task,15,TimeUnit.SECONDS).continueWith(done->{current(t);if(!done.isSuccessful())throw Objects.requireNonNull(done.getException());return done.getResult();});}
-    public Task<Map<String,Object>> command(SessionEpoch.Ticket t,String module,String command,String operationId,long expectedVersion,Map<String,Object> payload){current(t);if(!MODULES.contains(module)||command==null||!command.matches("[a-z_]{1,40}")||expectedVersion<0)throw new IllegalArgumentException("extension_intent");UUID.fromString(operationId);Map<String,Object> input=new HashMap<>();input.put("operationId",operationId);input.put("expectedVersion",expectedVersion);input.put("payload",com.gmail.manhle240406.project.listing.ListingSchema.freeze(payload));if(com.gmail.manhle240406.project.adoption.AdoptionValues.canonical(input).getBytes(java.nio.charset.StandardCharsets.UTF_8).length>32768)throw new IllegalArgumentException("bounded_payload");return scope(t,transport.call(module,command,Collections.unmodifiableMap(input)));}
-    public Task<Map<String,Object>> dashboard(SessionEpoch.Ticket t,List<String> ids,long from,long to,long definitionsVersion){current(t);if(ids.isEmpty()||ids.size()>12||new HashSet<>(ids).size()!=ids.size()||to<=from||to-from>90L*86400000||from%86400000!=0||to%86400000!=0)throw new IllegalArgumentException("utc_window");Map<String,Object> input=new HashMap<>();input.put("metricIds",new ArrayList<>(ids));input.put("fromMillis",from);input.put("toMillis",to);input.put("definitionsVersion",definitionsVersion);return scope(t,transport.call("dashboard","read",input));}
-    public Task<Map<String,Object>> feed(SessionEpoch.Ticket t,String kind,String type,String regionId,String speciesId,Map<String,Object> cursor){current(t);if(!Arrays.asList("lostfound","foster").contains(kind))throw new IllegalArgumentException("feed_kind");if(regionId!=null)com.gmail.manhle240406.project.adoption.AdoptionValues.catalogId(regionId);if(speciesId!=null)com.gmail.manhle240406.project.adoption.AdoptionValues.catalogId(speciesId);Map<String,Object> input=new HashMap<>();input.put("kind",kind);input.put("type",type);input.put("regionId",regionId);input.put("speciesId",speciesId);input.put("cursor",cursor==null?null:com.gmail.manhle240406.project.listing.ListingSchema.freeze(cursor));return scope(t,transport.call("feed","read_page",input));}
-    public Task<QuerySnapshot> ownViews(SessionEpoch.Ticket t,String view,DocumentSnapshot cursor){current(t);if(!VIEWS.contains(view))throw new IllegalArgumentException("own_view");String path=view+"/"+t.uid+"/items";Query q=db.collection(path).orderBy("updatedAt",Query.Direction.DESCENDING).orderBy(FieldPath.documentId(),Query.Direction.DESCENDING).limit(20);if(cursor!=null){if(!cursor.getReference().getParent().getPath().equals(path))throw new IllegalArgumentException("foreign_cursor");q=q.startAfter(cursor);}return scope(t,q.get(Source.SERVER));}
-    public Task<QuerySnapshot> remindersForPet(SessionEpoch.Ticket t,String petId,long custodyVersion,String state,DocumentSnapshot cursor){current(t);if(!Arrays.asList("active","completed","cancelled","retired").contains(state))throw new IllegalArgumentException("reminder_state");String path="users/"+t.uid+"/careReminders";com.gmail.manhle240406.project.adoption.AdoptionValues.listingId(petId);Query q=db.collection(path).whereEqualTo("ownerUid",t.uid).whereEqualTo("custodyVersion",custodyVersion).whereEqualTo("petId",petId).whereEqualTo("state",state).orderBy(state.equals("active")?"effectiveDueAt":"updatedAt").orderBy(FieldPath.documentId()).limit(50);if(cursor!=null){if(!cursor.getReference().getParent().getPath().equals(path))throw new IllegalArgumentException("foreign_cursor");q=q.startAfter(cursor);}return scope(t,q.get(Source.SERVER));}
-    public synchronized void stop(){if(head!=null){head.remove();head=null;}}
-    @Override public void close(){stop();sessions.removeInvalidation(invalidation);}
+    public interface Transport {
+        Task<Map<String, Object>> call(String module, String command, Map<String, Object> input);
+    }
+
+    public static final Transport UNAVAILABLE =
+            (m, c, p) ->
+                    Tasks.forException(
+                            new IllegalStateException("managed_extension_transport_unavailable"));
+    private final FirebaseFirestore db;
+    private final SessionGateway sessions;
+    private final Transport transport;
+    private ListenerRegistration head;
+    private final Runnable invalidation = this::stop;
+    private static final Set<String> MODULES =
+            new HashSet<>(
+                    Arrays.asList(
+                            "lostfound",
+                            "foster",
+                            "exchange",
+                            "preference",
+                            "reminder",
+                            "dashboard"));
+    private static final Set<String> VIEWS =
+            new HashSet<>(
+                    Arrays.asList("claimPartyViews", "fosterPartyViews", "exchangePartyViews"));
+
+    public ExtensionRepository(FirebaseFirestore db, SessionGateway sessions, Transport transport) {
+        this.db = db;
+        this.sessions = sessions;
+        this.transport = Objects.requireNonNull(transport);
+        sessions.onInvalidated(invalidation);
+    }
+
+    private void current(SessionEpoch.Ticket t) {
+        if (t == null || t.uid == null || !sessions.current(t))
+            throw new IllegalStateException("session_changed");
+    }
+
+    private <T> Task<T> scope(SessionEpoch.Ticket t, Task<T> task) {
+        return Tasks.withTimeout(task, 15, TimeUnit.SECONDS)
+                .continueWith(
+                        done -> {
+                            current(t);
+                            if (!done.isSuccessful())
+                                throw Objects.requireNonNull(done.getException());
+                            return done.getResult();
+                        });
+    }
+
+    public Task<Map<String, Object>> command(
+            SessionEpoch.Ticket t,
+            String module,
+            String command,
+            String operationId,
+            long expectedVersion,
+            Map<String, Object> payload) {
+        current(t);
+        if (!MODULES.contains(module)
+                || command == null
+                || !command.matches("[a-z_]{1,40}")
+                || expectedVersion < 0) throw new IllegalArgumentException("extension_intent");
+        UUID.fromString(operationId);
+        Map<String, Object> input = new HashMap<>();
+        input.put("operationId", operationId);
+        input.put("expectedVersion", expectedVersion);
+        input.put("payload", com.gmail.manhle240406.project.listing.ListingSchema.freeze(payload));
+        if (com.gmail.manhle240406.project.adoption.AdoptionValues.canonical(input)
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8)
+                        .length
+                > 32768) throw new IllegalArgumentException("bounded_payload");
+        return scope(t, transport.call(module, command, Collections.unmodifiableMap(input)));
+    }
+
+    public Task<Map<String, Object>> dashboard(
+            SessionEpoch.Ticket t, List<String> ids, long from, long to, long definitionsVersion) {
+        current(t);
+        if (ids.isEmpty()
+                || ids.size() > 12
+                || new HashSet<>(ids).size() != ids.size()
+                || to <= from
+                || to - from > 90L * 86400000
+                || from % 86400000 != 0
+                || to % 86400000 != 0) throw new IllegalArgumentException("utc_window");
+        Map<String, Object> input = new HashMap<>();
+        input.put("metricIds", new ArrayList<>(ids));
+        input.put("fromMillis", from);
+        input.put("toMillis", to);
+        input.put("definitionsVersion", definitionsVersion);
+        return scope(t, transport.call("dashboard", "read", input));
+    }
+
+    public Task<Map<String, Object>> feed(
+            SessionEpoch.Ticket t,
+            String kind,
+            String type,
+            String regionId,
+            String speciesId,
+            Map<String, Object> cursor) {
+        current(t);
+        if (!Arrays.asList("lostfound", "foster").contains(kind))
+            throw new IllegalArgumentException("feed_kind");
+        if (regionId != null)
+            com.gmail.manhle240406.project.adoption.AdoptionValues.catalogId(regionId);
+        if (speciesId != null)
+            com.gmail.manhle240406.project.adoption.AdoptionValues.catalogId(speciesId);
+        Map<String, Object> input = new HashMap<>();
+        input.put("kind", kind);
+        input.put("type", type);
+        input.put("regionId", regionId);
+        input.put("speciesId", speciesId);
+        input.put(
+                "cursor",
+                cursor == null
+                        ? null
+                        : com.gmail.manhle240406.project.listing.ListingSchema.freeze(cursor));
+        return scope(t, transport.call("feed", "read_page", input));
+    }
+
+    public Task<QuerySnapshot> ownViews(
+            SessionEpoch.Ticket t, String view, DocumentSnapshot cursor) {
+        current(t);
+        if (!VIEWS.contains(view)) throw new IllegalArgumentException("own_view");
+        String path = view + "/" + t.uid + "/items";
+        Query q =
+                db.collection(path)
+                        .orderBy("updatedAt", Query.Direction.DESCENDING)
+                        .orderBy(FieldPath.documentId(), Query.Direction.DESCENDING)
+                        .limit(20);
+        if (cursor != null) {
+            if (!cursor.getReference().getParent().getPath().equals(path))
+                throw new IllegalArgumentException("foreign_cursor");
+            q = q.startAfter(cursor);
+        }
+        return scope(t, q.get(Source.SERVER));
+    }
+
+    public Task<QuerySnapshot> remindersForPet(
+            SessionEpoch.Ticket t,
+            String petId,
+            long custodyVersion,
+            String state,
+            DocumentSnapshot cursor) {
+        current(t);
+        if (!Arrays.asList("active", "completed", "cancelled", "retired").contains(state))
+            throw new IllegalArgumentException("reminder_state");
+        String path = "users/" + t.uid + "/careReminders";
+        com.gmail.manhle240406.project.adoption.AdoptionValues.listingId(petId);
+        Query q =
+                db.collection(path)
+                        .whereEqualTo("ownerUid", t.uid)
+                        .whereEqualTo("custodyVersion", custodyVersion)
+                        .whereEqualTo("petId", petId)
+                        .whereEqualTo("state", state)
+                        .orderBy(state.equals("active") ? "effectiveDueAt" : "updatedAt")
+                        .orderBy(FieldPath.documentId())
+                        .limit(50);
+        if (cursor != null) {
+            if (!cursor.getReference().getParent().getPath().equals(path))
+                throw new IllegalArgumentException("foreign_cursor");
+            q = q.startAfter(cursor);
+        }
+        return scope(t, q.get(Source.SERVER));
+    }
+
+    public synchronized void stop() {
+        if (head != null) {
+            head.remove();
+            head = null;
+        }
+    }
+
+    @Override
+    public void close() {
+        stop();
+        sessions.removeInvalidation(invalidation);
+    }
 }

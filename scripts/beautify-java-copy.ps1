@@ -2,7 +2,7 @@
 param(
     [string]$ProjectRoot = (Split-Path -Parent $PSScriptRoot),
     [string]$OutputDirectory = "build/java-beautified-copy-aosp",
-    [string]$FormatterVersion = "1.24.0",
+    [string]$FormatterVersion = "1.37.0",
     [ValidateSet("AOSP", "Google")]
     [string]$Style = "AOSP"
 )
