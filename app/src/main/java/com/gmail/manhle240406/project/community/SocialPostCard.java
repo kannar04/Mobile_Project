@@ -49,7 +49,7 @@ public final class SocialPostCard extends LinearLayout {
             gallery.setTag("post_media_gallery");
             parent.addView(gallery, parent.indexOfChild(illustration) + 1, new ViewGroup.LayoutParams(-1, -2));
         }
-        gallery.bind(post.get("mediaAssetIds"));
+        gallery.bind(post.get("mediaAssetIds"),post.get("postId") instanceof String?"post:"+post.get("postId"):null);
         AdoptionPostCard adoption = parent.findViewWithTag("adoption_post_card");
         if (adoption == null) {
             adoption = new AdoptionPostCard(c);
