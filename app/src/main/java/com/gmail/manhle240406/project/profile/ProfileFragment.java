@@ -22,8 +22,9 @@ import java.util.*;
 
 public final class ProfileFragment extends com.gmail.manhle240406.project.wiring.MainPageFragment {
     private com.gmail.manhle240406.project.media.AvatarControl avatarControl;
-    private final androidx.activity.result.ActivityResultLauncher<androidx.activity.result.PickVisualMediaRequest> avatarPicker=registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia(),uri->{if(uri!=null&&avatarControl!=null)avatarControl.model.choose(uri);});
     private ProfileViewModel model;
+    private final androidx.activity.result.ActivityResultLauncher<androidx.activity.result.PickVisualMediaRequest> avatarPicker=registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia(),uri->{if(uri!=null&&avatarControl!=null)avatarControl.model.choose(uri);});
+    private final androidx.activity.result.ActivityResultLauncher<Intent> phoneVerification=registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),result->{if(result.getResultCode()==android.app.Activity.RESULT_OK&&model!=null)model.load(true);});
     private TextInputEditText name,bio,phone;
     private Spinner avatar,region;
     private boolean rendering;
@@ -31,6 +32,10 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
     private androidx.appcompat.app.AlertDialog dialog;
     private TextView verificationStatus;
     private MaterialButton verifyEmail,refreshEmail;
+    private LinearLayout petShelf;
+    private HorizontalScrollView petScroll;
+    private TextView petShelfStatus;
+    private long petShelfRequest;
     @Override protected void createPage(Bundle saved) {setContentView(R.layout.activity_profile);
         // Suppress hierarchy serialization for the entire private screen, including nested field widgets.
         disableSavedState(findViewById(R.id.profile_root));
@@ -51,7 +56,7 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
         AdapterView.OnItemSelectedListener selection=new AdapterView.OnItemSelectedListener(){public void onItemSelected(AdapterView<?> p,View v,int position,long id){capture();updateAvatar();}public void onNothingSelected(AdapterView<?> p){}};
         avatar.setOnItemSelectedListener(selection);region.setOnItemSelectedListener(selection);
         button(R.id.profile_save).setOnClickListener(v->{capture();if(validateContent())model.saveDraft();});
-        button(R.id.profile_save_contact).setOnClickListener(v->{capture();if(!ProfileSchema.validPhone(ProfileSchema.phone(model.phone)))field(R.id.profile_phone_layout).setError(getString(R.string.profile_invalid_phone));else{field(R.id.profile_phone_layout).setError(null);model.saveContact();}});
+        phone.setFocusable(false);phone.setFocusableInTouchMode(false);phone.setCursorVisible(false);phone.setInputType(android.text.InputType.TYPE_NULL);phone.setOnClickListener(v->phoneVerification.launch(new Intent(requireContext(),PhoneVerificationActivity.class)));field(R.id.profile_phone_layout).setEndIconMode(TextInputLayout.END_ICON_CUSTOM);field(R.id.profile_phone_layout).setEndIconDrawable(R.drawable.ic_nav_profile);field(R.id.profile_phone_layout).setEndIconContentDescription(R.string.lc_phone);field(R.id.profile_phone_layout).setEndIconOnClickListener(v->phoneVerification.launch(new Intent(requireContext(),PhoneVerificationActivity.class)));button(R.id.profile_save_contact).setVisibility(View.GONE);
         button(R.id.profile_preview).setOnClickListener(v->preview());
         button(R.id.profile_hide).setOnClickListener(v->model.visibility(false));
         button(R.id.profile_show).setOnClickListener(v->{dialog=new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.profile_show).setMessage(R.string.profile_visibility_help).setPositiveButton(R.string.profile_show,(d,w)->model.visibility(true)).setNegativeButton(R.string.auth_cancelled,null).show();});
@@ -74,35 +79,53 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
         button(R.id.profile_logout).setOnClickListener(v -> new MaterialAlertDialogBuilder(requireActivity())
             .setMessage(R.string.listing_logout)
             .setPositiveButton(R.string.listing_logout_now, (d, w) -> logout())
-            .setNegativeButton(R.string.listing_logout_save, (d, w) -> startActivity(new Intent(requireActivity(), com.gmail.manhle240406.project.listing.ListingActivity.class)))
-            .setNeutralButton(android.R.string.cancel, null).show());
+            .setNegativeButton(android.R.string.cancel, null).show());
         button(R.id.profile_back).setOnClickListener(v->finish());
 
         for(int id:new int[]{R.id.profile_notifications,R.id.profile_discovery,R.id.profile_tools,R.id.profile_pet_care,R.id.profile_catalogs})findViewById(id).setVisibility(View.GONE);
         button(R.id.profile_listings).setText(R.string.feedback_my_posts);
         button(R.id.profile_options).setText(R.string.wiring_settings_title);
         findViewById(R.id.profile_settings).setVisibility(View.GONE);
-        button(R.id.profile_review).setText(R.string.feedback_received_requests);
-        button(R.id.profile_review).setOnClickListener(v->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.adoption.AdoptionFlowActivity.class).putExtra("mode","hostApplications")));
+        button(R.id.profile_review).setVisibility(View.GONE);
+        button(R.id.profile_pets).setVisibility(View.GONE);
         LinearLayout shortcuts=(LinearLayout)findViewById(R.id.profile_pets).getParent();
-        button(R.id.profile_review).setText(R.string.oc2_adoption_manager);
-        button(R.id.profile_review).setOnClickListener(v->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.adoption.AdoptionFlowActivity.class).putExtra("mode","management")));
+        setupPetShelf(shortcuts);
         MaterialButton contacts=com.gmail.manhle240406.project.community.SocialSurface.quiet(requireContext(),"",()->((com.gmail.manhle240406.project.MainActivity)requireActivity()).navigate("chat"));contacts.setId(View.generateViewId());contacts.setIconResource(R.drawable.ic_nav_chat);contacts.setContentDescription(getString(R.string.nav_chat));
         android.view.ViewGroup toolbar=(android.view.ViewGroup)findViewById(R.id.profile_options).getParent();View gear=findViewById(R.id.profile_options);toolbar.removeView(gear);android.widget.RelativeLayout top=(android.widget.RelativeLayout)findViewById(R.id.profile_back).getParent();android.widget.RelativeLayout.LayoutParams gp=new android.widget.RelativeLayout.LayoutParams(48*getResources().getDisplayMetrics().densityDpi/160,48*getResources().getDisplayMetrics().densityDpi/160);gp.addRule(android.widget.RelativeLayout.ALIGN_PARENT_END);top.addView(gear,gp);android.widget.RelativeLayout.LayoutParams cp=new android.widget.RelativeLayout.LayoutParams(gp.width,gp.height);cp.addRule(android.widget.RelativeLayout.START_OF,R.id.profile_options);top.addView(contacts,cp);for(int i=0;i<top.getChildCount();i++)if(top.getChildAt(i) instanceof TextView&&!(top.getChildAt(i) instanceof MaterialButton)){TextView heading=(TextView)top.getChildAt(i);android.widget.RelativeLayout.LayoutParams hp=(android.widget.RelativeLayout.LayoutParams)heading.getLayoutParams();hp.removeRule(android.widget.RelativeLayout.ALIGN_PARENT_END);hp.addRule(android.widget.RelativeLayout.START_OF,contacts.getId());heading.setLayoutParams(hp);heading.setMaxLines(2);}
         button(R.id.profile_options).setText("");button(R.id.profile_options).setIconResource(R.drawable.ic_shell_settings);button(R.id.profile_options).setContentDescription(getString(R.string.wiring_settings_title));
         button(R.id.profile_logout).setText(R.string.oc2_logout);
+        button(R.id.profile_logout).setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(),R.color.anilove_badge_red_text));
+        button(R.id.profile_logout).setStrokeColor(android.content.res.ColorStateList.valueOf(androidx.core.content.ContextCompat.getColor(requireContext(),R.color.anilove_badge_red_text)));
         button(R.id.profile_options).setStrokeWidth(0);button(R.id.profile_options).setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.TRANSPARENT));
         android.view.View scrollRoot=findViewById(R.id.profile_root);android.view.ViewGroup pageHost=(android.view.ViewGroup)scrollRoot.getParent();android.widget.LinearLayout profileShell=new android.widget.LinearLayout(requireContext());profileShell.setOrientation(android.widget.LinearLayout.VERTICAL);profileShell.setBackgroundResource(R.color.anilove_bg);int slot=pageHost.indexOfChild(scrollRoot);android.view.ViewGroup.LayoutParams original=scrollRoot.getLayoutParams();pageHost.removeView(scrollRoot);pageHost.addView(profileShell,slot,original);profileShell.addView(scrollRoot,new android.widget.LinearLayout.LayoutParams(-1,0,1));MaterialButton logout=button(R.id.profile_logout);((android.view.ViewGroup)logout.getParent()).removeView(logout);android.widget.LinearLayout.LayoutParams logoutLayout=new android.widget.LinearLayout.LayoutParams(-1,-2);int spacing=com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),20);logoutLayout.setMargins(spacing,8,spacing,8);profileShell.addView(logout,logoutLayout);
 
         photoControls.setVisibility(View.GONE);findViewById(R.id.profile_avatar_image).setOnClickListener(v->editPersonal());
         button(R.id.profile_back).setText("");button(R.id.profile_back).setIconResource(R.drawable.ic_social_back);button(R.id.profile_back).setContentDescription(getString(R.string.auth_back));button(R.id.profile_back).setCornerRadius(com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),24));
-        android.widget.HorizontalScrollView quick=new android.widget.HorizontalScrollView(requireContext());quick.setHorizontalScrollBarEnabled(false);LinearLayout petCards=new LinearLayout(requireContext());quick.addView(petCards);shortcuts.addView(quick,shortcuts.indexOfChild(findViewById(R.id.profile_pets))+1);
-        com.gmail.manhle240406.project.adoption.OwnedPets.read(((AniloveApplication)getApplication()).foundation().sessions,8,null).addOnSuccessListener(data->{if(!isAdded()||getView()==null)return;for(Map<String,Object> pet:com.gmail.manhle240406.project.adoption.AdoptionFlowModel.rows(data.get("pets"))){if(petCards.getChildCount()>=8)break;Map<String,Object> petIdentity=com.gmail.manhle240406.project.adoption.AdoptionFlowModel.object(pet.get("identity"));MaterialButton card=com.gmail.manhle240406.project.community.SocialSurface.quiet(requireContext(),String.valueOf(petIdentity.getOrDefault("displayName","")),()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.pet.PetActivity.class)));card.setIconResource("dog".equals(petIdentity.get("species"))?R.drawable.profile_avatar_dog:R.drawable.profile_avatar_cat);card.setIconSize(com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),40));petCards.addView(card);}});
         model.changes.observe(getViewLifecycleOwner(),ignored->render());
         ((AniloveApplication)getApplication()).auth().state().observe(getViewLifecycleOwner(),s->{
             if(s!=null && s.uid!=null)render();
         });
     }
+    private void setupPetShelf(LinearLayout parent){
+        LinearLayout section=new LinearLayout(requireContext());section.setOrientation(LinearLayout.VERTICAL);section.setId(R.id.profile_pet_section);
+        TextView title=com.gmail.manhle240406.project.community.SocialViews.text(requireContext(),getString(R.string.profile_pets_title),true);title.setTextSize(20);title.setOnClickListener(v->openPets(false));title.setContentDescription(getString(R.string.profile_pets_open));section.addView(title);
+        petShelfStatus=com.gmail.manhle240406.project.community.SocialSurface.muted(requireContext(),getString(R.string.ad_loading));petShelfStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);section.addView(petShelfStatus);
+        petScroll=new HorizontalScrollView(requireContext());petScroll.setId(R.id.profile_pet_scroll);petScroll.setHorizontalScrollBarEnabled(false);petScroll.setFillViewport(false);petShelf=new LinearLayout(requireContext());petShelf.setId(R.id.profile_pet_list);petShelf.setOrientation(LinearLayout.HORIZONTAL);petScroll.addView(petShelf,new HorizontalScrollView.LayoutParams(-2,-2));section.addView(petScroll,new LinearLayout.LayoutParams(-1,-2));
+        int anchor=parent.indexOfChild(findViewById(R.id.profile_pets));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.setMargins(0,com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),24),0,com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),16));parent.addView(section,Math.max(0,anchor),lp);renderPetShelf(Collections.emptyList());
+    }
+    private void loadPetShelf(){
+        if(petShelf==null)return;long request=++petShelfRequest;petShelfStatus.setText(R.string.ad_loading);petShelfStatus.setVisibility(View.VISIBLE);
+        com.gmail.manhle240406.project.adoption.OwnedPets.read(((AniloveApplication)getApplication()).foundation().sessions,20,null).addOnCompleteListener(done->{if(request!=petShelfRequest||!isAdded()||getView()==null)return;if(done.isSuccessful()){List<Map<String,Object>> pets=petRows(done.getResult().get("pets"));renderPetShelf(pets);petShelfStatus.setText(pets.isEmpty()?getString(R.string.profile_pets_empty):"");petShelfStatus.setVisibility(pets.isEmpty()?View.VISIBLE:View.GONE);}else{renderPetShelf(Collections.emptyList());petShelfStatus.setText(R.string.profile_pets_load_failed);petShelfStatus.setVisibility(View.VISIBLE);}});
+    }
+    @SuppressWarnings("unchecked") private List<Map<String,Object>> petRows(Object value){List<Map<String,Object>> result=new ArrayList<>();if(value instanceof List)for(Object row:(List<?>)value)if(row instanceof Map)result.add((Map<String,Object>)row);return result;}
+    private void renderPetShelf(List<Map<String,Object>> pets){
+        if(petShelf==null)return;petShelf.removeAllViews();petShelf.addView(addPetTile(),petTileParams(true));for(Map<String,Object> pet:pets)petShelf.addView(petTile(pet),petTileParams(false));if(petScroll!=null)petScroll.post(()->petScroll.scrollTo(0,0));
+    }
+    private LinearLayout.LayoutParams petTileParams(boolean first){LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),128),com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),148));lp.setMargins(first?0:com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),12),com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),8),0,com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),4));return lp;}
+    private View addPetTile(){LinearLayout tile=new LinearLayout(requireContext());tile.setTag("profile_add_pet");tile.setOrientation(LinearLayout.VERTICAL);tile.setGravity(android.view.Gravity.CENTER);int pad=com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),12);tile.setPadding(pad,pad,pad,pad);tile.setBackgroundResource(R.drawable.profile_add_pet_dashed);ImageView icon=new ImageView(requireContext());icon.setImageResource(R.drawable.ic_profile_add_pet);icon.setContentDescription(null);tile.addView(icon,new LinearLayout.LayoutParams(com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),40),com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),40)));TextView label=com.gmail.manhle240406.project.community.SocialViews.text(requireContext(),getString(R.string.ad_add_pet),true);label.setGravity(android.view.Gravity.CENTER);LinearLayout.LayoutParams text=new LinearLayout.LayoutParams(-1,-2);text.topMargin=com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),8);tile.addView(label,text);tile.setContentDescription(getString(R.string.ad_add_pet));tile.setOnClickListener(v->openPets(true));return tile;}
+    private View petTile(Map<String,Object> pet){Map<?,?> identity=pet.get("identity") instanceof Map?(Map<?,?>)pet.get("identity"):Collections.emptyMap();String name=String.valueOf(identity.get("displayName")==null?getString(R.string.profile_pet_unnamed):identity.get("displayName"));LinearLayout tile=new LinearLayout(requireContext());tile.setTag("profile_pet_card");tile.setOrientation(LinearLayout.VERTICAL);tile.setGravity(android.view.Gravity.CENTER_HORIZONTAL);int pad=com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),8);tile.setPadding(pad,pad,pad,pad);tile.setBackgroundResource(R.drawable.anilove_card_bg);ImageView image=new ImageView(requireContext());image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setImageResource("dog".equals(identity.get("species"))?R.drawable.profile_avatar_dog:R.drawable.profile_avatar_cat);List<String> ids=com.gmail.manhle240406.project.media.MediaGrid.ids(pet.get("photoAssetIds"));if(!ids.isEmpty())com.gmail.manhle240406.project.media.MediaGrid.load(image,ids.get(0),"thumbnail");tile.addView(image,new LinearLayout.LayoutParams(-1,com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),92)));TextView label=com.gmail.manhle240406.project.community.SocialViews.text(requireContext(),name,true);label.setGravity(android.view.Gravity.CENTER);label.setMaxLines(1);label.setEllipsize(android.text.TextUtils.TruncateAt.END);LinearLayout.LayoutParams text=new LinearLayout.LayoutParams(-1,-2);text.topMargin=com.gmail.manhle240406.project.community.SocialViews.dp(requireContext(),8);tile.addView(label,text);tile.setContentDescription(getString(R.string.profile_pet_open,name));tile.setOnClickListener(v->openPets(false));return tile;}
+    private void openPets(boolean add){startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.pet.PetActivity.class).putExtra("startAdd",add));}
+    @Override public void onResume(){super.onResume();loadPetShelf();}
     // Switching tabs preserves the private in-memory edit instead of discarding or prompting twice.
     @Override public void leave(Runnable action){capture();action.run();}
     private View modalFields,modalContacts;
@@ -123,7 +146,7 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
         Runnable close=()->{if(saving[0])return;capture();if(model.dirty()||personal.dirty())new MaterialAlertDialogBuilder(requireContext()).setMessage(R.string.oc2_unsaved).setPositiveButton(R.string.feedback_discard,(d,w)->{editor.dismiss();model.load(true);}).setNegativeButton(R.string.feedback_continue_editing,null).show();else editor.dismiss();};
         editor.setCancelable(false);
         editor.setOnKeyListener((d,key,event)->{if(key==android.view.KeyEvent.KEYCODE_BACK&&event.getAction()==android.view.KeyEvent.ACTION_UP){close.run();return true;}return false;});
-        editor.setOnShowListener(d->{editor.getButton(-2).setOnClickListener(v->close.run());editor.getButton(-1).setOnClickListener(v->{capture();if(!validateContent()||!ProfileSchema.validPhone(ProfileSchema.phone(model.phone)))return;saving[0]=true;editor.getButton(-1).setEnabled(false);editor.getButton(-2).setEnabled(false);Runnable failed=()->{saving[0]=false;editor.getButton(-1).setEnabled(true);editor.getButton(-2).setEnabled(true);com.google.android.material.snackbar.Snackbar.make(panel,R.string.oc2_save_failed,com.google.android.material.snackbar.Snackbar.LENGTH_LONG).show();};personal.save(ok->{if(ok)model.saveAll(()->{saving[0]=false;editor.dismiss();},failed);else failed.run();});});});
+        editor.setOnShowListener(d->{name.setEnabled(true);bio.setEnabled(true);avatar.setEnabled(true);region.setEnabled(true);editor.getButton(-2).setOnClickListener(v->close.run());editor.getButton(-1).setOnClickListener(v->{capture();if(!validateContent())return;saving[0]=true;editor.getButton(-1).setEnabled(false);editor.getButton(-2).setEnabled(false);Runnable failed=()->{saving[0]=false;editor.getButton(-1).setEnabled(true);editor.getButton(-2).setEnabled(true);com.google.android.material.snackbar.Snackbar.make(panel,R.string.oc2_save_failed,com.google.android.material.snackbar.Snackbar.LENGTH_LONG).show();};personal.save(ok->{if(ok)model.saveAll(()->{saving[0]=false;editor.dismiss();},failed);else failed.run();});});});
         dialog.setOnDismissListener(d->{capture();model.editingProfile=false;panel.removeView(fields);editHome.addView(fields,Math.min(editPosition,editHome.getChildCount()));fields.setVisibility(View.GONE);panel.removeView(contact);contactHome.addView(contact,Math.min(contactPosition,contactHome.getChildCount()));contact.setVisibility(View.GONE);modalFields=null;modalContacts=null;});dialog.show();
     }
     private void options(View anchor){PopupMenu menu=new PopupMenu(requireActivity(),anchor);menu.getMenu().add(0,1,0,R.string.profile_contact);menu.getMenu().add(0,2,1,R.string.profile_hide);menu.getMenu().add(0,3,2,R.string.profile_visibility);menu.getMenu().add(0,4,3,R.string.profile_reload);menu.setOnMenuItemClickListener(item->{if(item.getItemId()==1)findViewById(R.id.profile_contact_group).setVisibility(View.VISIBLE);else if(item.getItemId()==2)model.visibility(false);else if(item.getItemId()==3)findViewById(R.id.profile_visibility_group).setVisibility(View.VISIBLE);else discard(()->model.load(true));return true;});menu.show();}
@@ -131,8 +154,8 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
     private MaterialButton button(int id){return findViewById(id);}
     private TextInputLayout field(int id){return findViewById(id);}
     private String value(TextInputEditText v){return v.getText()==null?"":v.getText().toString();}
-    private void capture(){if(rendering || model==null)return;model.name=value(name);model.bio=value(bio);model.phone=value(phone);model.avatar=Math.max(0,avatar.getSelectedItemPosition());model.region=Math.max(0,region.getSelectedItemPosition());}
-    private void updateAvatar(){if(avatarControl!=null&&avatarControl.model.assetId!=null){com.gmail.manhle240406.project.media.MediaGrid.load(findViewById(R.id.profile_avatar_image),avatarControl.model.assetId,"thumbnail");return;}((ImageView)findViewById(R.id.profile_avatar_image)).setImageResource(model.avatar==1?R.drawable.profile_avatar_cat:model.avatar==2?R.drawable.profile_avatar_dog:R.drawable.profile_avatar_default);}
+    private void capture(){if(rendering || model==null)return;model.name=value(name);model.bio=value(bio);model.avatar=Math.max(0,avatar.getSelectedItemPosition());model.region=Math.max(0,region.getSelectedItemPosition());}
+    private void updateAvatar(){if(avatarControl!=null&&avatarControl.model.assetId!=null){com.gmail.manhle240406.project.media.MediaGrid.load(findViewById(R.id.profile_avatar_image),avatarControl.model.assetId,"thumbnail");return;}((ImageView)findViewById(R.id.profile_avatar_image)).setImageResource(R.drawable.profile_avatar_default);}
     private boolean validateContent(){
         field(R.id.profile_name_layout).setError(null);field(R.id.profile_bio_layout).setError(null);
         int length=ProfileSchema.length(model.name.trim());
@@ -140,7 +163,7 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
         if(ProfileSchema.length(model.bio.trim())>500){field(R.id.profile_bio_layout).setError(getString(R.string.profile_bio_error));bio.requestFocus();return false;}
         return ProfileSchema.validContent(model.content());
     }
-    private String contentText(Map<String,Object> m){if(m==null)return getString(R.string.profile_none);return getResources().getStringArray(R.array.profile_avatar_labels)[ProfileSchema.AVATARS.indexOf(m.get("avatarKey"))]+" · "+m.get("displayName")+"\n"+getResources().getStringArray(R.array.profile_region_labels)[m.get("regionCode")==null?0:ProfileSchema.REGIONS.indexOf(m.get("regionCode"))+1]+"\n"+m.get("bio");}
+    private String contentText(Map<String,Object> m){if(m==null)return getString(R.string.profile_none);return m.get("displayName")+"\n"+getResources().getStringArray(R.array.profile_region_labels)[m.get("regionCode")==null?0:ProfileSchema.REGIONS.indexOf(m.get("regionCode"))+1]+"\n"+m.get("bio");}
     private void preview(){capture();if(!validateContent())return;
         LinearLayout layout=new LinearLayout(requireActivity());layout.setOrientation(LinearLayout.VERTICAL);int pad=(int)(24*getResources().getDisplayMetrics().density);layout.setPadding(pad,pad,pad,pad);
         previewText(layout,getString(R.string.profile_candidate),true);previewText(layout,contentText(model.content()),false);
@@ -162,7 +185,7 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
     private void clearAndFinish(){rendering=true;findViewById(R.id.profile_root).setVisibility(View.INVISIBLE);name.setText("");bio.setText("");phone.setText("");((TextView)findViewById(R.id.profile_review_text)).setText("");if(dialog!=null)dialog.dismiss();finish();}
     private void render(){
         if(model.sessionLost){clearAndFinish();return;}
-        if(renderedForm!=model.formRevision){rendering=true;name.setText(model.name);bio.setText(model.bio);phone.setText(model.phone);avatar.setSelection(model.avatar);region.setSelection(model.region);rendering=false;renderedForm=model.formRevision;updateAvatar();}
+        if(renderedForm!=model.formRevision){rendering=true;name.setText(model.name);bio.setText(model.bio);com.google.firebase.auth.FirebaseUser phoneUser=com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();phone.setText(phoneUser==null||phoneUser.getPhoneNumber()==null?"":phoneUser.getPhoneNumber());avatar.setSelection(model.avatar);region.setSelection(model.region);rendering=false;renderedForm=model.formRevision;updateAvatar();}
         AuthState auth=((AniloveApplication)getApplication()).auth().state().getValue();
         if(auth!=null){
             String copy=getString(auth.verified&&auth.verificationKnown?R.string.profile_email_verified:R.string.profile_email_unverified);
@@ -175,11 +198,12 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
         }
         boolean canAct=model.loaded && !model.busy && !model.coldPending && !model.publicationPending() && !model.conflictReady && model.retry==null && auth!=null && !auth.pending;
         boolean enabled=canAct && model.snapshot.issue==ProfileRepository.Code.OK;
-        name.setEnabled(enabled);bio.setEnabled(enabled);phone.setEnabled(enabled);avatar.setEnabled(enabled);region.setEnabled(enabled);
+        name.setEnabled(enabled);bio.setEnabled(enabled);phone.setEnabled(auth!=null&&!auth.pending);avatar.setEnabled(enabled);region.setEnabled(enabled);
         for(int id:new int[]{R.id.profile_save,R.id.profile_save_contact,R.id.profile_preview,R.id.profile_hide,R.id.profile_show,R.id.profile_reviews,R.id.profile_more})button(id).setEnabled(enabled);
         button(R.id.profile_hide).setEnabled(canAct);
         button(R.id.profile_show).setEnabled(enabled && model.snapshot!=null && model.snapshot.control!=null && model.snapshot.published!=null && auth.communityReady());
         button(R.id.profile_reload).setEnabled(!model.busy && model.retry==null && !model.conflictReady);
+        button(R.id.profile_edit).setEnabled(enabled);
         button(R.id.profile_retry).setVisibility(model.retry!=null||model.coldPending||model.publicationPending()?View.VISIBLE:View.GONE);button(R.id.profile_retry).setEnabled((model.retry!=null||model.coldPending||model.publicationPending()) && !model.busy);
         button(R.id.profile_resolve).setVisibility(model.conflictReady?View.VISIBLE:View.GONE);
         findViewById(R.id.profile_progress).setVisibility(model.busy?View.VISIBLE:View.GONE);
@@ -192,7 +216,7 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
             ((TextView)findViewById(R.id.profile_draft_status)).setText(d==null?getString(R.string.profile_none):getString("submitted".equals(d.get("submission"))?R.string.profile_pending:R.string.profile_draft));
             ((TextView)findViewById(R.id.profile_visibility_state)).setText(c==null?getString(R.string.profile_no_controls):getString("public".equals(c.get("visibility"))?R.string.profile_public_visible:R.string.profile_public_hidden,ProfileSchema.version(c)));
         }
-        if(model.reviews!=null){StringBuilder b=new StringBuilder();for(Map<String,Object> r:model.reviews.rows){b.append(getString("hide".equals(r.get("command"))?R.string.profile_hide:R.string.profile_submit_confirm)).append(" · ").append(java.text.DateFormat.getDateTimeInstance().format(((com.google.firebase.Timestamp)r.get("committedAt")).toDate())).append("\n\n");}((TextView)findViewById(R.id.profile_review_text)).setText(b.length()==0?getString(R.string.profile_empty_reviews):b.toString());}
+        if(model.reviews!=null){StringBuilder b=new StringBuilder();for(Map<String,Object> r:model.reviews.rows){b.append(getString("hide".equals(r.get("command"))?R.string.profile_hide:R.string.profile_submit_confirm)).append(" Â· ").append(java.text.DateFormat.getDateTimeInstance().format(((com.google.firebase.Timestamp)r.get("committedAt")).toDate())).append("\n\n");}((TextView)findViewById(R.id.profile_review_text)).setText(b.length()==0?getString(R.string.profile_empty_reviews):b.toString());}
         else ((TextView)findViewById(R.id.profile_review_text)).setText("");
         button(R.id.profile_more).setVisibility(model.reviews!=null && model.reviews.cursor!=null?View.VISIBLE:View.GONE);
         if(model.conflictReady && shownConflict!=model.conflictRevision){shownConflict=model.conflictRevision;showConflict();}
@@ -205,5 +229,5 @@ public final class ProfileFragment extends com.gmail.manhle240406.project.wiring
     private void logout() {
         ((AniloveApplication)getApplication()).auth().logout();
     }
-    @Override public void onDestroyView(){if(dialog!=null)dialog.dismiss();super.onDestroyView();}
+    @Override public void onDestroyView(){petShelfRequest++;petShelf=null;petScroll=null;petShelfStatus=null;if(dialog!=null)dialog.dismiss();super.onDestroyView();}
 }

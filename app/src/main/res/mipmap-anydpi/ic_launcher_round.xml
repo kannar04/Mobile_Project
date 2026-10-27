@@ -1,11 +1,7 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/pet_paw_icon_background" />
-    <item
-        android:drawable="@drawable/ic_pet_paw_vector"
-        android:left="18dp"
-        android:top="18dp"
-        android:right="18dp"
-        android:bottom="18dp"
-    />
+    <item android:drawable="@drawable/ic_pet_paw_vector"
+        android:left="18dp" android:top="18dp"
+        android:right="18dp" android:bottom="18dp" />
 </layer-list>

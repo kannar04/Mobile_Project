@@ -21,7 +21,6 @@ public final class FlowHubFragment extends MainPageFragment {
         SocialSurface.header(requireActivity(),root,group<0?R.string.flow_explore:FlowRoutes.GROUPS[group],this::finish);
         LinearLayout content=SocialSurface.content(requireActivity(),root);
         GridLayout grid=FlowGrid.create(requireContext());content.addView(grid,new LinearLayout.LayoutParams(-1,-2));
-        if(group==5)FlowGrid.add(grid,getString(R.string.ad_review),R.drawable.ic_shell_search,()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.adoption.ListingReviewActivity.class)),"adoption_admin_review");
         if(group<0){
             FlowGrid.add(grid,getString(R.string.review_manage_pets),R.drawable.ic_pet_paw_vector,()->startActivity(new Intent(requireActivity(),com.gmail.manhle240406.project.pet.PetActivity.class)),"explore_pets");
             FlowGrid.add(grid,getString(R.string.discovery_title),R.drawable.ic_shell_search,()->((com.gmail.manhle240406.project.MainActivity)requireActivity()).discovery("",false),"explore_discovery");

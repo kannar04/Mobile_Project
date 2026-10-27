@@ -10,21 +10,19 @@ import com.gmail.manhle240406.project.R;
 
 public class PostPetActivity extends AppCompatActivity {
 
-  @Override
-  protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    EdgeToEdge.enable(this);
-    setContentView(R.layout.activity_post_pet);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_post_pet);
 
-    ViewCompat.setOnApplyWindowInsetsListener(
-        findViewById(android.R.id.content),
-        (v, insets) -> {
-          Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-          v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-          return insets;
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
         });
 
-    findViewById(R.id.post_pet_back).setOnClickListener(v -> finish());
-    findViewById(R.id.post_pet_submit_btn).setOnClickListener(v -> finish());
-  }
+        findViewById(R.id.post_pet_back).setOnClickListener(v -> finish());
+        findViewById(R.id.post_pet_submit_btn).setOnClickListener(v -> finish());
+    }
 }
