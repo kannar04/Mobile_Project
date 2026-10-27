@@ -75,6 +75,9 @@
     <string name="report_rate">
         Đã đạt giới hạn tiếp nhận. Giữ nội dung và thử lại sau; hệ thống không thể điều phối cứu hộ.
     </string>
+    <string name="report_account_not_ready">Chưa đồng bộ được tài khoản để gửi báo cáo. Nội dung vẫn được giữ; hãy thử lại.</string>
+    <string name="report_permission_denied">Tài khoản hiện không được máy chủ cho phép gửi báo cáo. Nội dung vẫn được giữ.</string>
+    <string name="report_network_unavailable">Chưa kết nối được máy chủ. Nội dung vẫn được giữ; hãy thử lại khi có mạng.</string>
     <string name="report_duplicate">
         Bạn đã có báo cáo cho nội dung này. Xem hoặc bổ sung trong Báo cáo của tôi.
     </string>
