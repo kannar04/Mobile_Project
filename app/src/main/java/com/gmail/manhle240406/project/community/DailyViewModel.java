@@ -6,6 +6,7 @@ import android.os.*;
 import androidx.lifecycle.*;
 
 import com.gmail.manhle240406.project.AniloveApplication;
+import com.gmail.manhle240406.project.auth.AccountBootstrapRepository;
 import com.gmail.manhle240406.project.foundation.*;
 import com.google.android.gms.tasks.*;
 import com.google.firebase.firestore.*;
@@ -17,6 +18,7 @@ public final class DailyViewModel extends AndroidViewModel {
     public final MutableLiveData<Long> changes = new MutableLiveData<>(0L);
     public final SocialRepository social;
     public final ReportRepository reports;
+    private final AccountBootstrapRepository accounts;
     public final SessionGateway sessions;
     public final SessionEpoch.Ticket ticket;
     public final SavedStateHandle saved;
@@ -55,6 +57,10 @@ public final class DailyViewModel extends AndroidViewModel {
                 sessions == null
                         ? null
                         : new ReportRepository(FirebaseFirestore.getInstance(), sessions);
+        accounts =
+                sessions == null
+                        ? null
+                        : new AccountBootstrapRepository(FirebaseFirestore.getInstance(), sessions);
         postId = state.get("post_id");
         reportId = state.get("report_id");
         String owner = state.get("owner_uid");
@@ -145,7 +151,23 @@ public final class DailyViewModel extends AndroidViewModel {
         saved.set("owner_uid", ticket.uid);
         saved.set("pending_op", command.operationId);
         saved.set("pending_kind", "report");
-        execute(reports.execute(ticket, command), command.operationId);
+        Task<Map<String, Object>> task =
+                accounts.ensureAccountOnline()
+                        .continueWithTask(
+                                ready -> {
+                                    if (!ready.isSuccessful()) {
+                                        Exception failure = ready.getException();
+                                        return Tasks.forException(
+                                                failure == null
+                                                        ? new IllegalStateException("account_not_ready")
+                                                        : failure);
+                                    }
+                                    if (!Boolean.TRUE.equals(ready.getResult()))
+                                        return Tasks.forException(
+                                                new IllegalStateException("account_not_ready"));
+                                    return reports.execute(ticket, command);
+                                });
+        execute(task, command.operationId);
     }
 
     private void execute(Task<Map<String, Object>> task, String op) {
@@ -189,17 +211,52 @@ public final class DailyViewModel extends AndroidViewModel {
                         saved.remove("pending_op");
                         saved.remove("pending_kind");
                     } else {
-                        String message =
-                                t.getException() == null ? "" : t.getException().getMessage();
+                        Exception failure = t.getException();
+                        android.util.Log.e(
+                                "DailyViewModel",
+                                reporting ? "Report operation failed" : "Social operation failed",
+                                failure);
+                        String message = failure == null ? "" : failure.getMessage();
+                        FirebaseFirestoreException.Code code = firestoreCode(failure);
                         notice =
                                 message != null && message.contains("conflict")
                                         ? "conflict"
                                         : message != null && message.contains("rate")
                                                 ? "rate"
-                                                : "unavailable";
+                                                : message != null
+                                                                && message.contains(
+                                                                        "account_not_ready")
+                                                        ? "account_not_ready"
+                                                        : reporting
+                                                                        && code
+                                                                        == FirebaseFirestoreException
+                                                                                .Code
+                                                                                .PERMISSION_DENIED
+                                                                ? "report_permission"
+                                                                : reporting
+                                                                                && (code
+                                                                                        == FirebaseFirestoreException
+                                                                                                .Code
+                                                                                                .UNAVAILABLE
+                                                                                || code
+                                                                                        == FirebaseFirestoreException
+                                                                                                .Code
+                                                                                                .DEADLINE_EXCEEDED)
+                                                                        ? "network_unavailable"
+                                                                        : "unavailable";
                     }
                     changed();
                 });
+    }
+
+    private static FirebaseFirestoreException.Code firestoreCode(Throwable failure) {
+        Throwable current = failure;
+        while (current != null) {
+            if (current instanceof FirebaseFirestoreException)
+                return ((FirebaseFirestoreException) current).getCode();
+            current = current.getCause();
+        }
+        return null;
     }
 
     public void reconcile() {
