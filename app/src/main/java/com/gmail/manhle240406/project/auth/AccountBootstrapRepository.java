@@ -40,6 +40,13 @@ public final class AccountBootstrapRepository {
                         });
     }
 
+    /** Revalidates the account root on the server before a protected write. */
+    public Task<Boolean> ensureAccountOnline() {
+        SessionEpoch.Ticket ticket = sessions.capture();
+        if (ticket.uid == null) return Tasks.forResult(false);
+        return ensureOnline(ticket, db.collection("users").document(ticket.uid));
+    }
+
     private Task<Boolean> ensureOnline(SessionEpoch.Ticket ticket, DocumentReference ref) {
         return Tasks.withTimeout(
                         db.runTransaction(

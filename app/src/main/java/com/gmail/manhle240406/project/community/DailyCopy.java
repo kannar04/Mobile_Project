@@ -77,6 +77,15 @@ public final class DailyCopy {
             case "unavailable":
                 id = R.string.social_unavailable;
                 break;
+            case "account_not_ready":
+                id = R.string.report_account_not_ready;
+                break;
+            case "report_permission":
+                id = R.string.report_permission_denied;
+                break;
+            case "network_unavailable":
+                id = R.string.report_network_unavailable;
+                break;
             default:
                 id = R.string.social_service;
         }
