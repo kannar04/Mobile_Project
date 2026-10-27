@@ -982,7 +982,17 @@ service cloud.firestore {
     }
     match /users/{uid}/reportStatus/{id} {allow get: if self(uid);allow list: if self(uid) && page20();allow create: if self(uid) && reportCommon(id,uid,getAfter(/databases/$(database)/documents/reports/$(id)).data.opId) && !exists(/databases/$(database)/documents/reports/$(id));allow update,delete: if false;}
     match /users/{uid}/reportLinks/{key} {allow get: if self(uid);allow create: if self(uid) && key==reportKey(getAfter(/databases/$(database)/documents/reports/$(request.resource.data.currentReportId)).data) && reportCommon(request.resource.data.currentReportId,uid,getAfter(/databases/$(database)/documents/reports/$(request.resource.data.currentReportId)).data.opId) && !exists(/databases/$(database)/documents/reports/$(request.resource.data.currentReportId));allow list,update,delete: if false;}
-    match /reportRateControls/{uid} {allow get: if self(uid);allow create,update: if self(uid) && reportCommon(request.resource.data.lastReportId,uid,request.resource.data.lastOperationId) && reportRate(request.resource.data.lastReportId,uid,request.resource.data.lastOperationId) && getAfter(/databases/$(database)/documents/users/$(uid)/reportOperations/$(request.resource.data.lastOperationId)).data.command!='withdraw';allow list,delete: if false;}
+    match /reportRateControls/{uid} {
+      allow get: if self(uid);
+      allow create,update: if self(uid)
+        && reportRate(request.resource.data.lastReportId,uid,request.resource.data.lastOperationId)
+        && getAfter(/databases/$(database)/documents/reports/$(request.resource.data.lastReportId)).data.lastReporterOperationId==request.resource.data.lastOperationId
+        && getAfter(/databases/$(database)/documents/users/$(uid)/reportOperations/$(request.resource.data.lastOperationId)).data.ownerUid==uid
+        && getAfter(/databases/$(database)/documents/users/$(uid)/reportOperations/$(request.resource.data.lastOperationId)).data.reportId==request.resource.data.lastReportId
+        && getAfter(/databases/$(database)/documents/users/$(uid)/reportOperations/$(request.resource.data.lastOperationId)).data.command!='withdraw'
+        && getAfter(/databases/$(database)/documents/users/$(uid)/reportOperations/$(request.resource.data.lastOperationId)).data.committedAt==request.time;
+      allow list,delete: if false;
+    }
     match /users/{uid}/reportOperations/{op} {allow get: if self(uid);allow list: if self(uid) && page20();allow create: if self(uid) && reportReceipt(request.resource.data,uid,op) && reportCommon(request.resource.data.reportId,uid,op);allow update,delete: if false;}
 
     // F09 private media metadata. All lifecycle/quota/access writes are trusted-only.
