@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Status colors retain readable contrast on the dark Material surface. -->
+    <color name="anilove_badge_green_bg">#173A27</color>
+    <color name="anilove_badge_green_text">#A8DAB8</color>
+    <color name="anilove_badge_orange_bg">#442B12</color>
+    <color name="anilove_badge_orange_text">#FFD09A</color>
+    <color name="anilove_badge_red_bg">#492024</color>
+    <color name="anilove_badge_red_text">#FFB3B8</color>
+</resources>

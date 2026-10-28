@@ -1,0 +1,14 @@
+Continue the ANILOVE Android/Firebase work from the existing workspace.
+
+App repository: D:\dan\Mobile_Project
+Planning/approval records: C:\Users\Minht\Desktop\New folder
+
+First read D:\dan\Mobile_Project\CODEX_HANDOFF_2026-10-21.md in full. Then read every mandatory AGENTS.md, WORKFLOW.md, and VERIFICATION.md file named there. Treat the planning root's exact analyses and approval receipts as the only approval authority; the handoff is a status snapshot, not approval evidence.
+
+Use the handoff's explicit done/not-done matrix as the starting checklist. Reconfirm status from source, current diff, live configuration, and focused tests before changing any item from partial or unverified to complete.
+
+Preserve the current dirty working tree. Do not reset, clean, discard, overwrite, or broadly reformat existing changes. Re-run git status and inspect the complete diff before editing. Build the Firebase-connected spark variant, not debug. Never print secrets.
+
+Continue the approved F03 r8, F10 r8, F20 r4, F23 r4, and F28 r2 unified-adoption work. Start with focused verification on the two connected devices and the real Firebase project. Complete the current two-account adoption journey, identify the exact first failure, fix it, and rerun only affected checks. Then finish only the approved gaps documented in the handoff: real F28 callable/read and UI wiring, vaccination due-date/reminder support, and separate Admin contact-review behavior. Preserve Firebase OTP authority, the maximum-two active receiving rule, unlimited offering, ownership/private-data protections, scoped audited Admin permissions, bounded caching, and correct Back/navigation behavior.
+
+Do not claim completion from compilation alone. Record implementation evidence, tests, native Impeccable/code audit findings, fixes, deployments, and honest blockers in the planning root. If new scope is required, prepare and present a fresh exact revision through approval_gate.py before implementing it. Continue autonomously until the approved work is complete or a concrete external blocker prevents progress.
