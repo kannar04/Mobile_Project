@@ -18,6 +18,9 @@
 <string name="report_title">Báo cáo</string><string name="report_mine">Báo cáo của tôi</string><string name="report_private">Chỉ bạn và người được phép xét duyệt có thể xem. Tiếp nhận không phải kết luận vi phạm.</string>
 <string name="report_reason">Lý do</string><string name="report_details">Thông tin bổ sung · tối đa 1000 ký tự</string><string name="report_submit">Gửi báo cáo</string><string name="report_received">Đã tiếp nhận</string>
 <string name="report_invalid">Chọn lý do và nhập tối đa 1000 ký tự. Lý do Khác cần giải thích.</string><string name="report_rate">Đã đạt giới hạn tiếp nhận. Giữ nội dung và thử lại sau; hệ thống không thể điều phối cứu hộ.</string>
+<string name="report_account_not_ready">Chưa đồng bộ được tài khoản để gửi báo cáo. Nội dung vẫn được giữ; hãy thử lại.</string>
+<string name="report_permission_denied">Tài khoản hiện không được máy chủ cho phép gửi báo cáo. Nội dung vẫn được giữ.</string>
+<string name="report_network_unavailable">Chưa kết nối được máy chủ. Nội dung vẫn được giữ; hãy thử lại khi có mạng.</string>
 <string name="report_duplicate">Bạn đã có báo cáo cho nội dung này. Xem hoặc bổ sung trong Báo cáo của tôi.</string><string name="report_discard">Bỏ nội dung báo cáo chưa gửi?</string>
 <string name="report_original_retained">Lời trình bày gốc được giữ nguyên. Yêu cầu rút không xóa hồ sơ hoặc tự động kết thúc xét duyệt.</string><string name="report_append">Bổ sung thông tin</string><string name="report_withdraw">Yêu cầu rút báo cáo</string><string name="report_withdraw_statement">Tôi yêu cầu rút báo cáo này.</string>
 <string-array name="report_reasons"><item>Spam</item><item>Quấy rối</item><item>Thông tin sai lệch</item><item>Quyền riêng tư</item><item>Phúc lợi động vật</item><item>Khác</item></string-array>

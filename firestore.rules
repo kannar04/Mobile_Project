@@ -880,8 +880,16 @@ service cloud.firestore {
       return n.keys().size()==6 && n.keys().hasOnly(['windowStart','count','lastAcceptedAt','version','lastReportId','lastOperationId'])
         && n.lastReportId==id && n.lastOperationId==op && n.lastAcceptedAt==request.time && n.count is int && n.count>=1 && n.count<=30 && n.version is int
         && (!exists(path)?n.version==1 && n.count==1 && n.windowStart==request.time
-          : n.version==get(path).data.version+1 && request.time>=get(path).data.lastAcceptedAt+duration.value(5,'s')
-            && (request.time>=get(path).data.windowStart+duration.value(24,'h')?n.count==1 && n.windowStart==request.time:n.count==get(path).data.count+1 && n.windowStart==get(path).data.windowStart));
+          : n.version==get(path).data.version+1
+            && (n.count==get(path).data.count+1 && n.windowStart==get(path).data.windowStart
+              || n.count==1 && n.windowStart==request.time && request.time>=get(path).data.windowStart+duration.value(24,'h')));
+    }
+    function reportRateWrite(uid){
+      let n=request.resource.data;
+      let o=getAfter(/databases/$(database)/documents/users/$(uid)/reportOperations/$(n.lastOperationId)).data;
+      return self(uid)
+        && getAfter(/databases/$(database)/documents/reports/$(n.lastReportId)).data.lastReporterOperationId==n.lastOperationId
+        && o.ownerUid==uid && o.reportId==n.lastReportId && o.command!='withdraw' && o.committedAt==request.time;
     }
     function reportEvidence(id,uid,r){
       let e=getAfter(/databases/$(database)/documents/reports/$(id)/restrictedEvidence/current).data;
@@ -940,7 +948,11 @@ service cloud.firestore {
     }
     match /users/{uid}/reportStatus/{id} {allow get: if self(uid);allow list: if self(uid) && page20();allow create: if self(uid) && reportCommon(id,uid,getAfter(/databases/$(database)/documents/reports/$(id)).data.opId) && !exists(/databases/$(database)/documents/reports/$(id));allow update,delete: if false;}
     match /users/{uid}/reportLinks/{key} {allow get: if self(uid);allow create: if self(uid) && key==reportKey(getAfter(/databases/$(database)/documents/reports/$(request.resource.data.currentReportId)).data) && reportCommon(request.resource.data.currentReportId,uid,getAfter(/databases/$(database)/documents/reports/$(request.resource.data.currentReportId)).data.opId) && !exists(/databases/$(database)/documents/reports/$(request.resource.data.currentReportId));allow list,update,delete: if false;}
-    match /reportRateControls/{uid} {allow get: if self(uid);allow create,update: if self(uid) && reportCommon(request.resource.data.lastReportId,uid,request.resource.data.lastOperationId) && reportRate(request.resource.data.lastReportId,uid,request.resource.data.lastOperationId) && getAfter(/databases/$(database)/documents/users/$(uid)/reportOperations/$(request.resource.data.lastOperationId)).data.command!='withdraw';allow list,delete: if false;}
+    match /reportRateControls/{uid} {
+      allow get: if self(uid);
+      allow create,update: if reportRateWrite(uid);
+      allow list,delete: if false;
+    }
     match /users/{uid}/reportOperations/{op} {allow get: if self(uid);allow list: if self(uid) && page20();allow create: if self(uid) && reportReceipt(request.resource.data,uid,op) && reportCommon(request.resource.data.reportId,uid,op);allow update,delete: if false;}
 
     // F06_TEST_PROBE_ANCHOR: only the emulator test loader injects a temporary predicate probe.
