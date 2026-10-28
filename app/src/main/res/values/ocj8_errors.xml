@@ -1,0 +1,19 @@
+<resources>
+    <string name="lc_error_record_unavailable">Không tìm thấy hồ sơ này hoặc bạn không còn quyền xem.</string>
+    <string name="lc_error_network">Không kết nối được với máy chủ. Kiểm tra mạng rồi thử lại.</string>
+    <string name="lc_error_rate">Bạn thao tác quá nhanh. Vui lòng chờ một lúc rồi thử lại.</string>
+    <string name="lc_error_signin">Phiên đăng nhập đã hết hạn. Đăng nhập lại để tiếp tục.</string>
+    <string name="lc_error_own_listing">Bạn không thể gửi yêu cầu nhận nuôi thú cưng do chính mình đăng.</string>
+    <string name="lc_error_active_request">Bạn đã có một yêu cầu đang xử lý cho tin này. Mở lịch sử nhận nuôi để xem trạng thái.</string>
+    <string name="lc_error_not_published">Tin nhận nuôi này hiện không còn nhận yêu cầu.</string>
+    <string name="lc_error_invalid_input">Một số thông tin chưa hợp lệ hoặc còn thiếu. Kiểm tra các trường được đánh dấu rồi gửi lại.</string>
+    <string name="lc_error_media">Ảnh bắt buộc chưa tải xong hoặc không còn hợp lệ. Chọn lại ảnh rồi thử lại.</string>
+    <string name="lc_error_changed">Dữ liệu đã được cập nhật trên thiết bị khác. Kéo xuống để tải trạng thái mới trước khi tiếp tục.</string>
+    <string name="lc_error_reserved">Thú cưng đã có một hành trình nhận nuôi khác đang xử lý.</string>
+    <string name="lc_error_not_ready">Chưa đủ bước xác nhận để thực hiện thao tác này. Hoàn tất bước đang chờ trong hành trình trước.</string>
+    <string name="lc_error_closed">Hành trình này đã kết thúc nên không nhận thêm thao tác.</string>
+    <string name="lc_error_host_only">Chỉ chủ thú cưng có thể thực hiện thao tác này.</string>
+    <string name="lc_error_adopter_only">Chỉ người nhận nuôi có thể thực hiện thao tác này.</string>
+    <string name="lc_error_server">Máy chủ đã từ chối thao tác. Tải lại trang để xem trạng thái và bước đang được phép thực hiện.</string>
+    <string name="lc_push_error">Chưa bật được thông báo trên thiết bị này. Kiểm tra quyền thông báo và kết nối mạng rồi thử lại.</string>
+</resources>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wiring_settings_title">Cài đặt</string>
+    <string name="wiring_species">Loài</string>
+    <string name="wiring_regions">Khu vực</string>
+    <string name="wiring_push_unavailable">Thông báo đẩy đang tạm dừng trong bản thử nghiệm. Hộp thư chỉ hiển thị thông báo đã được dịch vụ được phép tạo; không có tin nhắn mẫu.</string>
+    <string name="wiring_inbox_comment">Bình luận mới</string>
+    <string name="wiring_inbox_activity">Hoạt động tài khoản</string>
+    <string name="wiring_inbox_open">Mở để kiểm tra nội dung hiện tại.</string>
+    <string name="wiring_search">Tìm theo tên thú cưng</string>
+    <string name="wiring_search_invalid">Tên tìm kiếm không được hỗ trợ. Hãy nhập tên ngắn hơn và thử lại.</string>
+    <string name="wiring_saved_reference">Thú cưng đã lưu</string>
+    <string name="wiring_service_unavailable">Tính năng này chưa có dịch vụ xử lý được phép dùng trong bản thử nghiệm. Không có yêu cầu hay thay đổi nào được gửi. Bạn vẫn có thể đọc nội dung được cho phép, quản lý hồ sơ và đăng xuất.</string>
+    <string name="wiring_uploads_paused">Tải ảnh lên đang tạm dừng trong bản thử nghiệm. Bạn vẫn có thể dùng hình minh họa có sẵn.</string>
+    <string name="wiring_configuration">Chưa cấu hình Firebase cho bản thử nghiệm này. Vui lòng kiểm tra cấu hình dự án.</string>
+    <string name="wiring_loading">Đang tải…</string>
+    <string name="wiring_empty">Chưa có nội dung được phép hiển thị.</string>
+    <string name="wiring_failed">Không thể tải dữ liệu. Kiểm tra kết nối và thử lại.</string>
+    <string name="wiring_more">Xem thêm</string>
+    <string name="wiring_retry">Thử lại</string>
+    <string name="wiring_open">Xem</string>
+    <string name="wiring_remove_saved">Bỏ lưu</string>
+    <string name="wiring_save">Lưu yêu thích</string>
+    <string name="wiring_unavailable_item">Nội dung không còn khả dụng</string>
+    <string name="wiring_saved">Đã cập nhật danh sách yêu thích.</string>
+    <string name="wiring_unknown">Chưa xác định kết quả. Hãy tải lại để kiểm tra trước khi gửi yêu cầu mới.</string>
+    <string name="wiring_language">Ngôn ngữ</string>
+    <string name="wiring_theme">Giao diện</string>
+    <string name="wiring_system">Theo hệ thống</string>
+    <string name="wiring_light">Sáng</string>
+    <string name="wiring_dark">Tối</string>
+    <string name="wiring_security">Bảo mật tài khoản</string>
+    <string name="wiring_security_help">Dùng Quên mật khẩu để khôi phục tài khoản mật khẩu. Tài khoản chỉ dùng Google được quản lý qua Google. Xóa tài khoản chưa có dịch vụ xử lý trong bản thử nghiệm này.</string>
+    <string name="wiring_reset_neutral">Nếu địa chỉ này có tài khoản đủ điều kiện, hãy kiểm tra email để biết hướng dẫn. Sau khi đổi mật khẩu, quay lại và đăng nhập.</string>
+    <string name="wiring_reset_action">Gửi hướng dẫn khôi phục</string>
+    <string name="wiring_reset_title">Quên mật khẩu</string>
+    <string name="wiring_reset_wait">Vui lòng chờ trước khi gửi lại.</string>
+    <string name="wiring_reset_configuration">Khôi phục mật khẩu chưa được xác minh cấu hình cho dự án này. Không có email nào được yêu cầu gửi.</string>
+    <string name="wiring_reset_failed">Không thể yêu cầu khôi phục. Kiểm tra kết nối hoặc thử lại sau.</string>
+    <string name="wiring_preference_failed">Không lưu được cài đặt. Cài đặt đã lưu trước đó vẫn được giữ.</string>
+    <string name="wiring_auth_required">Vui lòng đăng nhập để xem nội dung riêng của bạn.</string>
+</resources>

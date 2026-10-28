@@ -1,30 +1,4 @@
 <resources>
-    <string name="ui_write_post">Viết bài</string>
-    <string name="ui_write_prompt">Ngày hôm nay của bạn như thế nào?</string>
-    <string name="ui_write_hint">Ngày hôm nay của bạn như thế nào?</string>
-    <string name="ui_story_label">Bài viết</string>
-    <string name="ui_illustration">Thêm minh họa</string>
-    <string name="ui_optional_art">Tùy chọn · hình có sẵn, không phải ảnh cá nhân</string>
-    <string name="ui_char_count">%1$d / 2.000 ký tự</string>
-    <string name="ui_comments">Bình luận</string>
-    <string name="ui_comment_hint">Viết bình luận…</string>
-    <string name="ui_send">Gửi</string>
-    <string name="ui_like">Thích</string>
-    <string name="ui_unlike">Bỏ thích</string>
-    <string name="ui_no_comments">Chưa có bình luận. Hãy bắt đầu cuộc trò chuyện.</string>
-    <string name="ui_saved_subtitle">Những bé cưng bạn muốn gặp lại</string>
-    <string name="ui_saved_unconnected">Mục yêu thích chưa sẵn sàng</string>
-    <string name="ui_saved_help">
-        Bạn chưa thể xem danh sách đã lưu ở đây. Hãy quay lại sau để tiếp tục khám phá những bé cưng
-        bạn quan tâm.
-    </string>
-    <string name="ui_saved_private">Chỉ bạn mới xem được danh sách yêu thích của mình.</string>
-    <item type="id" name="social_body_input" />
-    <item type="id" name="social_publish_action" />
-    <item type="id" name="social_save_action" />
-    <item type="id" name="social_comment_input" />
-    <item type="id" name="social_send_action" />
-    <item type="id" name="social_comments_list" />
-    <item type="id" name="social_illustration_picker" />
-    <item type="id" name="social_header" />
+<string name="ui_write_post">Viết bài</string><string name="ui_write_prompt">Ngày hôm nay của bạn như thế nào?</string><string name="ui_write_hint">Ngày hôm nay của bạn như thế nào?</string><string name="ui_story_label">Bài viết</string><string name="ui_illustration">Thêm minh họa</string><string name="ui_optional_art">Tùy chọn · hình có sẵn, không phải ảnh cá nhân</string><string name="ui_char_count">%1$d / 2.000 ký tự</string><string name="ui_comments">Bình luận</string><string name="ui_comment_hint">Viết bình luận…</string><string name="ui_send">Gửi</string><string name="ui_like">Thích</string><string name="ui_unlike">Bỏ thích</string><string name="ui_no_comments">Chưa có bình luận. Hãy bắt đầu cuộc trò chuyện.</string><string name="ui_saved_subtitle">Những bé cưng bạn muốn gặp lại</string><string name="ui_saved_unconnected">Mục yêu thích chưa sẵn sàng</string><string name="ui_saved_help">Bạn chưa thể xem danh sách đã lưu ở đây. Hãy quay lại sau để tiếp tục khám phá những bé cưng bạn quan tâm.</string><string name="ui_saved_private">Chỉ bạn mới xem được danh sách yêu thích của mình.</string>
+<item type="id" name="social_body_input"/><item type="id" name="social_publish_action"/><item type="id" name="social_save_action"/><item type="id" name="social_comment_input"/><item type="id" name="social_send_action"/><item type="id" name="social_comments_list"/><item type="id" name="social_illustration_picker"/><item type="id" name="social_header"/>
 </resources>

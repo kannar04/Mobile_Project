@@ -1,0 +1,16 @@
+<resources>
+    <string name="community_pending">Đang chờ gửi</string>
+    <string name="community_review">Cần xem lại</string>
+    <string name="community_cancel_pending">Hủy yêu cầu</string>
+    <string name="community_pending_actions">Đang chờ gửi</string>
+    <string name="community_local_failed">Chưa lưu được yêu cầu. Thử lại.</string>
+    <string name="demo_share_title">Liên kết minh họa</string>
+    <string name="demo_share_help">Đây là liên kết thử nghiệm, chưa mở được trang thật.</string>
+    <string name="demo_share_action">Chia sẻ liên kết minh họa</string>
+    <string name="demo_share_copy">Sao chép</string>
+    <string name="demo_share_unavailable">Chưa thể chia sẻ nội dung này.</string>
+    <string name="guest_stories">Xem câu chuyện công khai</string>
+    <string name="guest_empty">Chưa có câu chuyện công khai.</string>
+    <string name="guest_paused">Câu chuyện công khai chưa mở.</string>
+    <string name="community_saved_empty">Chưa có thú cưng đã lưu.</string>
+</resources>

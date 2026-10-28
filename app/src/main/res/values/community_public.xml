@@ -1,0 +1,11 @@
+<resources>
+ <item name="public_feed_list" type="id" />
+ <string name="community_everyone">Mọi người · Công khai</string>
+ <string name="community_audience_label">Ai có thể đọc?</string>
+ <string name="community_notices">Thông báo về nội dung</string>
+ <string name="community_notices_empty">Chưa có thông báo về nội dung.</string>
+ <string name="community_removed_notice">Nội dung đã được gỡ</string>
+ <string-array name="community_audiences"><item>Mọi người · Công khai</item><item>Cộng đồng · Người dùng đăng nhập</item></string-array>
+ <string name="community_reconsider">Nếu cần xem xét lại, hãy liên hệ chủ dự án trong buổi demo.</string>
+ <string name="community_public_title">Câu chuyện</string>
+</resources>

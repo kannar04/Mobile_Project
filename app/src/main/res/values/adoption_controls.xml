@@ -1,0 +1,31 @@
+<resources>
+    <string name="ad_demo_queue_note">Chế độ demo: tài khoản người duyệt được chỉ định có thể xét cả hồ sơ của mình. Mỗi quyết định vẫn cần mở hồ sơ và xác nhận.</string>
+    <string name="ad_demo_own_record">Hồ sơ của bạn · tự duyệt demo</string>
+    <string name="ad_demo_self_available">Chế độ demo: bạn có thể mở hàng chờ nhận nuôi để tự xét khai báo này.</string>
+    <string name="ad_claim_sent_self_feedback">Đã gửi khai báo chăm sóc. Bạn có thể tự xét trong hàng chờ nhận nuôi của bản demo; tin tìm nhà chưa được gửi duyệt.</string>
+    <string name="ad_demo_review_title">Tự xét hồ sơ của tôi · demo</string>
+    <string name="ad_demo_review_confirmation">Bạn đang xét hồ sơ do chính mình gửi. Quyết định được ghi nhận là tự duyệt demo, không xác minh quyền sở hữu hay sức khỏe. Chấp thuận không tự hiển thị tin.</string>
+    <string name="ad_confirm_demo_approve">Chấp thuận hồ sơ của tôi</string>
+    <string name="ad_confirm_demo_reject">Từ chối hồ sơ của tôi</string>
+    <string name="ad_demo_reader_notice">Hồ sơ này được người đăng tự xét trong bản demo. Thông tin chăm sóc do người đăng cung cấp, chưa được xác minh độc lập.</string>
+    <string name="ad_claim_sent_feedback">Đã gửi khai báo chăm sóc. Một người duyệt khác sẽ xem xét; tin tìm nhà chưa được gửi duyệt.</string>
+    <string name="ad_claim_waiting">Khai báo chăm sóc đang chờ duyệt. Bạn có thể chuẩn bị bản nháp; chỉ gửi tin tìm nhà sau khi khai báo được chấp thuận.</string>
+    <string name="ad_claim_self_review">Bạn không thể tự duyệt khai báo của mình. Cần một tài khoản người duyệt khác.</string>
+    <string name="ad_check_claim">Kiểm tra trạng thái khai báo</string>
+    <string name="ad_listing_sent_feedback">Đã gửi tin tìm nhà để duyệt. Tin chưa hiển thị công khai.</string>
+    <string name="ad_saved_not_sent">Tin đã lưu nhưng chưa gửi duyệt. Bạn có thể gửi lại từ màn hình này.</string>
+    <string name="ad_queue_self_note">Hàng chờ chỉ có hồ sơ của người khác. Hồ sơ do bạn gửi cần một người duyệt độc lập.</string>
+    <string name="ad_submit_in_progress">Đang gửi yêu cầu…</string>
+    <string name="ad_conflict_feedback">Thông tin đã thay đổi. Kiểm tra trạng thái mới nhất trước khi gửi lại.</string>
+    <string name="ad_account_ineligible_feedback">Tài khoản chưa đủ điều kiện gửi yêu cầu nhận nuôi. Kiểm tra xác minh và quyền sử dụng trong Hồ sơ.</string>
+    <string name="ad_next">Trang tiếp theo</string>
+    <string name="ad_cancel_prepare">Dừng chuẩn bị nhận nuôi</string>
+    <string name="ad_no_transfer">Tôi xác nhận chưa giao hoặc nhận thú cưng</string>
+    <string name="ad_cancel_notice">Chỉ hủy giữ chỗ khi cả hai xác nhận chưa giao nhận. Nếu đã giao nhận hoặc có bất đồng, giữ nguyên hồ sơ để được xem xét.</string>
+    <string name="ad_record_statement">Ghi nhận xác nhận của tôi</string>
+    <string name="ad_cancel_reservation">Hủy giữ chỗ</string>
+    <string name="ad_revoke_consent">Rút lại đồng ý chuẩn bị</string>
+    <string name="ad_correct_report">Báo sai lệch giao nhận</string>
+    <string name="ad_statement_required">Hãy xác nhận tình trạng giao nhận và ghi lý do.</string>
+    <string name="ad_browse_only">Bạn có thể xem và chia sẻ tin nhận nuôi. Gửi hồ sơ nhận nuôi chưa được mở trong bản demo này.</string>
+</resources>

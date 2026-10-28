@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="adoption_timeline_progress">#82BC70</color>
+    <color name="adoption_timeline_track">#515A53</color>
+    <color name="adoption_timeline_current_bg">#27351F</color>
+    <color name="adoption_timeline_current_border">#B4D35B</color>
+    <color name="adoption_timeline_done_bg">#29452D</color>
+    <color name="adoption_timeline_done_text">#C8E8C5</color>
+    <color name="adoption_timeline_current_badge_text">#17200F</color>
+    <color name="followup_available_bg">#FF272320</color>
+    <color name="followup_available_stroke">#FF8D8178</color>
+    <color name="followup_waiting_bg">#FF4B3C18</color>
+    <color name="followup_waiting_stroke">#FFFFCA58</color>
+    <color name="followup_approved_bg">#FF203A26</color>
+    <color name="followup_approved_stroke">#FF84C88A</color>
+    <color name="followup_overdue_bg">#FF4A2422</color>
+    <color name="followup_overdue_stroke">#FFFF8A80</color>
+    <color name="followup_locked_bg">#FF302B28</color>
+    <color name="followup_locked_stroke">#FF9D928A</color>
+</resources>
