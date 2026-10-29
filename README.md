@@ -1,36 +1,21 @@
-# ANILOVE scaffold (dev)
+# ANILOVE Android app
 
-This branch mirrors the file structure of `dev_2` at commit
-`1ff5932f376176972f5e7c39a195a00d40117e51` so the team can paste code into matching files.
+Open this folder in Android Studio and sync Gradle, then run the app.
 
-## Empty placeholders
+The repository pins the Gradle daemon to a full JDK 21 toolchain. On the first
+command-line build, Gradle may download that JDK automatically. Let that download
+finish; Android's `JdkImageTransform` requires the JDK tools `jlink`, `javac`, and
+`jmod`, which are absent from a JRE-only installation.
 
-- All 75 Java files, including application and test sources.
-- All 8 XML files in `app/src/main/res/layout/`.
-- The 3 `profile_avatar_*.xml` drawables.
-- The 7 custom UI resource files: `values/auth.xml`, `community.xml`, `listing.xml`,
-  `pet.xml`, `profile.xml`, `social.xml`, and `values-night/auth.xml`.
+Build the Firebase-connected app from PowerShell:
 
-These files are completely empty, without package declarations, classes or XML stubs.
+    .\gradlew.bat :app:assembleSpark
 
-## Preserved content
+If an older checkout has already started Gradle with another Java runtime, stop
+that daemon once after pulling the current configuration, then build again:
 
-- Gradle Wrapper, build configuration and dependency catalog.
-- Android manifests, backup rules, default launcher icons, base themes, colors and app name.
-- Firebase configuration and Firestore rules/indexes.
-- Reference documentation from `dev_2`. It describes the implemented source branch,
-  not implemented functionality in this empty scaffold.
-- `File_Ideas/` and `image/`: the team's existing reference material.
+    .\gradlew.bat --stop
+    .\gradlew.bat :app:assembleSpark
 
-## Usage
-
-1. Open this project in Android Studio and configure your local Android SDK.
-2. Paste Java and custom UI resources from the implemented project into matching paths.
-3. Sync Gradle, then build and test.
-
-The app cannot build or run while Java and XML placeholders remain empty.
-Do not share generated `.gradle/`, `build/`, `node_modules/` or log files.
-`local.properties` contains machine-specific SDK settings and stays outside Git.
-
-The previous local `dev` revision is preserved in
-`backup/dev-before-scaffold-20261013`.
+Do not commit `local.properties`; each developer's Android Studio creates it with
+that machine's Android SDK path.
