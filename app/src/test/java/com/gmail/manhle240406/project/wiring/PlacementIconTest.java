@@ -1,3 +1,24 @@
 package com.gmail.manhle240406.project.wiring;
-import com.gmail.manhle240406.project.R;import org.junit.Test;import static org.junit.Assert.assertEquals;
-public class PlacementIconTest{@Test public void visiblePlacementFeaturesHaveDedicatedIcons(){String[] f={"F16","F17","F18","F20","F21","F28","F34"};int[] i={R.drawable.ic_placement_questionnaire,R.drawable.ic_placement_my_requests,R.drawable.ic_placement_review_requests,R.drawable.ic_placement_meeting,R.drawable.ic_placement_handover,R.drawable.ic_placement_review,R.drawable.ic_placement_exchange};for(int n=0;n<f.length;n++)assertEquals(f[n],i[n],FlowGrid.featureIcon(f[n],2));}}
+
+import static org.junit.Assert.assertEquals;
+
+import com.gmail.manhle240406.project.R;
+
+import org.junit.Test;
+
+public class PlacementIconTest {
+    @Test
+    public void visiblePlacementFeaturesHaveDedicatedIcons() {
+        String[] f = {"F16", "F17", "F18", "F20", "F21", "F28", "F34"};
+        int[] i = {
+            R.drawable.ic_placement_questionnaire,
+            R.drawable.ic_placement_my_requests,
+            R.drawable.ic_placement_review_requests,
+            R.drawable.ic_placement_meeting,
+            R.drawable.ic_placement_handover,
+            R.drawable.ic_placement_review,
+            R.drawable.ic_placement_exchange
+        };
+        for (int n = 0; n < f.length; n++) assertEquals(f[n], i[n], FlowGrid.featureIcon(f[n], 2));
+    }
+}

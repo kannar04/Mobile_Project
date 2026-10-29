@@ -1,57 +1,531 @@
 package com.gmail.manhle240406.project.pet;
+
+import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.*;
+
 import android.app.Application;
 import android.os.*;
+
 import androidx.lifecycle.*;
+
 import com.gmail.manhle240406.project.AniloveApplication;
 import com.gmail.manhle240406.project.adoption.*;
 import com.gmail.manhle240406.project.extensions.EncryptedOfflineStore;
 import com.gmail.manhle240406.project.foundation.*;
+
 import java.util.*;
-import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.*;
 
 /** One form, one stable submitted intent; encrypted SQLite autosave is never an upload queue. */
 public final class PetRegistrationModel extends AndroidViewModel {
- public final MutableLiveData<Long> changes=new MutableLiveData<>(0L);
- public Map<String,Object> form=blank(),workspace=new HashMap<>();public boolean editing,busy,lost,localSaved,restored,unknown;public String error="";public boolean submitted;
- private final SessionGateway sessions;private final SessionEpoch.Ticket ticket;private final EncryptedOfflineStore store;
- private final Handler handler=new Handler(Looper.getMainLooper());private long event,generation,localGeneration;private boolean writing,dirty;
- private String operationId=UUID.randomUUID().toString(),petId=UUID.randomUUID().toString();
- private final Runnable invalidation=()->{lost=true;form.clear();workspace.clear();handler.removeCallbacksAndMessages(null);changed();};
- private final Runnable autosave=this::persist;
- private static EncryptedOfflineStore shared;private static SessionEpoch.Ticket sharedTicket;private static SessionGateway namespaceGateway;private static Runnable rotateNamespace;
- private static synchronized EncryptedOfflineStore store(Application app,SessionGateway sessions,SessionEpoch.Ticket ticket){
-  if(shared==null||!sessions.current(sharedTicket)){
-   android.content.SharedPreferences prefs=app.getSharedPreferences("pet_draft_namespace",0);if(namespaceGateway!=sessions){if(namespaceGateway!=null&&rotateNamespace!=null)namespaceGateway.removeInvalidation(rotateNamespace);namespaceGateway=sessions;rotateNamespace=()->prefs.edit().remove("nonce").apply();sessions.onInvalidated(rotateNamespace);}String nonce=prefs.getString("nonce",null);if(nonce==null){nonce=UUID.randomUUID().toString();prefs.edit().putString("nonce",nonce).apply();}
-   Map<String,EncryptedOfflineStore.Consumer> adapters=new HashMap<>();adapters.put("f06_draft",new EncryptedOfflineStore.Consumer(){public int schemaVersion(){return 1;}public long leaseMillis(){return 0;}public boolean permitsDraft(){return true;}public Map<String,Object> validate(Map<String,Object> p,boolean draft){if(!draft||!p.keySet().equals(new HashSet<>(Arrays.asList("form","operationId","petId","unknown")))||!(p.get("form") instanceof Map)||!PetSchema.id((String)p.get("operationId"))||!PetSchema.id((String)p.get("petId"))||!(p.get("unknown") instanceof Boolean))throw new IllegalArgumentException("pet_draft");Map<String,Object> f=object(p.get("form"));if(!f.keySet().equals(blank().keySet()))throw new IllegalArgumentException("pet_fields");for(Object v:f.values())if(!(v instanceof String)&&!(v instanceof Boolean)&&!(v instanceof List&&com.gmail.manhle240406.project.media.MediaGrid.ids(v).size()==((List<?>)v).size()&&((List<?>)v).size()<=100))throw new IllegalArgumentException("pet_fields");if(AdoptionValues.canonical(p).length()>12000)throw new IllegalArgumentException("pet_bounds");return p;}});
-   shared=new EncryptedOfflineStore(app,sessions,ticket,nonce,adapters);sharedTicket=ticket;
-  }return shared;
- }
- public PetRegistrationModel(Application app){super(app);sessions=((AniloveApplication)app).foundation().sessions;ticket=sessions==null?null:sessions.capture();if(ticket==null||ticket.uid==null){lost=true;store=null;return;}sessions.onInvalidated(invalidation);store=store(app,sessions,ticket);
-  store.readDraft("f06_draft","registration").addOnCompleteListener(t->{if(!current())return;if(t.isSuccessful()&&t.getResult()!=null){EncryptedOfflineStore.Row r=t.getResult();form=new HashMap<>(object(r.payload.get("form")));petId=(String)r.payload.get("petId");operationId=(String)r.payload.get("operationId");unknown=Boolean.TRUE.equals(r.payload.get("unknown"));localGeneration=r.generation;restored=true;localSaved=true;}else if(!t.isSuccessful())error="local_unavailable";changed();});load();
- }
- static Map<String,Object> blank(){return map("name","","species","cat","breed","","sex","unknown","ageMonths","","basis","claimed_owner","reportedCare",false,"explanation","","observedAt",java.time.Instant.now().toString(),"editPetId","","expectedIdentityVersion","0","expectedClaimVersion","0","photoIds",new ArrayList<String>());}
- private boolean current(){return !lost&&sessions.current(ticket);}public void changed(){changes.setValue(++event);}
- public void change(String key,Object value){if(unknown||busy)return;form.put(key,value);error="";dirty=true;localSaved=false;handler.removeCallbacks(autosave);handler.postDelayed(autosave,350);}
- public void flush(){handler.removeCallbacks(autosave);persist();}
- private void persist(){if(!current()||store==null||!dirty||writing)return;writing=true;dirty=false;Map<String,Object> payload=map("form",new HashMap<>(form),"operationId",operationId,"petId",petId,"unknown",unknown);store.saveDraft("f06_draft","registration",localGeneration,0,payload).addOnCompleteListener(t->{if(!current())return;writing=false;if(t.isSuccessful()){localGeneration=t.getResult().generation;localSaved=true;}else error="local_unavailable";if(dirty)persist();changed();});}
- public void load(){if(!current()||busy)return;busy=true;com.gmail.manhle240406.project.adoption.OwnedPets.read(sessions,20,null).addOnCompleteListener(t->{if(!current())return;busy=false;if(t.isSuccessful())workspace=t.getResult();else error="unavailable";changed();});}
- public void start(){editing=true;submitted=false;error="";changed();}
- public void editPet(Map<String,Object> pet){if(busy||unknown)return;Map<String,Object> identity=object(pet.get("identity")),claim=object(pet.get("claim"));form=blank();form.put("name",identity.getOrDefault("displayName",""));for(String k:new String[]{"species","breed","sex"})form.put(k,identity.getOrDefault(k,form.get(k)));form.put("ageMonths",identity.get("ageMonths")==null?"":Long.toString(number(identity.get("ageMonths"))));for(String k:new String[]{"basis","reportedCare","explanation"})form.put(k,claim.getOrDefault(k,form.get(k)));form.put("photoIds",new ArrayList<>(com.gmail.manhle240406.project.media.MediaGrid.ids(pet.get("photoAssetIds"))));form.put("editPetId",pet.get("petId"));form.put("expectedIdentityVersion",Long.toString(number(pet.get("identityVersion"))));form.put("expectedClaimVersion",Long.toString(number(claim.get("claimVersion"))));petId=String.valueOf(pet.get("petId"));operationId=UUID.randomUUID().toString();editing=true;dirty=true;submitted=false;error="";persist();changed();}
- public void discard(){if(unknown)return;if(writing){handler.postDelayed(this::discard,50);return;}handler.removeCallbacks(autosave);dirty=false;store.acknowledgeDraft("f06_draft","registration",localGeneration).addOnCompleteListener(t->{if(!current())return;if(!t.isSuccessful()){error="local_unavailable";changed();return;}form=blank();localGeneration=0;operationId=UUID.randomUUID().toString();petId=UUID.randomUUID().toString();editing=false;restored=false;localSaved=false;changed();});}
- public void submit(){if(!current()||busy)return;String name=String.valueOf(form.get("name")).trim();if(name.isEmpty()||name.codePointCount(0,name.length())>80){error="invalid_name";changed();return;}Integer months=null;try{String age=(String)form.get("ageMonths");if(!age.isEmpty()){months=Integer.valueOf(age);if(months<0||months>1200)throw new NumberFormatException();}}catch(NumberFormatException bad){error="invalid_age";changed();return;}
-  if(!"claimed_owner".equals(form.get("basis"))&&String.valueOf(form.get("explanation")).trim().isEmpty()){error="invalid_claim";changed();return;}
-  String species=String.valueOf(form.get("species"));String illustration=("cat".equals(species)||"dog".equals(species))?species:"default";
-  Map<String,Object> identity=map("displayName",name,"species",species,"breed",String.valueOf(form.get("breed")).trim(),"sex",form.get("sex"),"ageMonths",months,"ageObservedAt",months==null?null:form.get("observedAt"),"marks","","marksUnknown",true,"illustrationKey",illustration);
-  // The observed date is part of the intent; keep it stable across an uncertain retry.
-  // An explicit retry reuses the exact persisted operation and observed date.
-  Map<String,Object> input=map("operationId",operationId,"petId",petId,"identity",identity,"claim",map("basis",form.get("basis"),"reportedCare",form.get("reportedCare"),"explanation",String.valueOf(form.get("explanation")).trim()));
-  String editId=(String)form.get("editPetId");String command=editId.isEmpty()?"registerPet":"revisePet";input.put("mediaAssetIds",form.get("photoIds"));if(!editId.isEmpty()){input.put("expectedIdentityVersion",Long.parseLong((String)form.get("expectedIdentityVersion")));input.put("expectedClaimVersion",Long.parseLong((String)form.get("expectedClaimVersion")));}
-  busy=true;unknown=true;dirty=true;handler.removeCallbacks(autosave);submitWhenSaved(command,input);changed();
- }
- private void submitWhenSaved(String command,Map<String,Object> input){if(!current())return;if(writing){handler.postDelayed(()->submitWhenSaved(command,input),80);return;}dirty=false;writing=true;store.saveDraft("f06_draft","registration",localGeneration,0,map("form",new HashMap<>(form),"operationId",operationId,"petId",petId,"unknown",true)).addOnCompleteListener(saved->{if(!current())return;writing=false;if(!saved.isSuccessful()){busy=false;unknown=false;error="local_unavailable";changed();return;}localGeneration=saved.getResult().generation;AdoptionApi.call(command,input).addOnCompleteListener(t->{if(!current())return;busy=false;if(t.isSuccessful())success();else{error=String.valueOf(t.getException());if(!uncertain(t.getException())){unknown=false;operationId=UUID.randomUUID().toString();}dirty=true;persist();changed();}});});
- }
- private boolean uncertain(Throwable error){for(Throwable e=error;e!=null;e=e.getCause())if(e instanceof com.google.firebase.functions.FirebaseFunctionsException){com.google.firebase.functions.FirebaseFunctionsException.Code c=((com.google.firebase.functions.FirebaseFunctionsException)e).getCode();return c==com.google.firebase.functions.FirebaseFunctionsException.Code.UNAVAILABLE||c==com.google.firebase.functions.FirebaseFunctionsException.Code.INTERNAL||c==com.google.firebase.functions.FirebaseFunctionsException.Code.DEADLINE_EXCEEDED||c==com.google.firebase.functions.FirebaseFunctionsException.Code.CANCELLED;}return true;}
- public void reconcile(){if(!current()||busy)return;busy=true;AdoptionApi.call("receipt",map("operationId",operationId,"family",String.valueOf(form.get("editPetId")).isEmpty()?"registerSubmitted":"reviseSubmitted","command",null)).addOnCompleteListener(t->{if(!current())return;busy=false;if(t.isSuccessful()&&t.getResult().get("receipt")!=null)success();else{error="unknown_outcome";changed();}});}
- private void success(){com.gmail.manhle240406.project.adoption.OwnedPets.clear();unknown=false;submitted=true;editing=false;error="";handler.removeCallbacks(autosave);dirty=false;if(writing){handler.postDelayed(this::success,100);return;}store.acknowledgeDraft("f06_draft","registration",localGeneration).addOnCompleteListener(t->{if(!current())return;form=blank();localGeneration=0;operationId=UUID.randomUUID().toString();petId=UUID.randomUUID().toString();restored=false;localSaved=false;load();changed();});}
- @Override protected void onCleared(){flush();handler.removeCallbacks(autosave);if(sessions!=null)sessions.removeInvalidation(invalidation);super.onCleared();}
+    public final MutableLiveData<Long> changes = new MutableLiveData<>(0L);
+    public Map<String, Object> form = blank(), workspace = new HashMap<>();
+    public boolean editing, busy, lost, localSaved, restored, unknown;
+    public String error = "";
+    public boolean submitted;
+    private final SessionGateway sessions;
+    private final SessionEpoch.Ticket ticket;
+    private final EncryptedOfflineStore store;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private long event, generation, localGeneration;
+    private boolean writing, dirty;
+    private String operationId = UUID.randomUUID().toString(), petId = UUID.randomUUID().toString();
+    private final Runnable invalidation =
+            () -> {
+                lost = true;
+                form.clear();
+                workspace.clear();
+                handler.removeCallbacksAndMessages(null);
+                changed();
+            };
+    private final Runnable autosave = this::persist;
+    private static EncryptedOfflineStore shared;
+    private static SessionEpoch.Ticket sharedTicket;
+    private static SessionGateway namespaceGateway;
+    private static Runnable rotateNamespace;
+
+    private static synchronized EncryptedOfflineStore store(
+            Application app, SessionGateway sessions, SessionEpoch.Ticket ticket) {
+        if (shared == null || !sessions.current(sharedTicket)) {
+            android.content.SharedPreferences prefs =
+                    app.getSharedPreferences("pet_draft_namespace", 0);
+            if (namespaceGateway != sessions) {
+                if (namespaceGateway != null && rotateNamespace != null)
+                    namespaceGateway.removeInvalidation(rotateNamespace);
+                namespaceGateway = sessions;
+                rotateNamespace = () -> prefs.edit().remove("nonce").apply();
+                sessions.onInvalidated(rotateNamespace);
+            }
+            String nonce = prefs.getString("nonce", null);
+            if (nonce == null) {
+                nonce = UUID.randomUUID().toString();
+                prefs.edit().putString("nonce", nonce).apply();
+            }
+            Map<String, EncryptedOfflineStore.Consumer> adapters = new HashMap<>();
+            adapters.put(
+                    "f06_draft",
+                    new EncryptedOfflineStore.Consumer() {
+                        public int schemaVersion() {
+                            return 1;
+                        }
+
+                        public long leaseMillis() {
+                            return 0;
+                        }
+
+                        public boolean permitsDraft() {
+                            return true;
+                        }
+
+                        public Map<String, Object> validate(Map<String, Object> p, boolean draft) {
+                            if (!draft
+                                    || !p.keySet()
+                                            .equals(
+                                                    new HashSet<>(
+                                                            Arrays.asList(
+                                                                    "form",
+                                                                    "operationId",
+                                                                    "petId",
+                                                                    "unknown")))
+                                    || !(p.get("form") instanceof Map)
+                                    || !PetSchema.id((String) p.get("operationId"))
+                                    || !PetSchema.id((String) p.get("petId"))
+                                    || !(p.get("unknown") instanceof Boolean))
+                                throw new IllegalArgumentException("pet_draft");
+                            Map<String, Object> f = object(p.get("form"));
+                            if (!f.keySet().equals(blank().keySet()))
+                                throw new IllegalArgumentException("pet_fields");
+                            for (Object v : f.values())
+                                if (!(v instanceof String)
+                                        && !(v instanceof Boolean)
+                                        && !(v instanceof List
+                                                && com.gmail.manhle240406.project.media.MediaGrid
+                                                                .ids(v)
+                                                                .size()
+                                                        == ((List<?>) v).size()
+                                                && ((List<?>) v).size() <= 100))
+                                    throw new IllegalArgumentException("pet_fields");
+                            if (AdoptionValues.canonical(p).length() > 12000)
+                                throw new IllegalArgumentException("pet_bounds");
+                            return p;
+                        }
+                    });
+            shared = new EncryptedOfflineStore(app, sessions, ticket, nonce, adapters);
+            sharedTicket = ticket;
+        }
+        return shared;
+    }
+
+    public PetRegistrationModel(Application app) {
+        super(app);
+        sessions = ((AniloveApplication) app).foundation().sessions;
+        ticket = sessions == null ? null : sessions.capture();
+        if (ticket == null || ticket.uid == null) {
+            lost = true;
+            store = null;
+            return;
+        }
+        sessions.onInvalidated(invalidation);
+        store = store(app, sessions, ticket);
+        store.readDraft("f06_draft", "registration")
+                .addOnCompleteListener(
+                        t -> {
+                            if (!current()) return;
+                            if (t.isSuccessful() && t.getResult() != null) {
+                                EncryptedOfflineStore.Row r = t.getResult();
+                                form = new HashMap<>(object(r.payload.get("form")));
+                                petId = (String) r.payload.get("petId");
+                                operationId = (String) r.payload.get("operationId");
+                                unknown = Boolean.TRUE.equals(r.payload.get("unknown"));
+                                localGeneration = r.generation;
+                                restored = true;
+                                localSaved = true;
+                            } else if (!t.isSuccessful()) error = "local_unavailable";
+                            changed();
+                        });
+        load();
+    }
+
+    static Map<String, Object> blank() {
+        return map(
+                "name",
+                "",
+                "species",
+                "cat",
+                "breed",
+                "",
+                "sex",
+                "unknown",
+                "ageMonths",
+                "",
+                "basis",
+                "claimed_owner",
+                "reportedCare",
+                false,
+                "explanation",
+                "",
+                "observedAt",
+                java.time.Instant.now().toString(),
+                "editPetId",
+                "",
+                "expectedIdentityVersion",
+                "0",
+                "expectedClaimVersion",
+                "0",
+                "photoIds",
+                new ArrayList<String>());
+    }
+
+    private boolean current() {
+        return !lost && sessions.current(ticket);
+    }
+
+    public void changed() {
+        changes.setValue(++event);
+    }
+
+    public void change(String key, Object value) {
+        if (unknown || busy) return;
+        form.put(key, value);
+        error = "";
+        dirty = true;
+        localSaved = false;
+        handler.removeCallbacks(autosave);
+        handler.postDelayed(autosave, 350);
+    }
+
+    public void flush() {
+        handler.removeCallbacks(autosave);
+        persist();
+    }
+
+    private void persist() {
+        if (!current() || store == null || !dirty || writing) return;
+        writing = true;
+        dirty = false;
+        Map<String, Object> payload =
+                map(
+                        "form",
+                        new HashMap<>(form),
+                        "operationId",
+                        operationId,
+                        "petId",
+                        petId,
+                        "unknown",
+                        unknown);
+        store.saveDraft("f06_draft", "registration", localGeneration, 0, payload)
+                .addOnCompleteListener(
+                        t -> {
+                            if (!current()) return;
+                            writing = false;
+                            if (t.isSuccessful()) {
+                                localGeneration = t.getResult().generation;
+                                localSaved = true;
+                            } else error = "local_unavailable";
+                            if (dirty) persist();
+                            changed();
+                        });
+    }
+
+    public void load() {
+        if (!current() || busy) return;
+        busy = true;
+        com.gmail.manhle240406.project.adoption.OwnedPets.read(sessions, 20, null)
+                .addOnCompleteListener(
+                        t -> {
+                            if (!current()) return;
+                            busy = false;
+                            if (t.isSuccessful()) workspace = t.getResult();
+                            else error = "unavailable";
+                            changed();
+                        });
+    }
+
+    public void start() {
+        editing = true;
+        submitted = false;
+        error = "";
+        changed();
+    }
+
+    public void editPet(Map<String, Object> pet) {
+        if (busy || unknown) return;
+        Map<String, Object> identity = object(pet.get("identity")),
+                claim = object(pet.get("claim"));
+        form = blank();
+        form.put("name", identity.getOrDefault("displayName", ""));
+        for (String k : new String[] {"species", "breed", "sex"})
+            form.put(k, identity.getOrDefault(k, form.get(k)));
+        form.put(
+                "ageMonths",
+                identity.get("ageMonths") == null
+                        ? ""
+                        : Long.toString(number(identity.get("ageMonths"))));
+        for (String k : new String[] {"basis", "reportedCare", "explanation"})
+            form.put(k, claim.getOrDefault(k, form.get(k)));
+        form.put(
+                "photoIds",
+                new ArrayList<>(
+                        com.gmail.manhle240406.project.media.MediaGrid.ids(
+                                pet.get("photoAssetIds"))));
+        form.put("editPetId", pet.get("petId"));
+        form.put("expectedIdentityVersion", Long.toString(number(pet.get("identityVersion"))));
+        form.put("expectedClaimVersion", Long.toString(number(claim.get("claimVersion"))));
+        petId = String.valueOf(pet.get("petId"));
+        operationId = UUID.randomUUID().toString();
+        editing = true;
+        dirty = true;
+        submitted = false;
+        error = "";
+        persist();
+        changed();
+    }
+
+    public void discard() {
+        if (unknown) return;
+        if (writing) {
+            handler.postDelayed(this::discard, 50);
+            return;
+        }
+        handler.removeCallbacks(autosave);
+        dirty = false;
+        store.acknowledgeDraft("f06_draft", "registration", localGeneration)
+                .addOnCompleteListener(
+                        t -> {
+                            if (!current()) return;
+                            if (!t.isSuccessful()) {
+                                error = "local_unavailable";
+                                changed();
+                                return;
+                            }
+                            form = blank();
+                            localGeneration = 0;
+                            operationId = UUID.randomUUID().toString();
+                            petId = UUID.randomUUID().toString();
+                            editing = false;
+                            restored = false;
+                            localSaved = false;
+                            changed();
+                        });
+    }
+
+    public void submit() {
+        if (!current() || busy) return;
+        String name = String.valueOf(form.get("name")).trim();
+        if (name.isEmpty() || name.codePointCount(0, name.length()) > 80) {
+            error = "invalid_name";
+            changed();
+            return;
+        }
+        Integer months = null;
+        try {
+            String age = (String) form.get("ageMonths");
+            if (!age.isEmpty()) {
+                months = Integer.valueOf(age);
+                if (months < 0 || months > 1200) throw new NumberFormatException();
+            }
+        } catch (NumberFormatException bad) {
+            error = "invalid_age";
+            changed();
+            return;
+        }
+        if (!"claimed_owner".equals(form.get("basis"))
+                && String.valueOf(form.get("explanation")).trim().isEmpty()) {
+            error = "invalid_claim";
+            changed();
+            return;
+        }
+        String species = String.valueOf(form.get("species"));
+        String illustration =
+                ("cat".equals(species) || "dog".equals(species)) ? species : "default";
+        Map<String, Object> identity =
+                map(
+                        "displayName",
+                        name,
+                        "species",
+                        species,
+                        "breed",
+                        String.valueOf(form.get("breed")).trim(),
+                        "sex",
+                        form.get("sex"),
+                        "ageMonths",
+                        months,
+                        "ageObservedAt",
+                        months == null ? null : form.get("observedAt"),
+                        "marks",
+                        "",
+                        "marksUnknown",
+                        true,
+                        "illustrationKey",
+                        illustration);
+        // The observed date is part of the intent; keep it stable across an uncertain retry.
+        // An explicit retry reuses the exact persisted operation and observed date.
+        Map<String, Object> input =
+                map(
+                        "operationId",
+                        operationId,
+                        "petId",
+                        petId,
+                        "identity",
+                        identity,
+                        "claim",
+                        map(
+                                "basis",
+                                form.get("basis"),
+                                "reportedCare",
+                                form.get("reportedCare"),
+                                "explanation",
+                                String.valueOf(form.get("explanation")).trim()));
+        String editId = (String) form.get("editPetId");
+        String command = editId.isEmpty() ? "registerPet" : "revisePet";
+        input.put("mediaAssetIds", form.get("photoIds"));
+        if (!editId.isEmpty()) {
+            input.put(
+                    "expectedIdentityVersion",
+                    Long.parseLong((String) form.get("expectedIdentityVersion")));
+            input.put(
+                    "expectedClaimVersion",
+                    Long.parseLong((String) form.get("expectedClaimVersion")));
+        }
+        busy = true;
+        unknown = true;
+        dirty = true;
+        handler.removeCallbacks(autosave);
+        submitWhenSaved(command, input);
+        changed();
+    }
+
+    private void submitWhenSaved(String command, Map<String, Object> input) {
+        if (!current()) return;
+        if (writing) {
+            handler.postDelayed(() -> submitWhenSaved(command, input), 80);
+            return;
+        }
+        dirty = false;
+        writing = true;
+        store.saveDraft(
+                        "f06_draft",
+                        "registration",
+                        localGeneration,
+                        0,
+                        map(
+                                "form",
+                                new HashMap<>(form),
+                                "operationId",
+                                operationId,
+                                "petId",
+                                petId,
+                                "unknown",
+                                true))
+                .addOnCompleteListener(
+                        saved -> {
+                            if (!current()) return;
+                            writing = false;
+                            if (!saved.isSuccessful()) {
+                                busy = false;
+                                unknown = false;
+                                error = "local_unavailable";
+                                changed();
+                                return;
+                            }
+                            localGeneration = saved.getResult().generation;
+                            AdoptionApi.call(command, input)
+                                    .addOnCompleteListener(
+                                            t -> {
+                                                if (!current()) return;
+                                                busy = false;
+                                                if (t.isSuccessful()) success();
+                                                else {
+                                                    error = String.valueOf(t.getException());
+                                                    if (!uncertain(t.getException())) {
+                                                        unknown = false;
+                                                        operationId = UUID.randomUUID().toString();
+                                                    }
+                                                    dirty = true;
+                                                    persist();
+                                                    changed();
+                                                }
+                                            });
+                        });
+    }
+
+    private boolean uncertain(Throwable error) {
+        for (Throwable e = error; e != null; e = e.getCause())
+            if (e instanceof com.google.firebase.functions.FirebaseFunctionsException) {
+                com.google.firebase.functions.FirebaseFunctionsException.Code c =
+                        ((com.google.firebase.functions.FirebaseFunctionsException) e).getCode();
+                return c
+                                == com.google.firebase.functions.FirebaseFunctionsException.Code
+                                        .UNAVAILABLE
+                        || c
+                                == com.google.firebase.functions.FirebaseFunctionsException.Code
+                                        .INTERNAL
+                        || c
+                                == com.google.firebase.functions.FirebaseFunctionsException.Code
+                                        .DEADLINE_EXCEEDED
+                        || c
+                                == com.google.firebase.functions.FirebaseFunctionsException.Code
+                                        .CANCELLED;
+            }
+        return true;
+    }
+
+    public void reconcile() {
+        if (!current() || busy) return;
+        busy = true;
+        AdoptionApi.call(
+                        "receipt",
+                        map(
+                                "operationId",
+                                operationId,
+                                "family",
+                                String.valueOf(form.get("editPetId")).isEmpty()
+                                        ? "registerSubmitted"
+                                        : "reviseSubmitted",
+                                "command",
+                                null))
+                .addOnCompleteListener(
+                        t -> {
+                            if (!current()) return;
+                            busy = false;
+                            if (t.isSuccessful() && t.getResult().get("receipt") != null) success();
+                            else {
+                                error = "unknown_outcome";
+                                changed();
+                            }
+                        });
+    }
+
+    private void success() {
+        com.gmail.manhle240406.project.adoption.OwnedPets.clear();
+        unknown = false;
+        submitted = true;
+        editing = false;
+        error = "";
+        handler.removeCallbacks(autosave);
+        dirty = false;
+        if (writing) {
+            handler.postDelayed(this::success, 100);
+            return;
+        }
+        store.acknowledgeDraft("f06_draft", "registration", localGeneration)
+                .addOnCompleteListener(
+                        t -> {
+                            if (!current()) return;
+                            form = blank();
+                            localGeneration = 0;
+                            operationId = UUID.randomUUID().toString();
+                            petId = UUID.randomUUID().toString();
+                            restored = false;
+                            localSaved = false;
+                            load();
+                            changed();
+                        });
+    }
+
+    @Override
+    protected void onCleared() {
+        flush();
+        handler.removeCallbacks(autosave);
+        if (sessions != null) sessions.removeInvalidation(invalidation);
+        super.onCleared();
+    }
 }
