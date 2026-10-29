@@ -10,9 +10,7 @@ import com.gmail.manhle240406.project.community.*;
 import com.gmail.manhle240406.project.wiring.MainPageFragment;
 import com.google.android.material.tabs.TabLayout;
 
-/**
- * Two private libraries with independent state and the shared bottom bar.
- */
+/** Two private libraries with independent state and the shared bottom bar. */
 public final class FavoritesLibraryFragment extends MainPageFragment {
     private String selected = "liked_posts";
 
@@ -31,17 +29,16 @@ public final class FavoritesLibraryFragment extends MainPageFragment {
         FrameLayout body = new FrameLayout(requireContext());
         body.setId(R.id.favorite_library);
         root.addView(body, new LinearLayout.LayoutParams(-1, 0, 1));
-        tabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
-            public void onTabSelected(TabLayout.Tab t) {
-                show((String) t.getTag());
-            }
+        tabs.addOnTabSelectedListener(
+                new TabLayout.OnTabSelectedListener() {
+                    public void onTabSelected(TabLayout.Tab t) {
+                        show((String) t.getTag());
+                    }
 
-            public void onTabUnselected(TabLayout.Tab t) {
-            }
+                    public void onTabUnselected(TabLayout.Tab t) {}
 
-            public void onTabReselected(TabLayout.Tab t) {
-            }
-        });
+                    public void onTabReselected(TabLayout.Tab t) {}
+                });
         tabs.selectTab(tabs.getTabAt("saved_pets".equals(selected) ? 1 : 0));
         show(selected);
         SocialViews.privateView(root);
@@ -59,7 +56,9 @@ public final class FavoritesLibraryFragment extends MainPageFragment {
             next = "saved_pets".equals(key) ? new SavedPetsFragment() : new LikedPostsFragment();
             tx.add(R.id.favorite_library, next, key);
         } else tx.show(next);
-        tx.setMaxLifecycle(next, androidx.lifecycle.Lifecycle.State.RESUMED).setPrimaryNavigationFragment(next).commitNow();
+        tx.setMaxLifecycle(next, androidx.lifecycle.Lifecycle.State.RESUMED)
+                .setPrimaryNavigationFragment(next)
+                .commitNow();
     }
 
     @Override
