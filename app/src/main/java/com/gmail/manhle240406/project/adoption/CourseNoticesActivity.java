@@ -1,0 +1,247 @@
+package com.gmail.manhle240406.project.adoption;
+
+import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.*;
+
+import android.os.Bundle;
+import android.widget.*;
+
+import androidx.activity.*;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
+
+import com.gmail.manhle240406.project.R;
+import com.gmail.manhle240406.project.community.*;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputEditText;
+
+import java.util.*;
+
+/** Recipient-only explanations and the existing own-appeal/addendum operations. */
+public final class CourseNoticesActivity extends AppCompatActivity {
+    private AdoptionFlowModel m;
+    private LinearLayout body;
+    private String kind = "content", after;
+    private androidx.appcompat.app.AlertDialog dialog, leaveDialog;
+
+    @Override
+    public void onCreate(Bundle saved) {
+        super.onCreate(saved);
+        EdgeToEdge.enable(this);
+        m = new ViewModelProvider(this).get(AdoptionFlowModel.class);
+        if (saved != null) {
+            kind = saved.getString("kind", "content");
+            after = saved.getString("after");
+        }
+        m.changes.observe(this, x -> render());
+        if (saved == null && !m.uncertain()) load();
+        getOnBackPressedDispatcher()
+                .addCallback(
+                        this,
+                        new OnBackPressedCallback(true) {
+                            public void handleOnBackPressed() {
+                                leave();
+                            }
+                        });
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle out) {
+        out.putString("kind", kind);
+        out.putString("after", after);
+        super.onSaveInstanceState(out);
+    }
+
+    private void load() {
+        m.load("ownNotices", "courseNotices", map("kind", kind, "after", after));
+    }
+
+    private void render() {
+        if (m.lost) {
+            finish();
+            return;
+        }
+        LinearLayout root = SocialSurface.page(this);
+        SocialViews.privateView(root);
+        SocialSurface.header(this, root, R.string.permissions_own_updates, this::leave);
+        body = SocialSurface.content(this, root);
+        Spinner tabs = new Spinner(this);
+        tabs.setMinimumHeight(SocialViews.dp(this, 48));
+        tabs.setContentDescription(getString(R.string.permissions_notice_type));
+        tabs.setAdapter(
+                new ArrayAdapter<>(
+                        this,
+                        android.R.layout.simple_spinner_dropdown_item,
+                        getResources().getStringArray(R.array.permissions_notice_types)));
+        tabs.setSelection("account".equals(kind) ? 1 : 0);
+        tabs.setEnabled(!m.busy && !m.uncertain());
+        body.addView(tabs);
+        tabs.setOnItemSelectedListener(
+                new AdapterView.OnItemSelectedListener() {
+                    public void onItemSelected(
+                            AdapterView<?> p, android.view.View v, int n, long id) {
+                        String next = n == 1 ? "account" : "content";
+                        if (!next.equals(kind) && !m.busy) {
+                            kind = next;
+                            after = null;
+                            load();
+                        }
+                    }
+
+                    public void onNothingSelected(AdapterView<?> p) {}
+                });
+        if (m.busy) body.addView(SocialSurface.muted(this, getString(R.string.wiring_loading)));
+        if (!m.error.isEmpty()) {
+            body.addView(
+                    SocialSurface.muted(
+                            this,
+                            getString(
+                                    m.uncertain() ? R.string.lc_pending : R.string.wiring_failed)));
+            if (m.uncertain()) {
+                button(R.string.ad_check_result, m::reconcile);
+                button(R.string.ad_retry_same, m::retrySame);
+            } else button(R.string.wiring_retry, this::load);
+        }
+        if ("appeal_saved".equals(m.notice) || "appeal_exists".equals(m.notice))
+            body.addView(
+                    SocialSurface.muted(
+                            this,
+                            getString(
+                                    "appeal_exists".equals(m.notice)
+                                            ? R.string.permissions_appeal_exists
+                                            : R.string.permissions_appeal_recorded)));
+        for (Map<String, Object> row : rows(m.data.get("rows"))) {
+            int label =
+                    "account".equals(kind)
+                            ? ("lifted".equals(row.get("state"))
+                                    ? R.string.permissions_lifted
+                                    : R.string.permissions_account_update)
+                            : ("restore".equals(row.get("action"))
+                                    ? R.string.permissions_restore
+                                    : R.string.permissions_content_update);
+            body.addView(SocialViews.text(this, getString(label), true));
+            body.addView(SocialViews.text(this, String.valueOf(row.get("reason")), false));
+            if ("account".equals(kind) && "active".equals(row.get("state")))
+                button(
+                        object(row.get("appeal")).isEmpty()
+                                ? R.string.permissions_appeal
+                                : R.string.permissions_appeal_addendum,
+                        () -> appeal(row));
+            SocialSurface.gap(body, 16);
+        }
+        if (!m.busy && m.error.isEmpty() && rows(m.data.get("rows")).isEmpty())
+            body.addView(SocialSurface.muted(this, getString(R.string.permissions_no_updates)));
+        if (m.data.get("next") != null)
+            button(
+                    R.string.oc3_next,
+                    () -> {
+                        after = String.valueOf(m.data.get("next"));
+                        load();
+                    });
+        button(
+                after == null ? R.string.ad_refresh : R.string.permissions_first_page,
+                () -> {
+                    after = null;
+                    load();
+                });
+    }
+
+    private void button(int text, Runnable action) {
+        android.view.View b = SocialSurface.quiet(this, getString(text), action);
+        b.setEnabled(
+                !m.busy
+                        && (!m.uncertain()
+                                || text == R.string.ad_check_result
+                                || text == R.string.ad_retry_same));
+        body.addView(b);
+    }
+
+    private void appeal(Map<String, Object> row) {
+        LinearLayout form = SocialViews.column(this);
+        TextInputEditText statement =
+                SocialViews.field(this, form, getString(R.string.permissions_appeal_statement), 5);
+        statement.setFilters(
+                new android.text.InputFilter[] {new android.text.InputFilter.LengthFilter(3000)});
+        statement.setText(String.valueOf(m.extras.getOrDefault("appealStatement", "")));
+        dialog =
+                new MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.permissions_appeal)
+                        .setView(form)
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .setPositiveButton(R.string.lc_submit, null)
+                        .create();
+        dialog.setOnShowListener(
+                d ->
+                        dialog.getButton(-1)
+                                .setOnClickListener(
+                                        v -> {
+                                            String text = statement.getText().toString().trim();
+                                            if (text.isEmpty()) {
+                                                statement.setError(getString(R.string.ad_required));
+                                                statement.requestFocus();
+                                                return;
+                                            }
+                                            m.extras.put("appealStatement", text);
+                                            Map<String, Object> existing =
+                                                    object(row.get("appeal"));
+                                            Map<String, Object> input =
+                                                    existing.isEmpty()
+                                                            ? map(
+                                                                    "command",
+                                                                    "appeal",
+                                                                    "appealId",
+                                                                    UUID.randomUUID().toString(),
+                                                                    "decisionId",
+                                                                    row.get("noticeId"),
+                                                                    "statement",
+                                                                    text,
+                                                                    "lateMaterialInformation",
+                                                                    false,
+                                                                    "expectedVersion",
+                                                                    row.get("version"))
+                                                            : map(
+                                                                    "command",
+                                                                    "appeal_addendum",
+                                                                    "appealId",
+                                                                    existing.get("appealId"),
+                                                                    "statement",
+                                                                    text,
+                                                                    "expectedVersion",
+                                                                    existing.get("version"));
+                                            dialog.dismiss();
+                                            m.write(
+                                                    "courseAccount",
+                                                    input,
+                                                    () -> {
+                                                        boolean duplicate =
+                                                                Boolean.TRUE.equals(
+                                                                        m.data.get("existing"));
+                                                        if (!duplicate)
+                                                            m.extras.remove("appealStatement");
+                                                        m.notice =
+                                                                duplicate
+                                                                        ? "appeal_exists"
+                                                                        : "appeal_saved";
+                                                        load();
+                                                    });
+                                        }));
+        dialog.show();
+    }
+
+    private void leave() {
+        if (m.busy || m.uncertain()) {
+            leaveDialog =
+                    new MaterialAlertDialogBuilder(this)
+                            .setMessage(R.string.permissions_leave_pending)
+                            .setPositiveButton(R.string.permissions_leave_tools, (d, w) -> finish())
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .show();
+        } else finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (leaveDialog != null) leaveDialog.dismiss();
+        if (dialog != null) dialog.dismiss();
+        super.onDestroy();
+    }
+}

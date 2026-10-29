@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+ <string name="oc2_adoption_manager">Quản lý nhận nuôi</string><string name="oc2_received">Đã nhận</string><string name="oc2_sent">Đã gửi</string><string name="oc2_logout">Đăng xuất</string>
+ <string name="oc2_unsaved">Bạn có chắc muốn thoát? Các thay đổi chưa được lưu.</string><string name="oc2_cancel">Hủy</string><string name="oc2_public_profile">Thông tin cá nhân</string><string name="oc2_interests">Sở thích / Giới thiệu</string><string name="oc2_save_failed">Chưa lưu được. Kiểm tra kết nối và thử lại.</string>
+</resources>

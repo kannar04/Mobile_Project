@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="media_photos">Ảnh</string>
+    <string name="media_add_photos">Thêm ảnh</string>
+    <string name="media_photo_position">Ảnh %1$d / %2$d</string>
+    <string name="media_overflow">+%1$d</string>
+    <string name="media_more_photos">Xem thêm %1$d ảnh</string>
+    <string name="media_previous">Ảnh trước</string>
+    <string name="media_next">Ảnh tiếp</string>
+    <string name="media_image_retry">Tải lại ảnh</string>
+    <string name="media_image_unavailable">Chưa tải được ảnh</string>
+    <string name="media_uploading">Đang tải ảnh…</string>
+    <string name="media_ready">Ảnh đã sẵn sàng</string>
+    <string name="media_upload_failed">Chưa tải được ảnh. Thử lại hoặc bỏ ảnh để tiếp tục.</string>
+    <string name="media_capacity_full">Bộ nhớ ảnh đã đầy. Bạn vẫn có thể đăng bài chỉ có chữ.</string>
+    <string name="media_remove">Bỏ ảnh</string>
+    <string name="media_earlier">Chuyển lên trước</string>
+    <string name="media_later">Chuyển ra sau</string>
+    <string name="media_limit">Chọn tối đa 10 ảnh.</string>
+    <string name="media_change_avatar">Đổi ảnh đại diện</string>
+    <string name="media_pick_avatar">Chọn ảnh mới</string>
+    <string name="media_private_avatar">Ảnh đại diện</string>
+    <string name="media_remove_avatar">Xóa ảnh đại diện riêng tư</string>
+    <string name="media_google_avatar">Dùng ảnh Google</string>
+    <string name="media_private_default">Ảnh đại diện riêng tư. Bạn có thể đổi hoặc xóa ảnh.</string>
+    <string name="media_avatar_saved">Đã lưu ảnh đại diện riêng tư.</string>
+</resources>

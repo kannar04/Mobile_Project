@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/anilove_bg">
+
+    <!-- Header -->
+    <LinearLayout
+        android:id="@+id/post_pet_header"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/post_pet_back"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/anilove_chip_bg"
+            android:contentDescription="Back"
+            android:padding="8dp"
+            android:src="@drawable/ic_nav_home"
+            app:tint="@color/anilove_text_dark" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:text="Đăng tin thú cưng"
+            android:textColor="@color/anilove_text_dark"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toTopOf="@id/post_pet_bottom_bar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/post_pet_header">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/AniLoveOutlinedField"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Tên thú cưng">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/post_pet_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="52dp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/AniLoveOutlinedField"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Giống (Loài / Breed)">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/post_pet_breed"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="52dp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/AniLoveOutlinedField"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Tuổi (ví dụ: 3 tháng, 1 tuổi)">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/post_pet_age"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="52dp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Thêm ảnh"
+                android:textColor="@color/anilove_text_dark"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="90dp"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="90dp"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/anilove_chip_bg"
+                    android:contentDescription="Add Photo"
+                    android:padding="28dp"
+                    android:src="@drawable/ic_nav_home"
+                    app:tint="@color/anilove_primary" />
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/AniLoveOutlinedField"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Mô tả chi tiết">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/post_pet_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="top"
+                    android:minLines="3" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/AniLoveOutlinedField"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Vị trí / Địa chỉ">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/post_pet_location"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="52dp" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <FrameLayout
+        android:id="@+id/post_pet_bottom_bar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/post_pet_submit_btn"
+            style="@style/AniLovePrimaryButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Đăng tin ngay" />
+    </FrameLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

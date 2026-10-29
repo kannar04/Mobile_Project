@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item type="id" name="home_create_post_card"/>
+    <item type="id" name="home_post_photo_btn"/>
+    <item type="id" name="adoption_history_root"/>
+    <item type="id" name="adoption_history_back"/>
+    <item type="id" name="adoption_history_recycler"/>
+    <item type="id" name="catalog_root"/>
+    <item type="id" name="catalog_back"/>
+    <item type="id" name="catalog_recycler"/>
+    <item type="id" name="discovery_root"/>
+    <item type="id" name="discovery_back"/>
+    <item type="id" name="discovery_search"/>
+    <item type="id" name="discovery_recycler"/>
+    <item type="id" name="listing_review_root"/>
+    <item type="id" name="listing_review_back"/>
+    <item type="id" name="listing_review_recycler"/>
+    <item type="id" name="questionnaire_root"/>
+    <item type="id" name="questionnaire_back"/>
+    <item type="id" name="btn_questionnaire_submit"/>
+    <item type="id" name="chat_back"/>
+    <item type="id" name="community_content"/>
+    <item type="id" name="community_root"/>
+    <item type="id" name="map_status"/>
+    <item type="id" name="map_scan"/>
+    <item type="id" name="welfare_category"/>
+    <item type="id" name="welfare_description"/>
+    <item type="id" name="welfare_status"/>
+    <item type="id" name="welfare_media"/>
+    <item type="id" name="photo_gallery_root"/>
+    <item type="id" name="photo_add_btn"/>
+    <item type="id" name="inbox_push_banner"/>
+    <item type="id" name="inbox_toggle_empty"/>
+    <item type="id" name="inbox_switcher"/>
+</resources>

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/enhanced_settings_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/anilove_bg"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/settings_back"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                app:icon="@drawable/ic_social_back"
+                app:iconTint="@color/anilove_text_dark"
+                android:contentDescription="@string/auth_back" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="Cài đặt Nâng cao (F38)"
+                android:textColor="@color/anilove_text_dark"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </RelativeLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/anilove_card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Tùy chọn Hệ thống"
+                android:textColor="@color/anilove_text_dark"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_setting_account"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="start|center_vertical"
+                android:text="👤 Tài khoản &amp; Bảo mật"
+                android:textColor="@color/anilove_text_dark" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_setting_language"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="start|center_vertical"
+                android:text="🌐 Ngôn ngữ (Tiếng Việt / English)"
+                android:textColor="@color/anilove_text_dark" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_setting_theme"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="start|center_vertical"
+                android:text="🎨 Giao diện (Sáng / Tối)"
+                android:textColor="@color/anilove_text_dark" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_setting_security"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="start|center_vertical"
+                android:text="🔒 Bảo mật &amp; Xác thực 2 yếu tố"
+                android:textColor="@color/anilove_text_dark" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

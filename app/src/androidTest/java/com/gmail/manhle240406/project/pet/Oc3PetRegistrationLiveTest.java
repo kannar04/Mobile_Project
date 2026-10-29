@@ -1,0 +1,136 @@
+package com.gmail.manhle240406.project.pet;
+
+import static androidx.test.espresso.Espresso.*;
+import static androidx.test.espresso.action.ViewActions.*;
+import static androidx.test.espresso.matcher.ViewMatchers.*;
+
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
+import android.content.*;
+import android.graphics.*;
+import android.net.Uri;
+
+import androidx.lifecycle.ViewModelProvider;
+import androidx.test.core.app.ActivityScenario;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.*;
+
+import com.gmail.manhle240406.project.R;
+import com.gmail.manhle240406.project.adoption.*;
+import com.gmail.manhle240406.project.media.MediaDraftViewModel;
+import com.google.firebase.auth.FirebaseAuth;
+
+import org.json.*;
+import org.junit.*;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+public class Oc3PetRegistrationLiveTest {
+    private static String privateId(Object model, String key) {
+        try {
+            java.lang.reflect.Field f = PetRegistrationModel.class.getDeclaredField(key);
+            f.setAccessible(true);
+            return (String) f.get(model);
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    @Test
+    public void syntheticPhotoRegistersOnceAndAppearsInReviewerQueue() throws Exception {
+        Context c = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        String uid = FirebaseAuth.getInstance().getUid();
+        assertNotNull(uid);
+        OwnedPets.clear();
+        JSONObject result = new JSONObject().put("uid", uid);
+        java.io.File photo = new java.io.File(c.getCacheDir(), "oc3-synthetic-pet.jpg");
+        Bitmap b = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888);
+        b.eraseColor(Color.rgb(40, 110, 70));
+        try (java.io.FileOutputStream out = new java.io.FileOutputStream(photo)) {
+            b.compress(Bitmap.CompressFormat.JPEG, 90, out);
+        }
+        b.recycle();
+        UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        try {
+            String petName = "QA pet " + uid.substring(0, Math.min(6, uid.length()));
+            result.put("petName", petName);
+            Intent add = new Intent(c, PetActivity.class).putExtra("startAdd", true);
+            try (ActivityScenario<PetActivity> scenario = ActivityScenario.launch(add)) {
+                assertTrue(
+                        "Pet form opens",
+                        device.wait(
+                                Until.hasObject(By.text(c.getString(R.string.oc3_pet_form_help))),
+                                30000));
+                java.util.concurrent.atomic.AtomicBoolean loaded =
+                        new java.util.concurrent.atomic.AtomicBoolean();
+                long loadDeadline = android.os.SystemClock.uptimeMillis() + 30000;
+                do {
+                    scenario.onActivity(
+                            a ->
+                                    loaded.set(
+                                            !new ViewModelProvider(a)
+                                                    .get(PetRegistrationModel.class)
+                                                    .busy));
+                    if (!loaded.get()) android.os.SystemClock.sleep(100);
+                } while (!loaded.get() && android.os.SystemClock.uptimeMillis() < loadDeadline);
+                assertTrue("Pet workspace loads", loaded.get());
+                onView(withTagValue(equalTo("pet_name")))
+                        .perform(
+                                scrollTo(),
+                                replaceText(petName),
+                                androidx.test.espresso.action.ViewActions.closeSoftKeyboard());
+                scenario.onActivity(
+                        a -> {
+                            PetRegistrationModel m =
+                                    new ViewModelProvider(a).get(PetRegistrationModel.class);
+                            m.change("reportedCare", true);
+                            MediaDraftViewModel media =
+                                    new ViewModelProvider(a).get(MediaDraftViewModel.class);
+                            media.add(java.util.Arrays.asList(Uri.fromFile(photo)));
+                            try {
+                                result.put("petId", privateId(m, "petId"))
+                                        .put("operationId", privateId(m, "operationId"))
+                                        .put("assets", new JSONArray(media.ids()));
+                            } catch (Exception e) {
+                                throw new AssertionError(e);
+                            }
+                        });
+                assertTrue(
+                        "Synthetic Android JPEG upload completes",
+                        device.wait(
+                                Until.hasObject(
+                                        By.text(c.getString(R.string.feedback_cover_photo))),
+                                90000));
+                onView(withTagValue(equalTo("pet_register_submit"))).perform(scrollTo(), click());
+                long deadline = android.os.SystemClock.uptimeMillis() + 45000;
+                java.util.concurrent.atomic.AtomicReference<String> outcome =
+                        new java.util.concurrent.atomic.AtomicReference<>("busy");
+                do {
+                    scenario.onActivity(
+                            a -> {
+                                PetRegistrationModel m =
+                                        new ViewModelProvider(a).get(PetRegistrationModel.class);
+                                outcome.set(m.submitted ? "submitted" : m.busy ? "busy" : m.error);
+                            });
+                    if ("busy".equals(outcome.get())) android.os.SystemClock.sleep(100);
+                } while ("busy".equals(outcome.get())
+                        && android.os.SystemClock.uptimeMillis() < deadline);
+                assertEquals(
+                        "Real registration must commit; actual=" + outcome.get(),
+                        "submitted",
+                        outcome.get());
+                assertEquals(uid, FirebaseAuth.getInstance().getUid());
+                device.takeScreenshot(
+                        new java.io.File(c.getExternalFilesDir(null), "oc3-pet-registered.png"));
+            }
+            result.put("passed", true);
+        } finally {
+            java.nio.file.Files.write(
+                    new java.io.File(c.getExternalFilesDir(null), "oc3-pet-results.json").toPath(),
+                    result.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            photo.delete();
+        }
+    }
+}

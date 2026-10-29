@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="profile_pet_section" type="id" />
+    <item name="profile_pet_scroll" type="id" />
+    <item name="profile_pet_list" type="id" />
+</resources>

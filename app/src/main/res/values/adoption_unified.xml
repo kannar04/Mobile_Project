@@ -1,0 +1,14 @@
+<resources>
+    <string name="lc_stage_request">Đã gửi yêu cầu</string>
+    <string name="lc_stage_request_wait">Đang chờ chủ thú cưng xem yêu cầu</string>
+    <string name="lc_stage_personal">Xác minh thông tin cá nhân</string>
+    <string name="lc_stage_personal_wait">Hai bên kiểm tra và xác nhận thông tin</string>
+    <string name="lc_stage_handover">Trao đổi và bàn giao</string>
+    <string name="lc_stage_handover_wait">Nhắn tin, gặp mặt và cùng xác nhận bàn giao</string>
+    <string name="lc_stage_done">Đã hoàn tất</string>
+    <string name="lc_stage_current">Đang thực hiện</string>
+    <string name="lc_stage_upcoming">Chưa đến</string>
+    <string name="lc_capacity_reached">Bạn đang có hai hồ sơ nhận nuôi. Hãy hoàn tất hoặc kết thúc một hồ sơ trước khi gửi yêu cầu mới.</string>
+    <string name="pet_tab_owned">Thú cưng của tôi</string>
+    <string name="pet_tab_adopting">Đang nhận nuôi</string>
+</resources>

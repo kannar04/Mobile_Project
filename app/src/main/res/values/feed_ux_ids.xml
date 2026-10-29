@@ -1,0 +1,5 @@
+<resources>
+    <item name="chat_type_tabs" type="id" />
+    <item name="notification_enabled_switch" type="id" />
+    <item name="home_refresh" type="id"/>
+</resources>

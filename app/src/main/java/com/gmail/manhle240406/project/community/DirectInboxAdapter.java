@@ -1,0 +1,143 @@
+package com.gmail.manhle240406.project.community;
+
+import android.os.*;
+import android.view.*;
+import android.widget.*;
+
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.gmail.manhle240406.project.*;
+import com.gmail.manhle240406.project.R;
+import com.gmail.manhle240406.project.foundation.*;
+import com.gmail.manhle240406.project.media.ManagedMediaClient;
+
+import java.util.*;
+
+/** One bounded private inbox window, refreshed only when visible or explicitly paged. */
+public final class DirectInboxAdapter extends RecyclerView.Adapter<DirectInboxAdapter.Holder>
+        implements AutoCloseable {
+    private final androidx.appcompat.app.AppCompatActivity activity;
+    private final SessionGateway sessions;
+    private final SessionEpoch.Ticket ticket;
+    private final AuthorLookup authors;
+    private final List<Map<String, Object>> rows = new ArrayList<>();
+    private String next;
+    private boolean busy, failed, visible;
+    private long generation;
+    private final Handler main = new Handler(Looper.getMainLooper());
+    private final Runnable invalidated =
+            () -> {
+                generation++;
+                rows.clear();
+                next = null;
+                main.removeCallbacksAndMessages(null);
+                notifyDataSetChanged();
+            };
+    private final Runnable refresh =
+            () -> {
+                if (visible) load(false);
+            };
+
+    public DirectInboxAdapter(androidx.appcompat.app.AppCompatActivity a, SessionGateway s) {
+        activity = a;
+        sessions = s;
+        ticket = s.capture();
+        authors = new AuthorLookup(s);
+        s.onInvalidated(invalidated);
+    }
+
+    public void start() {
+        visible = true;
+        main.removeCallbacks(refresh);
+        main.post(refresh);
+    }
+
+    public void stop() {
+        visible = false;
+        main.removeCallbacks(refresh);
+    }
+
+    public void refresh() {
+        if (visible) load(false);
+    }
+
+    private void load(boolean older) {
+        if (busy || !sessions.current(ticket) || older && next == null) return;
+        busy = true;
+        long g = generation;
+        ManagedMediaClient.call("directInbox", ManagedMediaClient.map("after", older ? next : null))
+                .addOnCompleteListener(
+                        t -> {
+                            if (g != generation
+                                    || !sessions.current(ticket)
+                                    || activity.isDestroyed()) return;
+                            busy = false;
+                            failed = !t.isSuccessful();
+                            if (t.isSuccessful()) {
+                                if (!older) rows.clear();
+                                rows.addAll(
+                                        com.gmail.manhle240406.project.adoption.AdoptionFlowModel
+                                                .rows(t.getResult().get("rows")));
+                                while (rows.size() > 100) rows.remove(0);
+                                next = (String) t.getResult().get("next");
+                            }
+                            notifyDataSetChanged();
+                        });
+    }
+
+    public int getItemCount() {
+        return rows.size() + 1;
+    }
+
+    public Holder onCreateViewHolder(ViewGroup p, int type) {
+        com.google.android.material.button.MaterialButton row =
+                SocialSurface.quiet(activity, "", () -> {});
+        row.setLayoutParams(new RecyclerView.LayoutParams(-1, -2));
+        row.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        return new Holder(row);
+    }
+
+    public void onBindViewHolder(Holder h, int p) {
+        com.google.android.material.button.MaterialButton row =
+                (com.google.android.material.button.MaterialButton) h.itemView;
+        row.setTag(null);
+        row.setIconResource(0);
+        row.setOnClickListener(null);
+        if (p == rows.size()) {
+            row.setText(
+                    failed
+                            ? R.string.wiring_retry
+                            : next != null ? R.string.social_more : R.string.oc3_no_messages);
+            row.setEnabled(!busy && (failed || next != null));
+            row.setOnClickListener(v -> load(!failed));
+            return;
+        }
+        Map<String, Object> data = rows.get(p);
+        String uid = (String) data.get("peerUid"), id = (String) data.get("conversationId");
+        row.setTag(id);
+        row.setEnabled(true);
+        row.setIconResource(R.drawable.ic_nav_chat);
+        row.setText(R.string.social_member);
+        authors.get(uid)
+                .addOnSuccessListener(
+                        profile -> {
+                            if (id.equals(row.getTag()) && profile != null)
+                                row.setText((String) profile.get("displayName"));
+                        });
+        row.setOnClickListener(v -> MainActivity.open(activity, "direct:" + id));
+    }
+
+    public void close() {
+        stop();
+        generation++;
+        rows.clear();
+        authors.close();
+        sessions.removeInvalidation(invalidated);
+    }
+
+    static final class Holder extends RecyclerView.ViewHolder {
+        Holder(View v) {
+            super(v);
+        }
+    }
+}

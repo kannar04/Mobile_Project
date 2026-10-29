@@ -1,0 +1,160 @@
+package com.gmail.manhle240406.project.profile;
+
+import static androidx.test.espresso.Espresso.*;
+import static androidx.test.espresso.action.ViewActions.*;
+import static androidx.test.espresso.matcher.ViewMatchers.*;
+
+import static org.junit.Assert.*;
+
+import android.content.*;
+import android.view.View;
+
+import androidx.test.core.app.ActivityScenario;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.*;
+
+import com.gmail.manhle240406.project.MainActivity;
+import com.gmail.manhle240406.project.R;
+import com.gmail.manhle240406.project.community.*;
+import com.google.android.gms.tasks.Tasks;
+import com.google.firebase.*;
+import com.google.firebase.auth.*;
+
+import org.json.*;
+import org.junit.*;
+import org.junit.runner.RunWith;
+
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+
+@RunWith(AndroidJUnit4.class)
+public class Oc2AuthorRefreshLiveTest {
+    private String token;
+
+    private androidx.test.espresso.ViewAction scroll(int position) {
+        return new androidx.test.espresso.ViewAction() {
+            public org.hamcrest.Matcher<View> getConstraints() {
+                return isAssignableFrom(androidx.recyclerview.widget.RecyclerView.class);
+            }
+
+            public String getDescription() {
+                return "Scroll bounded feed to position " + position;
+            }
+
+            public void perform(androidx.test.espresso.UiController ui, View v) {
+                ((androidx.recyclerview.widget.RecyclerView) v).scrollToPosition(position);
+                ui.loopMainThreadUntilIdle();
+            }
+        };
+    }
+
+    private void call(String operation, JSONObject payload) throws Exception {
+        java.net.HttpURLConnection c =
+                (java.net.HttpURLConnection)
+                        new java.net.URL(
+                                        "https://asia-east2-aniloveproject.cloudfunctions.net/mediaApi/"
+                                                + operation)
+                                .openConnection();
+        c.setRequestMethod("POST");
+        c.setConnectTimeout(15000);
+        c.setReadTimeout(30000);
+        c.setRequestProperty("Authorization", "Bearer " + token);
+        c.setRequestProperty("Content-Type", "application/json");
+        c.setDoOutput(true);
+        try (java.io.OutputStream out = c.getOutputStream()) {
+            out.write(payload.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+        assertEquals("managed profile operation", 200, c.getResponseCode());
+        c.disconnect();
+    }
+
+    @Test
+    public void unchangedPostRefreshShowsNewAuthorNameAndAvatarWithoutAppRestart()
+            throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        JSONObject fixture =
+                new JSONObject(
+                        new String(
+                                java.nio.file.Files.readAllBytes(
+                                        new java.io.File(
+                                                        context.getExternalFilesDir(null),
+                                                        "oc2-live-profile.json")
+                                                .toPath()),
+                                java.nio.charset.StandardCharsets.UTF_8));
+        String original = FirebaseAuth.getInstance().getUid();
+        FirebaseApp secondary =
+                FirebaseApp.initializeApp(
+                        context,
+                        FirebaseApp.getInstance().getOptions(),
+                        "oc2-native-" + UUID.randomUUID());
+        try {
+            FirebaseAuth auth = FirebaseAuth.getInstance(secondary);
+            Tasks.await(
+                    auth.signInWithEmailAndPassword(
+                            fixture.getString("email"), fixture.getString("password")),
+                    20,
+                    TimeUnit.SECONDS);
+            token =
+                    Tasks.await(auth.getCurrentUser().getIdToken(false), 20, TimeUnit.SECONDS)
+                            .getToken();
+            try (ActivityScenario<MainActivity> scenario =
+                    ActivityScenario.launch(MainActivity.class)) {
+                scenario.onActivity(a -> a.navigate("home"));
+                assertTrue(
+                        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+                                .wait(
+                                        Until.hasObject(
+                                                By.res(
+                                                        context.getPackageName(),
+                                                        "home_posts_recycler")),
+                                        30000));
+                onView(withId(R.id.home_posts_recycler)).perform(scroll(1));
+                UiDevice device =
+                        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+                assertTrue(device.wait(Until.hasObject(By.text("OC2 Before Refresh")), 30000));
+                call(
+                        "saveProfile",
+                        new JSONObject()
+                                .put("operationId", UUID.randomUUID())
+                                .put("baseVersion", 2)
+                                .put(
+                                        "payload",
+                                        new JSONObject()
+                                                .put("displayName", "OC2 After Refresh")
+                                                .put("avatarKey", "cat")
+                                                .put("regionCode", JSONObject.NULL)
+                                                .put("bio", "Disposable author refresh test")
+                                                .put("submission", "draft")));
+                call(
+                        "avatar",
+                        new JSONObject()
+                                .put("operationId", UUID.randomUUID())
+                                .put("expectedVersion", 1)
+                                .put("assetId", fixture.getJSONArray("assets").getString(1)));
+                onView(withId(R.id.home_posts_recycler)).perform(scroll(0));
+                onView(withId(R.id.home_refresh)).perform(swipeDown());
+                onView(withId(R.id.home_posts_recycler)).perform(scroll(1));
+                assertTrue(
+                        "Explicit refresh updates author on unchanged post",
+                        device.wait(Until.hasObject(By.text("OC2 After Refresh")), 30000));
+                com.gmail.manhle240406.project.foundation.SessionGateway sessions =
+                        ((com.gmail.manhle240406.project.AniloveApplication)
+                                        context.getApplicationContext())
+                                .foundation()
+                                .sessions;
+                try (AuthorLookup lookup = new AuthorLookup(sessions)) {
+                    assertEquals(
+                            fixture.getJSONArray("assets").getString(1),
+                            Tasks.await(lookup.get(fixture.getString("uid")), 15, TimeUnit.SECONDS)
+                                    .get("avatarAssetId"));
+                }
+                assertEquals(original, FirebaseAuth.getInstance().getUid());
+            }
+        } finally {
+            FirebaseAuth.getInstance(secondary).signOut();
+            secondary.delete();
+            token = null;
+        }
+    }
+}

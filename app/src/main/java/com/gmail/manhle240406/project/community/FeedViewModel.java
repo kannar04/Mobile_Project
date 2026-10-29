@@ -1,0 +1,317 @@
+package com.gmail.manhle240406.project.community;
+
+import android.app.Application;
+
+import androidx.lifecycle.*;
+
+import com.gmail.manhle240406.project.AniloveApplication;
+import com.gmail.manhle240406.project.foundation.*;
+import com.google.firebase.firestore.*;
+
+import java.util.*;
+
+public final class FeedViewModel extends AndroidViewModel {
+    public final MutableLiveData<Long> changes = new MutableLiveData<>(0L);
+    public final FeedWindow<DocumentSnapshot> window =
+            new FeedWindow<>(
+                    new FeedWindow.Identity<DocumentSnapshot>() {
+                        public String id(DocumentSnapshot d) {
+                            return d.getId();
+                        }
+
+                        public long version(DocumentSnapshot d) {
+                            return SocialRepository.number(d.getData(), "contentVersion");
+                        }
+                    });
+    public String anchor;
+    public int offset;
+    public boolean busy, end, newPosts, lost, failed, refreshing, refreshed;
+    private final SavedStateHandle saved;
+    private final SessionGateway sessions;
+    private final SessionEpoch.Ticket ticket;
+    private final SocialRepository repository;
+    private boolean initiallyRestored;
+    private final HashSet<String> checkingRemoved = new HashSet<>();
+    private ListenerRegistration listener;
+    private DocumentSnapshot cursor;
+    private long event, generation;
+    private final Runnable invalidation = this::invalidate;
+    private final ArrayList<DocumentSnapshot> checkpoints = new ArrayList<>();
+    private int pageIndex, firstPage;
+    public boolean boundaryLost;
+    private boolean evictedBoundary;
+
+    public FeedViewModel(Application app, SavedStateHandle state) {
+        super(app);
+        saved = state;
+        anchor = state.get("feed_anchor");
+        Integer px = state.get("feed_offset");
+        offset = px == null ? 0 : px;
+        FirebaseEnvironment env = ((AniloveApplication) app).foundation();
+        sessions = env.sessions;
+        ticket = sessions == null ? null : sessions.capture();
+        repository =
+                sessions == null
+                        ? null
+                        : new SocialRepository(FirebaseFirestore.getInstance(), sessions);
+        if (sessions != null) sessions.onInvalidated(invalidation);
+        if (ticket == null || ticket.uid == null) lost = true;
+        else {
+            String owner = saved.get("feed_uid");
+            if (owner != null && !owner.equals(ticket.uid)) {
+                anchor = null;
+                offset = 0;
+                saved.remove("feed_anchor");
+                saved.remove("feed_offset");
+            }
+            saved.set("feed_uid", ticket.uid);
+        }
+    }
+
+    public void checkpoint(String id, int px) {
+        anchor = id;
+        offset = px;
+        saved.set("feed_anchor", id);
+        saved.set("feed_offset", px);
+    }
+
+    private boolean current(long g) {
+        return !lost && g == generation && sessions.current(ticket);
+    }
+
+    private void notifyChange() {
+        changes.setValue(++event);
+    }
+
+    public void start() {
+        if (lost || repository == null) return;
+        if (window.rows().isEmpty() && !busy) {
+            if (anchor != null && !initiallyRestored) restoreAnchor();
+            else load(true);
+        }
+        if (listener == null)
+            listener =
+                    repository.head(
+                            (snapshot, error) -> {
+                                if (lost || !sessions.current(ticket)) return;
+                                if (error != null) return;
+                                if (snapshot == null || snapshot.getMetadata().isFromCache())
+                                    return;
+                                for (DocumentChange change : snapshot.getDocumentChanges()) {
+                                    DocumentSnapshot d = change.getDocument();
+                                    if (change.getType() == DocumentChange.Type.REMOVED) {
+                                        if (window.position(d.getId()) >= 0
+                                                && checkingRemoved.add(d.getId())) {
+                                            long g = generation;
+                                            repository
+                                                    .read("communityFeed/" + d.getId())
+                                                    .addOnCompleteListener(
+                                                            t -> {
+                                                                checkingRemoved.remove(d.getId());
+                                                                if (!current(g)) return;
+                                                                if (t.isSuccessful()
+                                                                        && !t.getResult()
+                                                                                .exists()) {
+                                                                    int position =
+                                                                            window.position(anchor);
+                                                                    window.remove(d.getId());
+                                                                    if (d.getId().equals(anchor)) {
+                                                                        List<DocumentSnapshot>
+                                                                                left =
+                                                                                        window
+                                                                                                .rows();
+                                                                        anchor =
+                                                                                left.isEmpty()
+                                                                                        ? null
+                                                                                        : left.get(
+                                                                                                        Math
+                                                                                                                .min(
+                                                                                                                        Math
+                                                                                                                                .max(
+                                                                                                                                        0,
+                                                                                                                                        position),
+                                                                                                                        left
+                                                                                                                                        .size()
+                                                                                                                                - 1))
+                                                                                                .getId();
+                                                                    }
+                                                                    notifyChange();
+                                                                }
+                                                            });
+                                        }
+                                    } else if (window.position(d.getId()) >= 0) {
+                                        if (SocialSchema.feed(d.getData(), d.getId()))
+                                            window.update(d);
+                                        else window.remove(d.getId());
+                                    } else if (!window.rows().isEmpty()) newPosts = true;
+                                }
+                                notifyChange();
+                            });
+    }
+
+    private void restoreAnchor() {
+        initiallyRestored = true;
+        busy = true;
+        long g = ++generation;
+        notifyChange();
+        repository
+                .read("communityFeed/" + anchor)
+                .addOnCompleteListener(
+                        t -> {
+                            if (!current(g)) return;
+                            if (!t.isSuccessful() || !t.getResult().exists()) {
+                                busy = false;
+                                anchor = null;
+                                offset = 0;
+                                load(true);
+                                return;
+                            }
+                            DocumentSnapshot a = t.getResult();
+                            repository
+                                    .around(a.getTimestamp("firstPublishedAt"), a.getId())
+                                    .addOnCompleteListener(
+                                            page -> {
+                                                if (!current(g)) return;
+                                                busy = false;
+                                                if (page.isSuccessful()) {
+                                                    List<DocumentSnapshot> docs =
+                                                            page.getResult().getDocuments();
+                                                    window.replace(docs);
+                                                    cursor =
+                                                            docs.isEmpty()
+                                                                    ? null
+                                                                    : docs.get(docs.size() - 1);
+                                                    checkpoints.clear();
+                                                    checkpoints.add(null);
+                                                    checkpoints.add(cursor);
+                                                    end = docs.size() < 20;
+                                                } else failed = true;
+                                                notifyChange();
+                                            });
+                        });
+    }
+
+    public void stop() {
+        if (listener != null) {
+            listener.remove();
+            listener = null;
+        }
+    }
+
+    public void refresh() {
+        if (busy || lost) return;
+        refreshing = true;
+        load(true);
+    }
+
+    public void load(boolean refresh) {
+        if (busy || lost || !refresh && end) return;
+        busy = true;
+        failed = false;
+        long g = ++generation;
+        notifyChange();
+        repository
+                .feed(refresh ? null : cursor)
+                .addOnCompleteListener(
+                        t -> {
+                            if (!current(g)) return;
+                            busy = false;
+                            if (!t.isSuccessful()) {
+                                failed = true;
+                                refreshing = false;
+                                notifyChange();
+                                return;
+                            }
+                            if (refreshing) {
+                                anchor = null;
+                                offset = 0;
+                                saved.remove("feed_anchor");
+                                saved.remove("feed_offset");
+                                refreshed = true;
+                            }
+                            refreshing = false;
+                            List<DocumentSnapshot> docs = new ArrayList<>();
+                            for (DocumentSnapshot d : t.getResult())
+                                if (SocialSchema.feed(d.getData(), d.getId())) docs.add(d);
+                            if (refresh) {
+                                window.replace(docs);
+                                checkpoints.clear();
+                                checkpoints.add(null);
+                                pageIndex = 0;
+                                firstPage = 0;
+                                newPosts = false;
+                            } else {
+                                pageIndex++;
+                                window.append(docs, false);
+                                if (pageIndex - firstPage >= 5) firstPage = pageIndex - 4;
+                            }
+                            List<DocumentSnapshot> raw = t.getResult().getDocuments();
+                            cursor = raw.isEmpty() ? cursor : raw.get(raw.size() - 1);
+                            if (checkpoints.size() <= pageIndex + 1) checkpoints.add(cursor);
+                            while (checkpoints.size() > 100) {
+                                checkpoints.remove(0);
+                                evictedBoundary = true;
+                                pageIndex--;
+                                firstPage = Math.max(0, firstPage - 1);
+                            }
+                            end = t.getResult().size() < 20;
+                            notifyChange();
+                        });
+    }
+
+    public void previous() {
+        if (busy || lost) return;
+        if (firstPage <= 0) {
+            if (evictedBoundary || initiallyRestored) {
+                boundaryLost = true;
+                notifyChange();
+            }
+            return;
+        }
+        busy = true;
+        failed = false;
+        long g = ++generation;
+        DocumentSnapshot before = checkpoints.get(firstPage - 1);
+        notifyChange();
+        repository
+                .feed(before)
+                .addOnCompleteListener(
+                        t -> {
+                            if (!current(g)) return;
+                            busy = false;
+                            if (t.isSuccessful()) {
+                                firstPage--;
+                                pageIndex = firstPage + 4;
+                                window.append(t.getResult().getDocuments(), true);
+                                cursor =
+                                        checkpoints.size() > pageIndex + 1
+                                                ? checkpoints.get(pageIndex + 1)
+                                                : null;
+                                end = false;
+                            } else failed = true;
+                            notifyChange();
+                        });
+    }
+
+    private void invalidate() {
+        generation++;
+        stop();
+        window.clear();
+        checkpoints.clear();
+        anchor = null;
+        offset = 0;
+        saved.remove("feed_anchor");
+        saved.remove("feed_offset");
+        saved.remove("feed_uid");
+        lost = true;
+        busy = false;
+        refreshing = false;
+        notifyChange();
+    }
+
+    @Override
+    protected void onCleared() {
+        invalidate();
+        if (sessions != null) sessions.removeInvalidation(invalidation);
+    }
+}

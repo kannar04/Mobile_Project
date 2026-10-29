@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    android:background="@drawable/anilove_card_bg"
+    android:gravity="top"
+    android:minHeight="64dp"
+    android:orientation="horizontal"
+    android:padding="16dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
+
+    <!-- Unread Red Indicator Dot -->
+    <View
+        android:id="@+id/inbox_unread_dot"
+        android:layout_width="8dp"
+        android:layout_height="8dp"
+        android:layout_marginTop="8dp"
+        android:importantForAccessibility="no"
+        android:layout_marginEnd="12dp"
+        android:background="@drawable/anilove_chip_bg"
+        android:backgroundTint="@color/anilove_primary" />
+
+    <!-- Notification category icon -->
+    <ImageView
+        android:id="@+id/inbox_avatar"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@drawable/anilove_chip_bg"
+        android:padding="10dp"
+        android:src="@drawable/ic_flow_notifications"
+        app:tint="@color/anilove_primary" />
+
+    <!-- Content Text -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/inbox_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textColor="@color/anilove_text_dark"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/inbox_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="@color/anilove_text_muted"
+ />
+    <!-- Timestamp -->
+    <TextView
+        android:id="@+id/inbox_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textAppearance="?attr/textAppearanceLabelMedium"
+        android:textColor="@color/anilove_text_muted"
+ />
+    </LinearLayout>
+
+</LinearLayout>
