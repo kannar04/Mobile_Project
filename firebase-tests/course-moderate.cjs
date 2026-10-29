@@ -1,38 +1,4 @@
 ﻿// Explicit single-target IAM operator. Dry-run by default; credentials never leave Firebase CLI.
-const fs = require('node:fs'),
-    assert = require('node:assert/strict');
-const {
-    connect,
-    project
-} = require('./course-owner-firestore.cjs');
-(async () => {
-    const args = process.argv.slice(2);
-    assert.ok(args.length >= 1 && args.length <= 2 && (!args[1] || args[1] === '--apply'), 'usage: node course-moderate.cjs command.json [--apply]');
-    const command = JSON.parse(fs.readFileSync(args[0], 'utf8').replace(/^\uFEFF/, ''));
-    const {
-        moderationPaths,
-        planModeration
-    } = await import('./course-moderation-plan.mjs');
-    const p = moderationPaths(command),
-        db = await connect();
-    const result = await db.transaction(async (read, records) => {
-        for (const v of Object.values(p).filter(Boolean)) await read(v);
-        if (p.report && records[p.report]) await read(`users/${records[p.report].reporterUid}/reportStatus/${command.reportId}`);
-        const plan = planModeration(command, records, new Date());
-        for (const w of plan.writes) await read(w.path);
-        return plan;
-    }, args[1] === '--apply');
-    console.log(JSON.stringify({
-        project,
-        operationId: command.operationId,
-        kind: command.kind,
-        targetId: command.targetId,
-        dryRun: args[1] !== '--apply',
-        applied: result.applied,
-        alreadyApplied: !!result.planned.alreadyApplied,
-        writeCount: result.planned.writes.length
-    }));
-})().catch(() => {
-    console.error('Moderation rejected or unavailable; inspect current versions/approval locally. No success is asserted.');
-    process.exitCode = 1;
-});
+const fs=require('node:fs'),assert=require('node:assert/strict');
+const {connect,project}=require('./course-owner-firestore.cjs');
+(async()=>{const args=process.argv.slice(2);assert.ok(args.length>=1&&args.length<=2&&(!args[1]||args[1]==='--apply'),'usage: node course-moderate.cjs command.json [--apply]');const command=JSON.parse(fs.readFileSync(args[0],'utf8').replace(/^\uFEFF/,''));const {moderationPaths,planModeration}=await import('./course-moderation-plan.mjs');const p=moderationPaths(command),db=await connect();const result=await db.transaction(async(read,records)=>{for(const v of Object.values(p).filter(Boolean))await read(v);if(p.report&&records[p.report])await read(`users/${records[p.report].reporterUid}/reportStatus/${command.reportId}`);const plan=planModeration(command,records,new Date());for(const w of plan.writes)await read(w.path);return plan;},args[1]==='--apply');console.log(JSON.stringify({project,operationId:command.operationId,kind:command.kind,targetId:command.targetId,dryRun:args[1]!=='--apply',applied:result.applied,alreadyApplied:!!result.planned.alreadyApplied,writeCount:result.planned.writes.length}));})().catch(()=>{console.error('Moderation rejected or unavailable; inspect current versions/approval locally. No success is asserted.');process.exitCode=1;});

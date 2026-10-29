@@ -1,14 +1,251 @@
 package com.gmail.manhle240406.project.notifications;
-import android.app.*;import android.content.*;import androidx.core.app.NotificationCompat;import com.gmail.manhle240406.project.R;import com.gmail.manhle240406.project.adoption.*;import com.google.firebase.auth.FirebaseAuth;import com.google.firebase.messaging.*;import java.util.*;import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.*;
-/** Challenge-proven binding; generic notifications are checked against current identity and binding epoch. */
+
+import static com.gmail.manhle240406.project.adoption.AdoptionFlowModel.*;
+
+import android.app.*;
+import android.content.*;
+
+import androidx.core.app.NotificationCompat;
+
+import com.gmail.manhle240406.project.R;
+import com.gmail.manhle240406.project.adoption.*;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.messaging.*;
+
+import java.util.*;
+
+/**
+ * Challenge-proven binding; generic notifications are checked against current identity and binding
+ * epoch.
+ */
 public final class AdoptionPushService extends FirebaseMessagingService {
- private static android.content.SharedPreferences prefs(Context c){return c.getSharedPreferences("adoption_push",0);}
- public static void enable(Activity activity,android.widget.TextView feedback){String uid=FirebaseAuth.getInstance().getUid();if(uid==null)return;if(android.os.Build.VERSION.SDK_INT>=33&&activity.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED){activity.requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS},412);feedback.setText(R.string.lc_push_permission);return;}android.content.SharedPreferences p=prefs(activity);String id=p.getString("installation",UUID.randomUUID().toString()),secret=p.getString("secret",null);if(secret==null){byte[] bytes=new byte[32];new java.security.SecureRandom().nextBytes(bytes);StringBuilder b=new StringBuilder();for(byte x:bytes)b.append(String.format(java.util.Locale.ROOT,"%02x",x&255));secret=b.toString();}p.edit().putString("installation",id).putString("secret",secret).putString("uid",uid).remove("epoch").apply();final String key=secret;FirebaseMessaging.getInstance().setAutoInitEnabled(true);FirebaseMessaging.getInstance().getToken().addOnCompleteListener(t->{if(activity.isDestroyed()||!uid.equals(FirebaseAuth.getInstance().getUid()))return;if(!t.isSuccessful()){feedback.setText(R.string.lc_push_error);return;}AdoptionApi.call("flowBinding",map("kind","register","installationId",id,"operationId",UUID.randomUUID().toString(),"token",t.getResult(),"secret",key,"replaceConfirmed",true)).addOnCompleteListener(r->{if(!activity.isDestroyed())feedback.setText(r.isSuccessful()?R.string.lc_push_wait:R.string.lc_push_error);});});}
- @Override public void onMessageReceived(RemoteMessage message){Map<String,String> d=message.getData();String uid=FirebaseAuth.getInstance().getUid();android.content.SharedPreferences p=prefs(this);if(uid==null||!uid.equals(p.getString("uid",null)))return;
-  if("binding_challenge".equals(d.get("kind"))){String secret=p.getString("secret",null);if(secret==null)return;try{Map<String,Object> result=com.google.android.gms.tasks.Tasks.await(AdoptionApi.call("flowBinding",map("kind","confirm","challengeId",d.get("challengeId"),"nonce",d.get("nonce"),"secret",secret)),8,java.util.concurrent.TimeUnit.SECONDS);if(uid.equals(FirebaseAuth.getInstance().getUid())&&p.getString("installation","").equals(result.get("installationId")))p.edit().putString("epoch",String.valueOf(((Number)result.get("bindingEpoch")).longValue())).commit();}catch(Exception ignored){/* Explicit retry can re-prove the device; no success is invented. */}return;}
-  if("activity".equals(d.get("kind"))&&uid.equals(d.get("uid"))&&p.getString("installation","").equals(d.get("installationId"))&&p.getString("epoch","").equals(d.get("bindingEpoch"))&&d.getOrDefault("eventId","").matches("[a-f0-9]{64}")){try{com.google.firebase.firestore.DocumentSnapshot row=com.google.android.gms.tasks.Tasks.await(com.google.firebase.firestore.FirebaseFirestore.getInstance().document("users/"+uid+"/notificationInbox/"+d.get("eventId")).get(com.google.firebase.firestore.Source.SERVER),8,java.util.concurrent.TimeUnit.SECONDS);if(!uid.equals(FirebaseAuth.getInstance().getUid())||!uid.equals(row.getString("recipientUid"))||row.get("readAt")!=null||!"active".equals(row.getString("state"))||row.getTimestamp("expiresAt")==null||row.getTimestamp("expiresAt").toDate().getTime()<=System.currentTimeMillis()||!InboxContract.route(row.getString("kind"),row.getString("routeType"),row.getString("targetId"),row.getString("templateKey")))return;NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);if(android.os.Build.VERSION.SDK_INT>=26)nm.createNotificationChannel(new NotificationChannel("activity_updates",getString(R.string.notification_settings),NotificationManager.IMPORTANCE_DEFAULT));Intent i=getPackageManager().getLaunchIntentForPackage(getPackageName());i.putExtra("notificationInbox",true);PendingIntent pi=PendingIntent.getActivity(this,d.get("eventId").hashCode(),i,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);int label="adoption".equals(row.getString("kind"))?R.string.lc_push_generic:"message".equals(row.getString("kind"))?R.string.oc4_notification_message:"like".equals(row.getString("kind"))?R.string.oc4_notification_like:R.string.wiring_inbox_comment;nm.notify(d.get("eventId").hashCode(),new NotificationCompat.Builder(this,"activity_updates").setSmallIcon(R.drawable.ic_nav_chat).setContentTitle("ANILOVE").setContentText(getString(label)).setContentIntent(pi).setAutoCancel(true).setVisibility(NotificationCompat.VISIBILITY_PRIVATE).build());}catch(Exception ignored){/* The private in-app item remains available. */}return;}
-  if(!"adoption_flow".equals(d.get("kind"))||!uid.equals(d.get("uid"))||!p.getString("installation","").equals(d.get("installationId"))||!p.getString("epoch","").equals(d.get("bindingEpoch")))return;
-  AdoptionApi.call("flowRead",map("kind","notice","id",d.get("eventId"))).addOnCompleteListener(t->{if(!t.isSuccessful()||!uid.equals(FirebaseAuth.getInstance().getUid()))return;Map<String,Object> notice=object(t.getResult().get("notice"));if(!Boolean.FALSE.equals(notice.get("read")))return;NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);if(android.os.Build.VERSION.SDK_INT>=26)nm.createNotificationChannel(new NotificationChannel("adoption_updates",getString(R.string.lc_notices),NotificationManager.IMPORTANCE_DEFAULT));Intent i=new Intent(this,LifecycleActivity.class).putExtra("mode","notices");if(notice.get("adoptionId")!=null)i.putExtra("adoption",String.valueOf(notice.get("adoptionId")));PendingIntent intent=PendingIntent.getActivity(this,d.get("eventId").hashCode(),i,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);Notification n=new NotificationCompat.Builder(this,"adoption_updates").setSmallIcon(R.drawable.ic_nav_chat).setContentTitle("ANILOVE").setContentText(getString(R.string.lc_push_generic)).setContentIntent(intent).setAutoCancel(true).build();try{nm.notify(d.get("eventId").hashCode(),n);}catch(SecurityException denied){/* The in-app notice remains available. */}});
- }
- @Override public void onNewToken(String token){prefs(this).edit().remove("epoch").apply();/* Explicit Enable re-proves a rotated token for the current account. */}
+    private static android.content.SharedPreferences prefs(Context c) {
+        return c.getSharedPreferences("adoption_push", 0);
+    }
+
+    public static void enable(Activity activity, android.widget.TextView feedback) {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid == null) return;
+        if (android.os.Build.VERSION.SDK_INT >= 33
+                && activity.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                        != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            activity.requestPermissions(
+                    new String[] {android.Manifest.permission.POST_NOTIFICATIONS}, 412);
+            feedback.setText(R.string.lc_push_permission);
+            return;
+        }
+        android.content.SharedPreferences p = prefs(activity);
+        String id = p.getString("installation", UUID.randomUUID().toString()),
+                secret = p.getString("secret", null);
+        if (secret == null) {
+            byte[] bytes = new byte[32];
+            new java.security.SecureRandom().nextBytes(bytes);
+            StringBuilder b = new StringBuilder();
+            for (byte x : bytes) b.append(String.format(java.util.Locale.ROOT, "%02x", x & 255));
+            secret = b.toString();
+        }
+        p.edit()
+                .putString("installation", id)
+                .putString("secret", secret)
+                .putString("uid", uid)
+                .remove("epoch")
+                .apply();
+        final String key = secret;
+        FirebaseMessaging.getInstance().setAutoInitEnabled(true);
+        FirebaseMessaging.getInstance()
+                .getToken()
+                .addOnCompleteListener(
+                        t -> {
+                            if (activity.isDestroyed()
+                                    || !uid.equals(FirebaseAuth.getInstance().getUid())) return;
+                            if (!t.isSuccessful()) {
+                                feedback.setText(R.string.lc_push_error);
+                                return;
+                            }
+                            AdoptionApi.call(
+                                            "flowBinding",
+                                            map(
+                                                    "kind",
+                                                    "register",
+                                                    "installationId",
+                                                    id,
+                                                    "operationId",
+                                                    UUID.randomUUID().toString(),
+                                                    "token",
+                                                    t.getResult(),
+                                                    "secret",
+                                                    key,
+                                                    "replaceConfirmed",
+                                                    true))
+                                    .addOnCompleteListener(
+                                            r -> {
+                                                if (!activity.isDestroyed())
+                                                    feedback.setText(
+                                                            r.isSuccessful()
+                                                                    ? R.string.lc_push_wait
+                                                                    : R.string.lc_push_error);
+                                            });
+                        });
+    }
+
+    @Override
+    public void onMessageReceived(RemoteMessage message) {
+        Map<String, String> d = message.getData();
+        String uid = FirebaseAuth.getInstance().getUid();
+        android.content.SharedPreferences p = prefs(this);
+        if (uid == null || !uid.equals(p.getString("uid", null))) return;
+        if ("binding_challenge".equals(d.get("kind"))) {
+            String secret = p.getString("secret", null);
+            if (secret == null) return;
+            try {
+                Map<String, Object> result =
+                        com.google.android.gms.tasks.Tasks.await(
+                                AdoptionApi.call(
+                                        "flowBinding",
+                                        map(
+                                                "kind",
+                                                "confirm",
+                                                "challengeId",
+                                                d.get("challengeId"),
+                                                "nonce",
+                                                d.get("nonce"),
+                                                "secret",
+                                                secret)),
+                                8,
+                                java.util.concurrent.TimeUnit.SECONDS);
+                if (uid.equals(FirebaseAuth.getInstance().getUid())
+                        && p.getString("installation", "").equals(result.get("installationId")))
+                    p.edit()
+                            .putString(
+                                    "epoch",
+                                    String.valueOf(
+                                            ((Number) result.get("bindingEpoch")).longValue()))
+                            .commit();
+            } catch (Exception ignored) {
+                /* Explicit retry can re-prove the device; no success is invented. */
+            }
+            return;
+        }
+        if ("activity".equals(d.get("kind"))
+                && uid.equals(d.get("uid"))
+                && p.getString("installation", "").equals(d.get("installationId"))
+                && p.getString("epoch", "").equals(d.get("bindingEpoch"))
+                && d.getOrDefault("eventId", "").matches("[a-f0-9]{64}")) {
+            try {
+                com.google.firebase.firestore.DocumentSnapshot row =
+                        com.google.android.gms.tasks.Tasks.await(
+                                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                        .document(
+                                                "users/"
+                                                        + uid
+                                                        + "/notificationInbox/"
+                                                        + d.get("eventId"))
+                                        .get(com.google.firebase.firestore.Source.SERVER),
+                                8,
+                                java.util.concurrent.TimeUnit.SECONDS);
+                if (!uid.equals(FirebaseAuth.getInstance().getUid())
+                        || !uid.equals(row.getString("recipientUid"))
+                        || row.get("readAt") != null
+                        || !"active".equals(row.getString("state"))
+                        || row.getTimestamp("expiresAt") == null
+                        || row.getTimestamp("expiresAt").toDate().getTime()
+                                <= System.currentTimeMillis()
+                        || !InboxContract.route(
+                                row.getString("kind"),
+                                row.getString("routeType"),
+                                row.getString("targetId"),
+                                row.getString("templateKey"))) return;
+                NotificationManager nm =
+                        (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                if (android.os.Build.VERSION.SDK_INT >= 26)
+                    nm.createNotificationChannel(
+                            new NotificationChannel(
+                                    "activity_updates",
+                                    getString(R.string.notification_settings),
+                                    NotificationManager.IMPORTANCE_DEFAULT));
+                Intent i = getPackageManager().getLaunchIntentForPackage(getPackageName());
+                i.putExtra("notificationInbox", true);
+                PendingIntent pi =
+                        PendingIntent.getActivity(
+                                this,
+                                d.get("eventId").hashCode(),
+                                i,
+                                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                int label =
+                        "adoption".equals(row.getString("kind"))
+                                ? R.string.lc_push_generic
+                                : "message".equals(row.getString("kind"))
+                                        ? R.string.oc4_notification_message
+                                        : "like".equals(row.getString("kind"))
+                                                ? R.string.oc4_notification_like
+                                                : R.string.wiring_inbox_comment;
+                nm.notify(
+                        d.get("eventId").hashCode(),
+                        new NotificationCompat.Builder(this, "activity_updates")
+                                .setSmallIcon(R.drawable.ic_nav_chat)
+                                .setContentTitle("ANILOVE")
+                                .setContentText(getString(label))
+                                .setContentIntent(pi)
+                                .setAutoCancel(true)
+                                .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+                                .build());
+            } catch (Exception ignored) {
+                /* The private in-app item remains available. */
+            }
+            return;
+        }
+        if (!"adoption_flow".equals(d.get("kind"))
+                || !uid.equals(d.get("uid"))
+                || !p.getString("installation", "").equals(d.get("installationId"))
+                || !p.getString("epoch", "").equals(d.get("bindingEpoch"))) return;
+        AdoptionApi.call("flowRead", map("kind", "notice", "id", d.get("eventId")))
+                .addOnCompleteListener(
+                        t -> {
+                            if (!t.isSuccessful()
+                                    || !uid.equals(FirebaseAuth.getInstance().getUid())) return;
+                            Map<String, Object> notice = object(t.getResult().get("notice"));
+                            if (!Boolean.FALSE.equals(notice.get("read"))) return;
+                            NotificationManager nm =
+                                    (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                            if (android.os.Build.VERSION.SDK_INT >= 26)
+                                nm.createNotificationChannel(
+                                        new NotificationChannel(
+                                                "adoption_updates",
+                                                getString(R.string.lc_notices),
+                                                NotificationManager.IMPORTANCE_DEFAULT));
+                            Intent i =
+                                    new Intent(this, LifecycleActivity.class)
+                                            .putExtra("mode", "notices");
+                            if (notice.get("adoptionId") != null)
+                                i.putExtra("adoption", String.valueOf(notice.get("adoptionId")));
+                            PendingIntent intent =
+                                    PendingIntent.getActivity(
+                                            this,
+                                            d.get("eventId").hashCode(),
+                                            i,
+                                            PendingIntent.FLAG_UPDATE_CURRENT
+                                                    | PendingIntent.FLAG_IMMUTABLE);
+                            Notification n =
+                                    new NotificationCompat.Builder(this, "adoption_updates")
+                                            .setSmallIcon(R.drawable.ic_nav_chat)
+                                            .setContentTitle("ANILOVE")
+                                            .setContentText(getString(R.string.lc_push_generic))
+                                            .setContentIntent(intent)
+                                            .setAutoCancel(true)
+                                            .build();
+                            try {
+                                nm.notify(d.get("eventId").hashCode(), n);
+                            } catch (SecurityException denied) {
+                                /* The in-app notice remains available. */
+                            }
+                        });
+    }
+
+    @Override
+    public void onNewToken(String token) {
+        prefs(this)
+                .edit()
+                .remove("epoch")
+                .apply(); /* Explicit Enable re-proves a rotated token for the current account. */
+    }
 }
