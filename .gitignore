@@ -3,6 +3,8 @@
 .idea/
 .kilo/
 **/build/
+/build/java-beautified-copy/
+/build/java-beautified-copy-aosp/
 local.properties
 *.iml
 *.log
